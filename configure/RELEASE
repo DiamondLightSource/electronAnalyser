@@ -9,6 +9,17 @@
 # module defined in the RELEASE file is rebuilt.
 
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
+SUPPORT=/dls_sw/prod/R3.14.10/support
+WORK=/dls_sw/work/R3.14.10/support
+
+# ASYN - for device driver support
+ASYN=$(SUPPORT)/asyn/4-12
+
+# Area Detector support
+AREA_DETECTOR=$(SUPPORT)/areaDetector/1-5
+
+# Busy record support
+BUSY=$(SUPPORT)/busy/1-2dls1
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here

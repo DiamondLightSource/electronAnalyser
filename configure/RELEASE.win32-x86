@@ -1,0 +1,13 @@
+SUPPORT=C:/dls_sw/prod/R3.14.10/support
+WORK=C:/dls_sw/work/R3.14.10/support
+
+EPICS_BASE=C:/dls_sw/epics/R3.14.10/base
+
+ASYN=$(SUPPORT)/asyn/4-12
+AREA_DETECTOR=$(SUPPORT)/areaDetector/1-5
+BUSY=$(SUPPORT)/busy/1-2dls1
+
+# If you don't want to install into $(TOP) then
+# define INSTALL_LOCATION_APP here
+INSTALL_LOCATION_APP=c:\\ElectronAnalyzerIOC
+
