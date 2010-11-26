@@ -1,0 +1,16 @@
+cd "@ELECTRON_ANALYSER_INSTALL@"
+
+@rem copy the build files from the W: drive to the local drive
+set _shareddrive=T:\i09\IOC\BL09I-EA-IOC-05
+xcopy /Y /E /V /I %_shareddrive%\bin @ELECTRON_ANALYSER_INSTALL@\bin
+xcopy /Y /E /V /I %_shareddrive%\dbd @ELECTRON_ANALYSER_INSTALL@\dbd
+xcopy /Y /E /V /I %_shareddrive%\db @ELECTRON_ANALYSER_INSTALL@\db
+
+@rem set the various environment options: path and EPICS stuff
+call "bin\win32-x86\profile.bat"
+
+echo
+echo "Starting the Electron Analyser IOC"
+@rem run up the IOC with the startup script as argument
+bin\win32-x86\electronAnalyser.exe bin\win32-x86\stelectronAnalyser.boot
+

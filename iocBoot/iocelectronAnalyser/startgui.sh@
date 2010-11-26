@@ -1,0 +1,3 @@
+export EPICS_DISPLAY_PATH=.:@AREA_DETECTOR_LINUX@/ADApp/op/adl:@ASYN_LINUX@/medm
+medm -x @ELECTRON_ANALYSER_LINUX@/electronAnalyserApp/opi/edl/electronAnalyserTop.adl
+

@@ -1,0 +1,35 @@
+
+## Register all support components
+dbLoadDatabase("dbd/electronAnalyser.dbd")
+electronAnalyser_registerRecordDeviceDriver(pdbbase)
+
+
+# Configure electronAnalyser driver plugin. Runs the electronAnalyser constructor.
+# Max memory calculation:
+#   size 2880 x 2881 x 4 bytes per pixel = 33189120 bytes
+#   Number of plugin buffers: 10
+#   total number of NDArray buffers needed; 10 + 1 = 11
+#  Max memory: 33189120 bytes x 11 = 365080320 bytes. Rounded up: ~400MB
+electronAnalyserConfig("asynelectronAnalyser", "192.168.0.2", 2880, 2881, 11, 400000000)
+# Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
+asynSetTraceMask("asynelectronAnalyser", 0, 0x11)
+
+# Configure a NDStdArray to allow reading the image data over Channel Access
+NDStdArraysConfigure("electronAnalyserStdArray", 2, 0, "asynelectronAnalyser", 0, -1)
+
+# Configure the ROI plugin to produce 8 regions of interest
+NDROIConfigure("electronAnalyserROI", 8, 0, "asynelectronAnalyser", 0, 8, 8, -1)
+
+# Create a TIFF file saving plugin
+NDFileTIFFConfigure("electronAnalyserFileTIFF", 8, 0, "asynelectronAnalyser", 0)
+
+# Instantiate one set of the AD base template for electronAnalyser detcetor driver
+dbLoadRecords("db/electronAnalyserExample.db")
+
+
+
+
+
+iocInit()
+
+#asynReport(10, "asynelectronAnalyser")
