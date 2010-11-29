@@ -6,21 +6,36 @@ include $(TOP)/configure/CONFIG
 # Build an Diamond Support Module
 # -------------------------------
 
-#LIBRARY_IOC += xxx
+#define the library name
+LIBRARY_IOC += electronAnalyserSupport
 
 # xxxRecord.h will be created from xxxRecord.dbd
 #DBDINC += xxx.h
 
 # xxxRecord.dbd will be installed into <top>/dbd
-#DBD += xxx.dbd
+DBD += electronAnalyserSupport.dbd
+
+# Any specific external resources (not epics) that we need to link to
+# need to be defined as follows.
+# Keep in mind that we dont specifically need to link to libraries at this
+# point (in a support module) as linking will happen when we build the IOC binary.
+USR_CFLAGS_WIN32 += 
+USR_INCLUDES_WIN32 += -I../include/
+#USR_LIBS_WIN32 +=
+
+USR_CFLAGS_Linux +=
+USR_INCLUDES_Linux +=
+#USR_LIBS_Linux +=
+# In the case of usr lib nnn, point to its dir like this:
+#nnn_DIR =
 
 # The following are compiled and added to the support library
-#xxx_SRCS += xxxCodeA.c
-#xxx_SRCS += xxxCodeB.c
+electronAnalyserSupport_SRCS_WIN32 += electronAnalyser.cpp
+#electronAnalyserSupport_SRCS_Linux += electronAnalyser_sim.cpp
+electronAnalyserSupport_SRCS += drvelectronAnalyserRegistrar.c
 
 # We need to link against the EPICS Base libraries
 #xxx_LIBS += $(EPICS_BASE_IOC_LIBS)
-
 
 # ------------------------
 # Build an IOC Application
@@ -33,6 +48,11 @@ DBD += electronAnalyser.dbd
 
 # electronAnalyser.dbd will be created from these files
 electronAnalyser_DBD += base.dbd
+electronAnalyser_DBD += asyn.dbd
+electronAnalyser_DBD += ADSupport.dbd
+electronAnalyser_DBD += pluginSupport.dbd
+electronAnalyser_DBD += electronAnalyserSupport.dbd
+electronAnalyser_DBD += busySupport.dbd
 #electronAnalyser_DBD += xxx.dbd
 
 # electronAnalyser_registerRecordDeviceDriver.cpp will be created
@@ -50,8 +70,31 @@ electronAnalyser_SRCS_vxWorks += -nil-
 electronAnalyser_OBJS_vxWorks += $(EPICS_BASE_BIN)/vxComLibrary
 
 # This line says that this IOC Application depends on the
-# xxx Support Module
-#electronAnalyser_LIBS += xxx
+# electronAnalyser Support Module
+
+# A little linking hack to ensure that nafxcwd is linked first (preventing a LNK2005 error)
+electronAnalyser_LDFLAGS_WIN32 += /NOD:nafxcwd.lib
+electronAnalyser_SYS_LIBS_WIN32 += nafxcwd
+
+electronAnalyser_LIBS += asyn
+electronAnalyser_LIBS += ADBase NDPlugin netCDF
+electronAnalyser_LIBS += electronAnalyserSupport
+electronAnalyser_LIBS += busy
+
+# Linux system libraries:
+electronAnalyser_SYS_LIBS_Linux += tiff jpeg z
+# Linux libraries supplied by areaDetector
+electronAnalyser_LIBS_Linux += NeXus mfhdf df hdf5 mxml
+
+# Windows libraries supplied by areaDetector
+electronAnalyser_LIBS_WIN32 += libtiff jpeg libNeXus.dll
+# Windows libraries for Electron Analyser
+electronAnalyser_LIBS_WIN32 += SESWrapper SESInstrument
+SESWrapper_DIR = ../lib/
+SESInstrument_DIR = ../lib/
+
+# This is probably not necessary as we build statically against the .lib files
+BIN_INSTALLS_WIN32 += ../dll/SESWrapper.dll ../dll/SESInstrument.dll $(AREA_DETECTOR)/ADApp/tiffSupport/libtiff3.dll
 
 # We need to link this IOC Application against the EPICS Base libraries
 electronAnalyser_LIBS += $(EPICS_BASE_IOC_LIBS)
