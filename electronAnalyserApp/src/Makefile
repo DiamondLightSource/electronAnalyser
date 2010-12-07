@@ -30,12 +30,9 @@ USR_INCLUDES_Linux +=
 #nnn_DIR =
 
 # The following are compiled and added to the support library
-electronAnalyserSupport_SRCS_WIN32 += electronAnalyser.cpp
+electronAnalyserSupport_SRCS_WIN32 += cexports.cpp werror.cpp wevent.cpp wlibrary.cpp wmutex.cpp wsesinstrument.cpp wvariable.cpp wseswrapperbase.cpp wseswrappermain.cpp electronAnalyser.cpp
 #electronAnalyserSupport_SRCS_Linux += electronAnalyser_sim.cpp
-electronAnalyserSupport_SRCS += drvelectronAnalyserRegistrar.c
-
-# We need to link against the EPICS Base libraries
-#xxx_LIBS += $(EPICS_BASE_IOC_LIBS)
+electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
 
 # ------------------------
 # Build an IOC Application
@@ -87,14 +84,14 @@ electronAnalyser_SYS_LIBS_Linux += tiff jpeg z
 electronAnalyser_LIBS_Linux += NeXus mfhdf df hdf5 mxml
 
 # Windows libraries supplied by areaDetector
-electronAnalyser_LIBS_WIN32 += libtiff jpeg libNeXus.dll
+electronAnalyser_LIBS_WIN32 += libtiff jpeg libNeXus
 # Windows libraries for Electron Analyser
-electronAnalyser_LIBS_WIN32 += SESWrapper SESInstrument
-SESWrapper_DIR = ../lib/
-SESInstrument_DIR = ../lib/
+#electronAnalyser_LIBS_WIN32 += SESWrapper SESInstrument
+#SESWrapper_DIR = ../lib
+#SESInstrument_DIR = ../lib
 
 # This is probably not necessary as we build statically against the .lib files
-BIN_INSTALLS_WIN32 += ../dll/SESWrapper.dll ../dll/SESInstrument.dll $(AREA_DETECTOR)/ADApp/tiffSupport/libtiff3.dll
+#BIN_INSTALLS_WIN32 += ../dll/SESWrapper.dll ../dll/SESInstrument.dll $(AREA_DETECTOR)/ADApp/tiffSupport/libtiff3.dll
 
 # We need to link this IOC Application against the EPICS Base libraries
 electronAnalyser_LIBS += $(EPICS_BASE_IOC_LIBS)

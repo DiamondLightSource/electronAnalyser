@@ -1,0 +1,20 @@
+# DO NOT EDIT: This file created by mkmf.pl,v 1.5 2002/03/25 21:33:24 jba Exp $ 
+
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/registryCommon.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/iocsh.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/iocshRegisterCommon.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/dbStaticLib.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/registryRecordType.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/shareLib.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/dbFldTypes.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/dbBase.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/link.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/errMdef.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/recSup.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/ellLib.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/dbDefs.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/errlog.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsTypes.h
+electronAnalyser_registerRecordDeviceDriver.obj : C:/dls_sw/epics/R3.14.10/base/include/compilerDependencies.h
+
+

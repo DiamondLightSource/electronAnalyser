@@ -1,0 +1,15 @@
+# DO NOT EDIT: This file created by mkmf.pl,v 1.5 2002/03/25 21:33:24 jba Exp $ 
+
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsExit.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsThread.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/iocsh.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/shareLib.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsEvent.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsMutex.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/os/WIN32/osdThread.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsAssert.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/os/WIN32/osdEvent.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/compilerDependencies.h
+electronAnalyserMain.obj : C:/dls_sw/epics/R3.14.10/base/include/os/WIN32/osdMutex.h
+
+

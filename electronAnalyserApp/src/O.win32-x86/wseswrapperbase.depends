@@ -1,0 +1,13 @@
+# DO NOT EDIT: This file created by mkmf.pl,v 1.5 2002/03/25 21:33:24 jba Exp $ 
+
+wseswrapperbase.obj : ../include//wseswrapperbase.h
+wseswrapperbase.obj : ../include//wsesinstrument.h
+wseswrapperbase.obj : ../include//werror.h
+wseswrapperbase.obj : ../include//common.hpp
+wseswrapperbase.obj : ../include//constants.h
+wseswrapperbase.obj : ../include//wvariable.hpp
+wseswrapperbase.obj : ../include//sestypes.h
+wseswrapperbase.obj : ../include//wlibrary.h
+wseswrapperbase.obj : ../include//types.h
+
+
