@@ -96,107 +96,102 @@ private:
     WSESWrapperMain *ses;
     SESWrapperNS::WAnalyzerRegion analyzer;
     SESWrapperNS::WDetectorRegion detector;
-    SESWrapperNS::WDetectorInfo info;
+    SESWrapperNS::WDetectorInfo detectorInfo;
     asynStatus acquireData(void *pData);
     asynStatus setROI(int xmin, int ymin, int xsize, int ysize);
     asynStatus updateROI();
     asynStatus getDetectorTemperature(float *temperature);
     virtual void init_device();
-    virtual void always_executed_hook();
     void delete_device();
-    virtual void read_attr_hardware(std::vector<long > & attr_list);
-    virtual asynStatus getKineticEnergy(double & kineticEnergy);
-    virtual asynStatus setKineticEnergy(double kineticEnergy);
-    virtual asynStatus getAnalyserMode(bool & mode);
-    virtual asynStatus setAnalyserMode(bool mode);
-    virtual asynStatus getEnergyScale(string & energyScale);
-    virtual asynStatus setEnergyScale(string energyScale);
-    virtual asynStatus getHighEnergy(double & highEnergy);
-    virtual asynStatus setHighEnergy(double highEnergy);
-    virtual asynStatus getLowEnergy(double & lowEnergy);
-    virtual asynStatus setLowEnergy(double lowEnergy);
-    virtual asynStatus getCenterEnergy(double & fixedEnergy);
-    virtual asynStatus setCenterEnergy(double fixedEnergy);
-    virtual asynStatus getEnergyStep(double & energyStep);
-    virtual asynStatus setEnergyStep(double energyStep);
-    virtual asynStatus getStepTime(int & stepTime);
-    virtual asynStatus setStepTime(int stepTime);
-    virtual asynStatus getLensMode(char * lensMode);
-    virtual asynStatus setLensMode(char * lensMode);
-    virtual asynStatus getPassEnergy(double & passEnergy);
-    virtual asynStatus setPassEnergy(double passEnergy);
-    virtual asynStatus getElementSet(char * passMode);
-    virtual asynStatus setElementSet(char * passMode);
-    virtual asynStatus getDetectorFirstXChannel(int & detectorFirstXChannel);
-    virtual asynStatus setDetectorFirstXChannel(int detectorFirstXChannel);
-    virtual asynStatus getDetectorLastXChannel(int & detectorLastXChannel);
-    virtual asynStatus setDetectorLastXChannel(int detectorLastXChannel);
-    virtual asynStatus getDetectorFirstYChannel(int & detectorFirstYChannel);
-    virtual asynStatus setDetectorFirstYChannel(int detectorFirstYChannel);
-    virtual asynStatus getDetectorLastYChannel(int & detectorLastYChannel);
-    virtual asynStatus setDetectorLastYChannel(int detectorLastYChannel);
-    virtual asynStatus getDetectorSlices(int & detectorSlices);
-    virtual asynStatus setDetectorSlices(int detectorSlices);
-    virtual asynStatus getADCMode(bool & adcMode);
-    virtual asynStatus setADCMode(bool adcMode);
-    virtual asynStatus getADCMask(char * adcMask);
-    virtual asynStatus setADCMask(char * adcMask);
-    virtual asynStatus getDiscriminatorLevel(int & discriminatorLevel);
-    virtual asynStatus setDiscriminatorLevel(int discriminatorLevel);
-    virtual asynStatus getChannels(int & channels);
-    virtual asynStatus getSlices(int & slices);
-    virtual asynStatus getSweeps(int & sweeps);
-    virtual asynStatus getChannelScale(double * spectrum);
-    virtual asynStatus getSliceScale(double * spectrum);
-    virtual asynStatus getSpectrum(double * sumData);
-    virtual asynStatus getData(double * data);
-    virtual bool is_excitationEnergy_allowed();
-    virtual bool is_mode_allowed();
-    virtual bool is_energyScale_allowed();
-    virtual bool is_highEnergy_allowed();
-    virtual bool is_lowEnergy_allowed();
-    virtual bool is_fixEnergy_allowed();
-    virtual bool is_energyStep_allowed();
-    virtual bool is_stepTime_allowed();
-    virtual bool is_lensMode_allowed();
-    virtual bool is_passEnergy_allowed();
-    virtual bool is_passMode_allowed();
-    virtual bool is_detectorFirstXChannel_allowed();
-    virtual bool is_detectorLastXChannel_allowed();
-    virtual bool is_detectorFirstYChannel_allowed();
-    virtual bool is_detectorLastYChannel_allowed();
-    virtual bool is_detectorSlices_allowed();
-    virtual bool is_ADCMode_allowed();
-    virtual bool is_ADCMask_allowed();
-    virtual bool is_discriminatorLevel_allowed();
-    virtual bool is_channels_allowed();
-    virtual bool is_slices_allowed();
-    virtual bool is_sweeps_allowed();
-    virtual bool is_channelScale_allowed();
-    virtual bool is_sliceScale_allowed();
-    virtual bool is_sumData_allowed();
-    virtual bool is_data_allowed();
-    virtual bool is_Start_allowed();
-    virtual bool is_Stop_allowed();
-    virtual bool is_ResetInstrument_allowed();
-    virtual bool is_ResetSupplies_allowed();
-    virtual bool is_TestCommunication_allowed();
-    virtual bool is_GetHardwareInfo_allowed();
-    virtual bool is_GetLensModeList_allowed();
-    virtual bool is_GetPassEnergyList_allowed();
-    virtual bool is_GetPassModeList_allowed();
-    void start();
-    void stop();
-    void reset_instrument();
-    void reset_supplies();
-    void test_communication();
-    void get_hardware_info();
-    std::vector<string> *get_lens_mode_list();
-    std::vector<double> *get_pass_energy_list();
-    std::vector<string> *get_pass_mode_list();
-    void get_device_property();
-    BOOL isCallReturnError(int & eaStatus, const char *functionName);
+    virtual void updateStatus();
+
+    // Anaylzer specific parameters
+    virtual asynStatus getKineticEnergy(double *kineticEnergy);
+    virtual asynStatus setKineticEnergy(const double kineticEnergy);
+    virtual asynStatus getElementVoltage(const char *elementName, double *voltage);
+    virtual asynStatus setElementVoltage(const char *elementName, const double voltage);
+    virtual asynStatus zeroSupplies();
+
+    virtual asynStatus setAcquisitionMode(const bool b);
+    virtual asynStatus getAcquisitionMode(bool *b);
+    virtual asynStatus setEnergyMode(const bool b);
+    virtual asynStatus getEnergyMode(bool *b);
+
+    virtual asynStatus start();
+    virtual asynStatus stop();
+
+    //HW specific methods
+    virtual asynStatus resetInstrument();
+    virtual asynStatus testCommunication();
+
+    virtual asynStatus getLensModeList(std::vector<string> * pLensModeList);
+    virtual asynStatus getPassEnergyList(std::vector<double> * pPassEnergyList);
+    virtual asynStatus getElementSetLlist(std::vector<string> * pElementSetList);
+
     bool isError(int & err, const char * functionName);
+
+    // access methods to properties - defined in WSESWrapperBase class
+    virtual asynStatus getLibDescription(char *value, int &size);
+    virtual asynStatus getLibVersion(char *value, int &size);
+    virtual asynStatus getLibError(int index, char *value, int &size);
+    virtual asynStatus getLibWorkingDir(char *value, int &size);
+    virtual asynStatus setLibWorkingDir(const char *value);
+    virtual asynStatus getInstrumentStatus(int *value);
+    virtual asynStatus getAlwaysDelayRegion(bool *value);
+    virtual asynStatus setAlwaysDelayRegion(const bool *value);
+    virtual asynStatus getAllowIOWithDetector(bool *value);
+    virtual asynStatus setAllowIOWithDetector(const bool *value);
+    virtual asynStatus getInstrumentModel(char *value, int &size);
+    virtual asynStatus getInstrumentSerialNo(char *value, int &size);
+    virtual asynStatus getDetectorInfo(SESWrapperNS::DetectorInfo *value);
+    virtual asynStatus getDetectorRegion(SESWrapperNS::DetectorRegion *value);
+    virtual asynStatus setDetectorRegion(const SESWrapperNS::DetectorRegion *value);
+    virtual asynStatus getElementSetCount(int & value);
+    virtual asynStatus getElementSet(int index, char * elementSet, int & size);
+    virtual asynStatus setElementSet(const char * elementSet);
+    virtual asynStatus getLensModeCount(int & value);
+    virtual asynStatus getLensMode(int index, char * lensMode, int & size);
+    virtual asynStatus setLensMode(const char * lensMode);
+    virtual asynStatus getPassEnergyCount(int & value);
+    virtual asynStatus getPassEnergy(int index, double &passEnergy );
+    virtual asynStatus setPassEnergy(const double * passEnergy);
+    virtual asynStatus getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *value);
+    virtual asynStatus setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value);
+    virtual asynStatus getUseExternalIO(bool *value);
+    virtual asynStatus setUseExternalIO(const bool *value);
+    virtual asynStatus getUseDetector(bool *value);
+    virtual asynStatus setUseDetector(const bool *value);
+    virtual asynStatus getRegionName(char *value, int &size);
+    virtual asynStatus setRegionName(const char *value);
+    virtual asynStatus getTempFileName(char *value, int &size);
+    virtual asynStatus setTempFileName(const char *value);
+    virtual asynStatus getResetDataBetweenIterations(bool * value);
+    virtual asynStatus setResetDataBetweenIterations(const bool * value);
+
+    // access methods to Data Parameters
+    virtual asynStatus getAcqChannels(int & channels);
+    virtual asynStatus getAcqSlices(int & slices);
+    virtual asynStatus getAcqIterations(int & iterations);
+    virtual asynStatus getAcqIntensityUnit(char * intensityUnit, int & size);
+    virtual asynStatus getAcqChannelUnit(char * channelUnit, int & size);
+    virtual asynStatus getAcqSliceUnit(char * sliceUnit, int & size);
+    virtual asynStatus getAcqChannelScale(double * pSpectrum, int & size);
+    virtual asynStatus getAcqSliceScale(double * pSpectrum, int & size);
+    virtual asynStatus getAcqSpectrum(double * pSumData, int & size);
+    virtual asynStatus getAcqImage(double * pData, int & size);
+    virtual asynStatus getAcqSlice(int index, double * pSliceData, int size);
+    virtual asynStatus getAcqRawImage(int * pImage, int &size);
+    virtual asynStatus getAcqCurrentStep(int &currentStep);
+    virtual asynStatus getAcqElapsedTime(double &elapsedTime);
+    virtual asynStatus getAcqIOPorts(int &ports);
+    virtual asynStatus getAcqIOSize(int &dataSize);
+    virtual asynStatus getAcqIOIterations(int &iterations);
+    virtual asynStatus getAcqIOUnit(char * unit, int & size);
+    virtual asynStatus getAcqIOScale(double * scale, int & size);
+    virtual asynStatus getAcqIOSpectrum(int index, double * pSpectrum, int & size);
+    virtual asynStatus getAcqIOData(double * pData, int & size);
+    virtual asynStatus getAcqIOPortName(int index, char * pName, int & size);
+
     WError *werror;
     string sesRootDirectory;
     string instrumentFilePath;
@@ -224,17 +219,159 @@ static void electronAnalyserTaskC(void *drvPvt)
 /** Define Electron Analyser driver specific parameters */
 typedef enum
 {
-	lensMode = ADLastStdParam, /**< (asynInt32,    r/w) the lens mode selected*/
-	acquisitionMode, /**< (asynInt32,    r/w) the acquisition mode selected*/
+	//Properties
+	LibDescription 			/**< (asynOctet,    	r/o) the library description*/
+		= ADLastStdParam,
+	LibVersion,				/**< (asynOctet,    	r/o) the library version*/
+	LibWorkingDir,			/**< (asynOctet,    	r/w) the woring directory of the current application*/
+	InstrumentStatus,		/**< (asynInt32,    	r/o) the status of instrument specified at SesNS::InstrumentStatus.*/
+	AlwaysDelayRegion, 		/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
+	AllowIOWithDetector,	/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
+	InstrumentSerialNo,		/**< (asynOctet,    	r/o) the instrument serial number*/
+	//Detector Info
+	TimerControlled,		/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
+	XChannels,				/**< (asynInt32,    	r/o) Specifies the number of X channels currently shown on the detector.*/
+	YChannels,				/**< (asynInt32,    	r/o) Specifies the number of Y channels (slices) currently shown on the detector.*/
+	MaxSlices,				/**< (asynInt32,    	r/o) Specifies the maximum number of Y channels (slices).*/
+	MaxChannels,			/**< (asynInt32,    	r/o) Specifies the maximum number of X channels.*/
+	FrameRate,				/**< (asynInt32,    	r/o) Specifies the frame rate (frames/s).*/
+	ADCPresent,				/**< (asynInt32,    	r/o) Specifies whether the detector contains an ADC (0=No, 1=YES).*/
+	DiscPresent,			/**< (asynInt32,    	r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES).*/
+	// Detector Region
+	DetectorFirstXChannel,	/**< (asynInt32,    	r/w) Specifies the first X channel to be used on the detector (range: <code>[0...@ref electronAnalyserParam_t::XChannels_-1]</code>. )*/
+	DetectorLastXChannel,	/**< (asynInt32,    	r/w) Specifies the last X channel to be used on the detector. */
+	DetectorFirstYChannel,	/**< (asynInt32,    	r/w) Specifies the first Y channel to be used on the detector (range: <code>[0...@ref electronAnalyserParam_t::YChannels_-1]</code>. )*/
+	DetectorLastYChannel,	/**< (asynInt32,    	r/w) Specifies the last Y channel to be used on the detector. */
+	DetectorSlices,			/**< (asynInt32,    	r/w) Specifies the current number of Y channels (slices). */
+	DetectorMode,			/**< (asynInt32,    	r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No).*/
+	// Analyzer Region
+	AnalyzerAcquisitionMode,/**< (asynInt32,    	r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. */
+	AnalyzerHighEnergy,		/**< (asynFloat64,  	r/w) Specifies the high-end kinetic energy (eV) for swept mode acquisition. */
+	AnalyzerLowEnergy,		/**< (asynFloat64,  	r/w) Specifies the low-end kinetic energy (eV) for swept mode acquisition. */
+	AnalyzerCenterEnergy,	/**< (asynFloat64,  	r/w) Specifies the center energy (eV) for fixed mode acquisition (the low and high end energies is calculated from this value and the current pass energy). */
+	AnalyzerEnergyStep,		/**< (asynFloat64,  	r/w) Specifies the energy step size (eV) for swept mode acquisition. */
+	AnalyzerDwellTime,		/**< (asynFloat64,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
+	// Energy Scale
+	EnergyMode,				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
+	RunMode,				/**< (asynInt32, 		r/w) defines how software should perform the acquisition and save data.*/
+
+	ElementSetCount,		/**< (asynInt32,    	r/o) the number of installed element sets.*/
+	ElementSets,			/**< (asynOctet,    	r/w) the list of names of the installed element sets*/
+	LensModeCount,			/**< (asynInt32,		r/o) the number of available lens modes.*/
+	LensModes,				/**< (asynOctet,    	r/w) the list of names of available lens modes*/
+	PassEnergyCount,		/**< (asynInt32,		r/o) the number of available pass energies for the current lens mode.*/
+	PassEnergies,			/**< (asynFloat64,  	r/w) the list of available pass energies for the current lens mode.*/
+	UseExternalIO,			/**< (asynInt32,    	r/w) enable or disable the external IO interface (0=No, 1=YES).*/
+	UseDetector, 			/**< (asynInt32,    	r/w) enable or disable the detector (0=No, 1=YES).*/
+	RegionName, 			/**< (asynOctet,    	r/w) the name of the current region (max 32 characters)*/
+	TempFileName,			/**< (asynOctet,    	r/w) the name of the temporary file created when performing acquisition*/
+	ResetDataBetweenIterations, /**< (asynInt32,    r/w) allow reset of spectrum and external IO data between each iteration. (0=No, 1=YES).*/
+	// Data Parameters
+	AcqChannels,			/**< (asynInt32,		r/o) the number of channels in acquired data*/
+	AcqSlices, 				/**< (asynInt32,		r/o) the number of slices in acquired data*/
+	AcqIterations, 			/**< (asynInt32,		r/o) the number of iterations since last call to initAcqisition()*/
+	AcqIntensityUnit, 		/**< (asynOctet,		r/o) the unit of intensity scale (e.g. "counts/s")*/
+	AcqChannelUnit, 		/**< (asynOctet,		r/o) the unit of channel scale (e.g. "eV")*/
+	AcqSliceUnit, 			/**< (asynOctet,		r/o) the unit of slice scale (e.g. "mm")*/
+	AcqSpectrum, 			/**< (asynFloat64Array,	r/o) the integrated spectrum*/
+	AcqImage, 				/**< (asynFloat64Array,	r/o) the 2D matrix of acquired data*/
+	AcqSlice, 				/**< (asynFloat64Array,	r/o) access one slice from acquired data. The AcqSliceNumber defines which slice to access.*/
+	AcqSliceNumber, 		/**< (asynInt32,		r/w) the index parameters that specifies which slice to access by AcqSlice*/
+	AcqChannelScale, 		/**< (asynFloat64Array,	r/o) the channel scale*/
+	AcqSliceScale, 			/**< (asynFloat64Array,	r/o) the slice scale*/
+	AcqRawImage,			/**< (asynInt32Array,	r/o) the last image taken by the detector*/
+	AcqCurrentStep,			/**< (asynInt32,    	r/o) the current step in a swept mode acquisition.*/
+	AcqElapsedTime, 		/**< (asynFloat64,  	r/o) the elapsed time (ms) since last call to StartAcquisition()*/
+	AcqIOPorts,				/**< (asynInt32, 		r/o) the number of ports available from external IO interface measurements*/
+	AcqIOSize,				/**< (asynInt32, 		r/o) the size of each vector from external IO data*/
+	AcqIOIterations,		/**< (asynInt32, 		r/o) the number of times the external IO data has been acquired*/
+	AcqIOUnit,				/**< (asynOctet, 		r/o) the unit of the external IO data vectors*/
+	AcqIOScale,				/**< (asynFloat64Array, r/o) the scale of the external IO data*/
+	AcqIOSpectrum,			/**< (asynFloat64Array, r/o) data from one of the available ports in the external IO interface. AcqIOPortIndex parameter specifies which port to access. The size of the data is AcqIOSize*/
+	AcqIOPortIndex,			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
+	AcqIOData,				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
+	AcqIOPortName,			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
+
 	ADLastDriverParam
 } electronAnalyserParam_t;
+
 
 /** Define a table that maps enum-string.
  * The string is used in the database to reference a certain parameter */
 static asynParamString_t electronAnalyserParamString[] =
 {
-{ lensMode, "LENS_MODE" },
-{ acquisitionMode, "ACQUISITION_MODE" }, };
+		{LibDescription,	"LIB_DESCRIPTION"},
+		{LibVersion,		"LIB_VERSION"},
+		{LibWorkingDir,		"LIB_WORKING_DIR"},
+		{InstrumentStatus,	"INSTRUMENT_STATUS"},
+		{AlwaysDelayRegion, "ALWAYS_DELAY_REGION"},
+		{AllowIOWithDetector,"ALLOW_IO_WITH_DETECTOR"},
+		{InstrumentSerialNo,"INSTRUMENT_SERIAL_NUMBER"},
+		//Detector Info
+		{TimerControlled,	"TIMER_CONTROLLED"},
+		{XChannels,			"X_CHANNELS"},
+		{YChannels,			"Y_CHANNELS"},
+		{MaxSlices,			"MAX_SLICES"},
+		{MaxChannels,		"MAX_CHANNELS"},
+		{FrameRate,			"FRAME_RATE"},
+		{ADCPresent,		"ADC_PRESENT"},
+		{DiscPresent,		"DISC_PRESENT"},
+		// Detector Region
+		{DetectorFirstXChannel,"FIRST_X_CHANNEL"},
+		{DetectorLastXChannel, "LAST_X_CHANNEL"},
+		{DetectorFirstYChannel,"FIRST_Y_CHANNELS"},
+		{DetectorLastYChannel, "LAST_Y_CHANNELS"},
+		{DetectorSlices,	   "DETECTOR_SLICES"},
+		{DetectorMode,			"DETECTOR_MODE"},
+		// Analyzer Region
+		{AnalyzerAcquisitionMode,"ACQISITION_MODE"},
+		{AnalyzerHighEnergy,	"HIGH_ENERGY"},
+		{AnalyzerLowEnergy,		"LOW_ENERGY"},
+		{AnalyzerCenterEnergy,	"CENTER_ENERGY"},
+		{AnalyzerEnergyStep,	"ENERGY_STEP"},
+		{AnalyzerDwellTime,		"DWELL_TIME"},
+		// Energy Scale
+		{EnergyMode,			"ENERGY_MODE"},
+		{RunMode,				"EUN_MODE"},
+		{ElementSetCount,		"ELEMENT_SET_COUNT"},
+		{ElementSets,			"ELEMENT_SETS"},
+		{LensModeCount,			"LENS_MODE_COUNT"},
+		{LensModes,				"LENS_MODES"},
+		{PassEnergyCount,		"PASS_ENERGY_COUNT"},
+		{PassEnergies,			"PASS_ENERGIES"},
+		{UseExternalIO,			"USE_EXTERNAL_IO"},
+		{UseDetector, 			"USE_DETECTOR"},
+		{RegionName, 			"REGION_NAME"},
+		{TempFileName,			"TEMP_FILE_NAME"},
+		{ResetDataBetweenIterations, "RESET_DATA_BETWEEN_ITERATIONS"},
+		// Data Parameters
+		{AcqChannels,			"ACQ_CHANNELS"},
+		{AcqSlices, 			"ACQ_SLICES"},
+		{AcqIterations, 		"ACQ_ITERATIONS"},
+		{AcqIntensityUnit, 		"ACQ_INTENSITY_UNIT"},
+		{AcqChannelUnit, 		"ACQ_CHANNEL_UNIT"},
+		{AcqSliceUnit, 			"ACQ_SLICE_UNIT"},
+		{AcqSpectrum, 			"ACQ_SPECTRUM"},
+		{AcqImage, 				"ACQ_IMAGE"},
+		{AcqSlice, 				"ACQ_SLICE"},
+		{AcqSliceNumber, 		"ACQ_SLICE_INDEX"},
+		{AcqChannelScale, 		"ACQ_CHANNEL_SCALE"},
+		{AcqSliceScale, 		"ACQ_SLICE_SCALE"},
+		{AcqRawImage,			"ACQ_RAW_IMAGE"},
+		{AcqCurrentStep,		"ACQ_CURRENT_STEP"},
+		{AcqElapsedTime, 		"ACQ_ELAPSED_TIME"},
+		{AcqIOPorts,			"ACQ_IO_PORTS"},
+		{AcqIOSize,				"ACQ_IO_SIZE"},
+		{AcqIOIterations,		"ACQ_IO_ITERATIONS"},
+		{AcqIOUnit,				"ACQ_IO_UNIT"},
+		{AcqIOScale,			"ACQ_IO_SCALE"},
+		{AcqIOSpectrum,			"ACQ_IO_SPECTRUM"},
+		{AcqIOPortIndex,		"ACQ_IO_PORT_INDEX"},
+		{AcqIOData,				"ACQ_IO_DATA"},
+		{AcqIOPortName,			"ACQ_IO_PORT_NAME"}
+
+};
+
 // A little trick to get the number of parameters...
 #define NUM_ELECTRONANALYSER_PARAMS (sizeof(electronAnalyserParamString)/sizeof(electronAnalyserParamString[0]))
 
@@ -638,7 +775,7 @@ asynStatus ElectronAnalyser::writeOctet(asynUser *pasynUser, const char *value,
 
 	switch (function)
 	{
-	case acquisitionMode:
+	case AnalyzerAcquisitionMode:
 		break;
 	default:
 		/* If this parameter belongs to a base class call its method */
@@ -757,9 +894,9 @@ asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
  * If the call returns error status, it converts the status code to error message, add to Asyn log and
  * sets the Area Detector's ADStatusMessage field, update any client.
  *
- * \param[in] err - the return status code
- * \param[in] functionName - the function name where Pixium API call is made.
- * \return true if error in call return, false if err==0.
+ * @param[in] err - the return status code
+ * @param[in] functionName - the function name where Pixium API call is made.
+ * @return true if error in call return, false if err==0.
  */
 bool ElectronAnalyser::isError(int & err, const char * functionName)
 {
@@ -796,6 +933,9 @@ void ElectronAnalyser::delete_device()
 	{
 		instrumentFilePath.clear();
 	}
+	if (werror != NULL) {
+		werror->release();
+	}
 }
 
 /**
@@ -806,7 +946,9 @@ void ElectronAnalyser::init_device()
 	const char * functionName = "init_device()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: create device", driverName, functionName);
 	// Initialise variables to default values
-	get_device_property();
+	sesRootDirectory = getenv("SES_ROOT");
+	instrumentFilePath = sesRootDirectory.append("\\data\\instrument.dat");
+
 
 	// Get connection to the SES wrapper
 	ses = new WSESWrapperMain(sesRootDirectory.c_str());
@@ -848,39 +990,15 @@ void ElectronAnalyser::init_device()
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: - out", driverName, functionName);
 }
 
-//+----------------------------------------------------------------------------
-//
-// method : 		ElectronAnalyser::get_device_property()
-//
-// description : 	Read the device properties from database.
-//
-//-----------------------------------------------------------------------------
-void ElectronAnalyser::get_device_property()
-{
-	//	Initialize your default values here
-	sesRootDirectory = getenv("SES_ROOT");
-	instrumentFilePath = sesRootDirectory.append("\\data\\instrument.dat");
-}
-//+----------------------------------------------------------------------------
-//
-// method : 		ElectronAnalyser::always_executed_hook()
-//
-// description : 	method always executed before any command is executed
-//
-//-----------------------------------------------------------------------------
-void ElectronAnalyser::always_executed_hook()
+/**
+ * update database and EDM screen status for the instrument.
+ */
+void ElectronAnalyser::updateStatus()
 {
 	const char * functionName = "always_executed_hook()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int status=0;
-	int err = ses->getProperty("instrument_status", 0, &status);
-	if(err!=0)
-	{
-		string msg = WError::instance()->message(err);
-		this->setIntegerParam(ADStatus, ADStatusError);
-		this->setStringParam(ADStatusMessage, msg.c_str());
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: SES driver failure: %s", driverName, functionName, msg.c_str());
-	}
+	this->getInstrumentStatus(&status);
 	switch(status)
 	{
 	case SesNS::Normal:
@@ -910,31 +1028,17 @@ void ElectronAnalyser::always_executed_hook()
 		break;
 	}
 
-	int steps = 0;
+	int step = 0;
 	int dummy = 0;
-	ses->getAcquiredData("acq_current_step", 0, &steps,dummy);
+	this->getAcqCurrentStep(step);
 
 	int channels = 0;
-	ses->getAcquiredData("acq_channels", 0, &channels,dummy);
-	if(steps>channels){
-		steps = channels;
+	this->getAcqChannels(channels);
+	if(step>channels){
+		step = channels;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Current step: %d", driverName, functionName, steps);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Current step: %d", driverName, functionName, step);
 	this->callParamCallbacks();
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-}
-//+----------------------------------------------------------------------------
-//
-// method : 		ElectronAnalyser::read_attr_hardware
-//
-// description : 	Hardware acquisition for attributes.
-//
-//-----------------------------------------------------------------------------
-void ElectronAnalyser::read_attr_hardware(std::vector<long> &attr_list)
-{
-	const char * functionName = "read_attr_hardware(vector<long> &attr_list)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//	Add your own code here
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 }
 
@@ -944,11 +1048,11 @@ void ElectronAnalyser::read_attr_hardware(std::vector<long> &attr_list)
  * @param[out] kineticEnergy Pointer to a double to be modified with the current kinetic energy.
  * @return asynError if kinetic energy can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getKineticEnergy(double &kineticEnergy)
+asynStatus ElectronAnalyser::getKineticEnergy(double *kineticEnergy)
 {
-	const char * functionName = "read_excitationEnergy(double &kineticEnergy)";
+	const char * functionName = "getKineticEnergy(double *kineticEnergy)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->getKineticEnergy(&kineticEnergy);
+	int err = ses->getKineticEnergy(kineticEnergy);
     if(isError(err, functionName)) return asynError;
     asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
@@ -962,9 +1066,9 @@ asynStatus ElectronAnalyser::getKineticEnergy(double &kineticEnergy)
  * @param[in] kineticEnergy The kinetic energy (in eV) to be set.
  * @return asynError if kinetic energy can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::setKineticEnergy(double kineticEnergy)
+asynStatus ElectronAnalyser::setKineticEnergy(const double kineticEnergy)
 {
-	const char * functionName = "setKineticEnergy(double kineticEnergy)";
+	const char * functionName = "setKineticEnergy(const double kineticEnergy)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int err =  ses->setKineticEnergy(kineticEnergy);
     if(isError(err, functionName)) return asynError;
@@ -972,550 +1076,1106 @@ asynStatus ElectronAnalyser::setKineticEnergy(double kineticEnergy)
 	return asynSuccess;
 }
 /**
- * gets the analyser mode in which the region is measured. fixed (@c true) or swept (@c false) mode.
- * This is a one-byte boolean. The value can be set to 1 (for @c true) or 0 (for @c false).
- * @param [out] mode - fixed (@c true) or swept (@c false) mode.
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getAnalyserMode(bool &mode)
-{
-	const char * functionName = "getAnalyserMode(bool &mode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	if(analyzer.fixed_)
-	{
-		mode= true;
-	}
-	else
-	{
-		mode = false;
-	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the analyser mode so that the region will be measured in fixed (@c true) or swept (@c false) mode.
- * This is a one-byte boolean. The value can be set to 1 (for @c true) or 0 (for @c false).
- * @param [in] mode - fixed (@c true) or swept (@c false)
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setAnalyserMode(bool mode)
-{
-	const char * functionName = "setAnalyserMode(bool mode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	if(mode)
-	{
-		analyzer.fixed_ = true;
-	}
-	else
-	{
-		analyzer.fixed_ = false;
-	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets energy scale from hardware
- * @param energyScale
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getEnergyScale(string &energyScale)
-{
-	const char * functionName = "setMode(string mode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
-
-	/*string	attr_energyScale;
-	if(){
-	attr_energyScale = "Kinetic";
-	}
-	else{
-	attr_energyScale = "Binding";
-	}
-
-	attr.set_value(&attr_energyScale);*/
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the energy scale to hardware.
+ * @brief Reads the current voltage from analyzer element @p elementName.
  *
- * @param [in] energyScale - Kinetic or Binding
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setEnergyScale(string energyScale)
-{
-	const char * functionName = "setEnergyScale(string energyScale)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the high-end kinetic energy (eV) for swept mode acquisition.
- * @param [out] highEnergy
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getHighEnergy(double &highEnergy)
-{
-	const char * functionName = "getHighEnergy(double &highEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	highEnergy = analyzer.highEnergy_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-
-/**
- * sets the high-end kinetic energy (eV) for swept mode acquisition.
+ * @param[in] elementName A string specifying the name of the element to be read.
+ * @param[out] voltage A pointer to a variable that will receive the voltage (in V).
  *
- * @param [in] highEnergy
- * @return always asynSuccess
+ * @return asynError if loadInstrument() has not been called, or if the element could not be read
+ * 			(e.g. the element @p elementName does not exist), otherwise asynSuccess.
  */
-asynStatus ElectronAnalyser::setHighEnergy(double highEnergy)
+asynStatus ElectronAnalyser::getElementVoltage(const char *elementName, double *voltage)
 {
-	const char * functionName = "setHighEnergy(double highEnergy)";
+	const char * functionName = "getElementVoltage(const char *elementName, double *voltage)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	analyzer.highEnergy_ = highEnergy;
+	int err = ses->getElementVoltage(elementName, voltage);
+    if(isError(err, functionName)) return asynError;
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+
+/**
+ * @brief Changes the voltage of analyzer element @p elementName.
+ *
+ * @param[in] elementName A string specifying the name of the element to be modified.
+ * @param[in] voltage The new voltage (in V).
+ *
+ * @return asynError if loadInstrument() has not been called, or if the element voltage could not be set
+ * 			(e.g. the element @p elementName does not exist), otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setElementVoltage(const char *elementName, const double voltage)
+{
+	const char * functionName = "setElementVoltage(const char *elementName, const double voltage)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err =  ses->setElementVoltage(elementName, voltage);
+    if(isError(err, functionName)) return asynError;
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * gets the low-end kinetic energy (eV) for swept mode acquisition.
- * @param [out] lowEnergy
+ * @brief Changes the acquisition mode of analyzer region definition.
+ *
+ * This setting only applies to hardware library at initAcquisition().
+ *
+ * @param[in] b @c true for fixed, @c false for swept
  * @return always asynSuccess
  */
-asynStatus ElectronAnalyser::getLowEnergy(double &lowEnergy)
-{
-	const char * functionName = "getLowEnergy(double &lowEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	lowEnergy = analyzer.lowEnergy_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+asynStatus ElectronAnalyser::setAcquisitionMode(const bool b){
+	this->analyzer.fixed_=b;
 	return asynSuccess;
 }
 /**
- * sets the low-end kinetic energy (eV) for swept mode acquisition.
- * @param [in] lowEnergy
+ * @brief gets the current acquisition mode of the analyzer
+ * @param[out] b @c true for fixed, @c false for swept
  * @return always asynSuccess
  */
-asynStatus ElectronAnalyser::setLowEnergy(double lowEnergy)
-{
-	const char * functionName = "setLowEnergy(double lowEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	analyzer.lowEnergy_ = lowEnergy;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+asynStatus ElectronAnalyser::getAcquisitionMode(bool *b){
+	*b = this->analyzer.fixed_;
 	return asynSuccess;
 }
 /**
- * gets the center energy (eV) for fixed mode acquisition
- * (the low and high end energies is calculated from this value and the current pass energy).
- * @param [out] centreEnergy
+ * @brief Changes the energy mode of analyzer region definition.
+ *
+ * This setting only applies to hardware library at initAcquisition().
+ *
+ * @param[in] b @c true for kinetic energy, @c false for binding energy
  * @return always asynSuccess
  */
-asynStatus ElectronAnalyser::getCenterEnergy(double &centreEnergy)
-{
-	const char * functionName = "getCenterEnergy(double &centreEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	centreEnergy = analyzer.centerEnergy_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+asynStatus ElectronAnalyser::setEnergyMode(const bool b){
+	this->analyzer.kinetic_=b;
 	return asynSuccess;
 }
 /**
- * sets the center energy (eV) for fixed mode acquisition
- * (the low and high end energies is calculated from this value and the current pass energy).
- * @param [in] centreEnergy
+ * @brief gets the current energy mode of the analyzer
+ * @param b @c true for kinetic energy, @c false for binding energy
  * @return always asynSuccess
  */
-asynStatus ElectronAnalyser::setCenterEnergy(double centreEnergy)
-{
-	const char * functionName = "setCenterEnergy(double centreEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	analyzer.centerEnergy_ = centreEnergy;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+asynStatus ElectronAnalyser::getEnergyMode(bool *b){
+	*b=this->analyzer.kinetic_;
 	return asynSuccess;
 }
+
+/// ######################## integration methods ######################
 /**
- * gets the energy step size (eV) for swept mode acquisition.
- * @param [out] energyStep
- * @return always asynSuccess
+ * @brief start acquisition
+ *
+ * This method sets detector region and analzer region, then initialise acquisition before start.
+ * This method also changes the EPICS areaDetector status to @p ADStatusAcquire on successfully start,
+ * or @p ADStatusError if failed to start.
+ *
+ * @return asynError if @p detector_region, @p analyzer_region, @fn initAcquisition(false, false), or
+ * @fn startAcquisition() failed, otherwise asynSuccess.
  */
-asynStatus ElectronAnalyser::getEnergyStep(double &energyStep)
+asynStatus ElectronAnalyser::start()
 {
-	const char * functionName = "getEnergyStep(double &energyStep)";
+	const char * functionName = "start()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	energyStep = analyzer.energyStep_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the energy step size (eV) for swept mode acquisition.
- * @param [in] energyStep
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setEnergyStep(double energyStep)
-{
-	const char * functionName = "setEnergyStep(double energyStep)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	analyzer.energyStep_ = energyStep;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the dwell time (ms) for fixed or swept mode acquisition.
- * @param [out] stepTime
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getStepTime(int &stepTime)
-{
-	const char * functionName = "getStepTime(int &stepTime)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	stepTime = analyzer.dwellTime_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the dwell time (ms) for fixed or swept mode acquisition.
- * @param [in] stepTime
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setStepTime(int stepTime)
-{
-	const char * functionName = "setStepTime(int stepTime)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	analyzer.dwellTime_ = stepTime;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the current lens mode value.
- * @param [out] lensMode
- * @return asynError if lens mode can not be read, otherwise asynSuccess
- */
-asynStatus ElectronAnalyser::getLensMode(char * lensMode)
-{
-	const char * functionName = "getLensMode(char * lensMode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	char* myLensMode =0;
-	int size =0;
-	int err = ses->getProperty("lens_mode", 0, myLensMode, size);
-	if(isError(err, functionName)){
+	// set acquisition parameters on the wrapper
+	int err=ses->setProperty("detector_region", 0, &detector);
+	if (isError(err, functionName)) {
 		return asynError;
 	}
-	myLensMode = new char[size];
-	err = ses->getProperty("lens_mode", 0, myLensMode, size);
-	if(isError(err, functionName)){
-		delete [] myLensMode;
+	err = ses->setProperty("analyzer_region", 0, &analyzer);
+	if (isError(err, functionName)) {
 		return asynError;
 	}
-	strncpy(lensMode ,myLensMode, size);
-	delete [] myLensMode;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+
+	err = ses->initAcquisition(false, false);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition initialisation completed.", driverName, functionName);
+	setStringParam(ADStatusMessage, "acquisition initialisation completed.");
+	callParamCallbacks();
+	int steps=0;
+	double dtime=0;
+	double minEnergyStep=0;
+	err=ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+	if (isError(err, functionName)) {
+		return asynError;
+	} else {
+		char * message = new char[MAX_MESSAGE_SIZE];
+		epicsSnprintf(message, sizeof(message),"Number of steps: %d; Dwell time: %f; minimum energy step: %f.",steps, dtime, minEnergyStep );
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.", driverName, functionName, message);
+		setStringParam(ADStatusMessage, message);
+		callParamCallbacks();
+	}
+
+	err = ses->startAcquisition();
+	setIntegerParam(ADStatus, ADStatusAcquire);
+	if (isError(err, functionName)) {
+		setIntegerParam(ADStatus, ADStatusError);
+		callParamCallbacks();
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: start acquisition.", driverName, functionName);
+	setStringParam(ADStatusMessage, "start acquisition.");
+	callParamCallbacks();
 	return asynSuccess;
 }
 /**
- * sets the lens mode for next acquisition.
- * @param [in] lensMode
- * @return asynError if change lens mode fails, otherwise asynSuccess
+ * @brief stop acquisition.
+ *
+ * This method changes the EPICS areaDetector status to @p ADStatusIdle on success.
+ *
+ * @return asynError if stop failed, otherwise asynSuccess.
  */
-asynStatus ElectronAnalyser::setLensMode(char * lensMode)
+asynStatus ElectronAnalyser::stop()
 {
-	const char * functionName = "setLensMode(char * lensMode)";
+	const char * functionName = "stop()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->setProperty("lens_mode", 0, lensMode);
-	if(isError(err, functionName)){
+	int err = ses->stopAcquisition();
+	if (isError(err, functionName)) {
+		setStringParam(ADStatusMessage, "error stop acquisition.");
+		callParamCallbacks();
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	setIntegerParam(ADStatus, ADStatusIdle);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition stopped.", driverName, functionName);
+	setStringParam(ADStatusMessage, "acquisition stopped.");
+	callParamCallbacks();
 	return asynSuccess;
 }
 /**
- * gets the current pass energy value.
- * @param [out] passEnergy
- * @return asynError if pass energy can not be read, otherwise asynSuccess
+ * @brief Resets the instrument and puts it in a default state.
+ *
+ * @return asynError if reset failed, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getPassEnergy(double &passEnergy)
+asynStatus ElectronAnalyser::resetInstrument()
 {
-	const char * functionName = "getPassEnergy(double &passEnergy)";
+	const char * functionName = "resetInstrument()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->getProperty("pass_energy", 0, &passEnergy);
-	if(isError(err, functionName)){
-		return asynError;
-	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the pass energy for next acquisition.
- * @param [in] passEnergy
- * @return asynError if changing pass energy fails, otherwise asynSuccess
- */
-asynStatus ElectronAnalyser::setPassEnergy(double passEnergy)
-{
-	const char * functionName = "setPassEnergy(double passEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->setProperty("pass_energy", 0,&passEnergy);
-	if(isError(err, functionName)){
+	int err =ses->resetHW();
+	if (isError(err, functionName)) {
+		setStringParam(ADStatusMessage, "error reset instrument.");
+		callParamCallbacks();
 		return asynError;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * gets the current element set or pass mode.
- * @param [out] elementSet
- * @return asynError if element set can not be read, otherwise asynSuccess
+ * @brief Sets all voltage elements to zero.
+ *
+ * @return asynError if the voltages could not be set, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getElementSet(char * elementSet)
+asynStatus ElectronAnalyser::zeroSupplies()
 {
-	const char * functionName = "getElementSet(char * elementSet)";
+	const char * functionName = "resetSupplies()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	char* passMode =0;
-	int size =0;
-	int err = ses->getProperty("element_set", 0, passMode, size);
-	if(isError(err, functionName)){
-		return asynError;
-	}
-	passMode = new char[size];
-	err = ses->getProperty("element_set", 0, passMode, size);
-	if(isError(err, functionName)){
-		delete [] passMode;
-		return asynError;
-	}
-	strncpy(elementSet ,passMode, size);
-	delete [] passMode;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the element set for next acquisition.
- * @param elementSet
- * @return asynError if changing element set fails, otherwise asynSuccess
- */
-asynStatus ElectronAnalyser::setElementSet(char * elementSet)
-{
-	const char * functionName = "setElementSet(char * elementSet)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->setProperty("element_set", 0, elementSet);
-	if(isError(err, functionName)){
+	int err =ses->zeroSupplies();
+	if (isError(err, functionName)) {
+		setStringParam(ADStatusMessage, "error reset supplies to zero.");
+		callParamCallbacks();
 		return asynError;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * gets the first X channel to be used on the detector (range: <code>[0...@ref WDetectorInfo::xChannels_-1]</code>. )
- * @param [out] dfx
- * @return always asynSuccess
+ * @brief Tests the hardware to check communication status.
+ *
+ * @return asynError if communication failed, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getDetectorFirstXChannel(int &dfx)
+asynStatus ElectronAnalyser::testCommunication()
 {
-	const char * functionName = "getDetectorFirstXChannel(int &dfx)";
+	const char * functionName = "testCommunication()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	dfx = detector.firstXChannel_;
+
+	int err = ses->testHW();
+	if (isError(err, functionName)) {
+		setStringParam(ADStatusMessage, "error test communication.");
+		callParamCallbacks();
+		return asynError;
+	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * sets the first X channel to be used on the detector (range: <code>[0...@ref WDetectorInfo::xChannels_-1]</code>. )
- * @param [in]
- * @return always asynSuccess
+ * @brief gets the list of available lens modes.
+ *
+ * @param [out] pLensModeList - pointer to the list held in a vector of string.
+ * @return asynError if @p lens_mode_count or @p lens_mode_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::setDetectorFirstXChannel(int dfx)
+asynStatus ElectronAnalyser::getLensModeList(std::vector<string> *pLensModeList)
 {
-	const char * functionName = "setDetectorFirstXChannel(int dfx)";
+	const char * functionName = "getLensModeList(std::vector<string> *pLensModeList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detector.firstXChannel_ = dfx;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the last X channel to be used on the detector.
- * @param [out] dlx
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getDetectorLastXChannel(int &dlx)
-{
-	const char * functionName = "getDetectorLastXChannel(int &dlx)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	dlx = detector.lastXChannel_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the last X channel to be used on the detector.
- * @param [in] dlx
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setDetectorLastXChannel(int dlx)
-{
-	const char * functionName = "setDetectorLastXChannel(int dlx)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detector.lastXChannel_ = dlx;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the first Y channel to be used on the detector (range: <code>[0...@ref WDetectorInfo::yChannels_-1]</code>.
- * @param [out] dfy
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getDetectorFirstYChannel(int &dfy)
-{
-	const char * functionName = "getDetectorFirstYChannel(int &dfy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	dfy = detector.firstYChannel_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the first Y channel to be used on the detector (range: <code>[0...@ref WDetectorInfo::yChannels_-1]</code>.
- * @param [in] dfy
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setDetectorFirstYChannel(int dfy)
-{
-	const char * functionName = "setDetectorFirstYChannel(int dfy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detector.firstYChannel_ = dfy;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the last Y channel to be used on the detector.
- * @param [out] dly
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getDetectorLastYChannel(int &dly)
-{
-	const char * functionName = "getDetectorLastYChannel(int &dly)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	dly = detector.lastYChannel_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the last Y channel to be used on the detector.
- * @param [in] dly
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setDetectorLastYChannel(int dly)
-{
-	const char * functionName = "setDetectorLastYChannel(int dly)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detector.lastYChannel_ = dly;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the current number of Y channels (slices).
- * @param [out] detectorSlices
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getDetectorSlices(int &detectorSlices)
-{
-	const char * functionName = "getDetectorSlices(int &detectorSlices)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detectorSlices = detector.slices_;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * sets the current number of Y channels (slices).
- * @param [in] detectorSlices
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setDetectorSlices(int detectorSlices)
-{
-	const char * functionName = "setDetectorSlices(int detectorSlices)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	detector.slices_ = detectorSlices;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the detector running mode: ADC mode (@c true), or Pulse Counting mode (@c false).
- * @param [out] mode
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getADCMode(bool &mode)
-{
-	const char * functionName = "getADCMode(bool &mode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	if(detector.adcMode_)
+
+	int max =0;
+	int err = ses->getProperty("lens_mode_count",0,&max);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+
+	for(int i=0; i<max;i++)
 	{
-		mode= true;
-	}
-	else
-	{
-		mode = false;
+		char* lens = 0;
+		int size  = 0;
+		err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
+		if (isError(err, functionName)) {
+			return asynError;
+		}
+		lens =  new char[size];
+		err = ses->getProperty("lens_mode",i,lens, size);
+		if (isError(err, functionName)) {
+			delete [] lens;
+			return asynError;
+		}
+		pLensModeList->push_back(lens);
+		delete [] lens;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * Specifies whether the detector is running in ADC mode (@c true), or Pulse Counting mode (@c false).
- * @param [in] mode
- * @return always asynSuccess
+ * @brief gets the list of installed element sets.
+ *
+ * @param [out] pEelementSetList - pointer to the list held in the vector of string
+ * @return asynError if @p element_set_count or @p element_set_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::setADCMode(bool mode)
+asynStatus ElectronAnalyser::getElementSetLlist(std::vector<string> *pElementSetList)
 {
-	const char * functionName = "setADCMode(bool mode)";
+	const char * functionName = "getElementSetLlist(std::vector<string> *pElementSetList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	if(mode)
-	{
-		detector.adcMode_ = true;
+
+	int max =0;
+	int err = ses->getProperty("element_set_count",0,&max);
+	if (isError(err, functionName)) {
+		return asynError;
 	}
-	else
+
+	for(int i=0; i<max;i++)
 	{
-		detector.adcMode_ = false;
+		char* set = 0;
+		int size  = 0;
+		err = ses->getProperty("element_set", i, set, size); // there is no @c element_set_from_index defined in the wrapper
+		if (isError(err, functionName)) {
+			return asynError;
+		}
+		set =  new char[size];
+		err = ses->getProperty("element_set",i,set, size);
+		if (isError(err, functionName)) {
+			delete [] set;
+			return asynError;
+		}
+		pElementSetList->push_back(set);
+		delete [] set;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-asynStatus ElectronAnalyser::getADCMask(char * mask)
-{
-	const char * functionName = "getADCMask(char * mask)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-asynStatus ElectronAnalyser::setADCMask(char * mask)
-{
-	const char * functionName = "setADCMask(char * mask)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-asynStatus ElectronAnalyser::getDiscriminatorLevel(int &level)
-{
-	const char * functionName = "getDiscriminatorLevel(int &level)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-asynStatus ElectronAnalyser::setDiscriminatorLevel(int level)
-{
-	const char * functionName = "setDiscriminatorLevel(int level)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	//FIXME: waiting for availabilty in wrapper see MANTIS 15320
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Not implemented within the GammaData wrapper.", driverName, functionName);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * geta the number of channels in acquired data.
- * @param [out] channels
- * @return asynError if acq_channels can not be read, otherwise asynSuccess
+ * @brief gets list of available pass energies for the current lens mode.
+ *
+ * @param [out] pPassEnergyList - pointer to the list held in a vector of double
+ * @return asynError if @p pass_energy_count or @p pass_energy_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getChannels(int & channels)
+asynStatus ElectronAnalyser::getPassEnergyList(std::vector<double> *pPassEnergyList)
 {
-	const char * functionName = "getChannels(int & channels)";
+	const char * functionName = "getPassEnergyList(std::vector<double> *pPassEnergyList)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int max =0;
+	int err = ses->getProperty("pass_energy_count",0,&max);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+
+	for(int i=0; i<max;i++)
+	{
+		double passE = 0;
+		err = ses->getProperty("pass_energy",i,&passE); // there is no @c pass_energy_from_index defined in wrapper
+		if (isError(err, functionName)) {
+			return asynError;
+		}
+		pPassEnergyList->push_back(passE);
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+
+/***********************************************************************************//**
+ * 			Access methods for properties defined in WSESWapperBase
+ * *********************************************************************************/
+/**
+ * @brief get the description of the library.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length for the description.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the description. Can be 0 (NULL).
+ * @param[in,out] size - If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return Always returns asynSuccess.
+ */
+asynStatus ElectronAnalyser::getLibDescription(char *value, int &size)
+{
+	const char * functionName = "getLibDescription(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	ses->getProperty("lib_description", 0, value, size);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the version of the library.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length for the version.
+ *
+ * @param[out] value A @c char* buffer to be filled with the version. The syntax is @code <major>.<minor>.<build> @endcode.
+ *              Can be 0 (NULL).
+ * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return Always returns asynSuccess.
+ */
+asynStatus ElectronAnalyser::getLibVersion(char *value, int &size)
+{
+	const char * functionName = "getLibVersion(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	ses->getProperty("lib_version", 0, value, size);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the error message corresponding to the @p index error code.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length for
+ * the error indicated by @p index.
+ *
+ * @param[in] index An error code, e.g. from a previously returned function. If @p index is not a valid error code,
+ *              the error string is "Unknown Error".
+ * @param[out] value A @c char* buffer to be filled with the error message connected to error code @p index. Can be 0 (NULL).
+ * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return Always returns asynSuccess;
+ */
+asynStatus ElectronAnalyser::getLibError(int index, char *value, int &size)
+{
+	const char * functionName = "getLibError(int index, char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	ses->getProperty("lib_error", index, value, size);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the working directory for the current application.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the full path of the current working directory. Can be 0 (NULL).
+ * @param[in,out] size - If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if @c lib_working_dir can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getLibWorkingDir(char *value, int &size)
+{
+	const char * functionName = "getLibWorkingDir(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("lib_working_dir", 0, value);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief set the working directory for the current application.
+ *
+ * Changes the working directory for the library.
+ *
+ * @param[in] value A null-terminated C string that contains the path to the new working directory.
+ *
+ * @return asynError if @c lib_working_dir  can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setLibWorkingDir(const char *value)
+{
+	const char * functionName = "setLibWorkingDir(const char *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("lib_working_dir", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the status of the instrument.
+ *
+ * @param[out] value Pointer to a 32-bit integer. Possible values are given by SesNS::InstrumentStatus.
+ *
+ * @return asynError if @c instrument_status can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getInstrumentStatus(int *value)
+{
+	const char * functionName = "getInstrumentStatus(int *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("instrument_status", 0, value);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get enable (c true) or disable (@c false) state for the region delay.
+ *
+ * The @p value parameter must be a pointer to a 1-byte boolean.
+ * If @p value is 1 or @c true, there is a delay before starting a measurement.
+ *
+ * @param[out] value - Pointer to a 1-byte boolean.
+ *
+ * @return asynError If WSESWrapperMain::loadInstrument() has not been called, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getAlwaysDelayRegion(bool *value)
+{
+	const char * functionName = "getAlwaysDelayRegion(bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("always_delay_region", 0, value);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief enable (c true) or disable (@c false) the region delay to be applied even when HV supplies are not changed.
+ *
+ * If @c true (1), a delay will be made before starting the acquisition of a region.
+ *
+ * @param[in] value - A 1-byte boolean of value @c true (1) or @c false (0).
+ *
+ * @return asynError if the library has not been successfully initialized, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setAlwaysDelayRegion(const bool *value)
+{
+	const char * functionName = "setAlwaysDelayRegion(const bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("always_delay_region", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get enable (c true) or disable (@c false) state for simultaneous external I/O communication with detector communication.
+ *
+ * The @p value parameter must be a pointer to a 1-byte boolean.
+ *
+ * If @p value is 1 or @c true, external I/O signalling and detector can be used simultaneously.
+ *
+ * @param[out] value - Pointer to a 1-byte boolean.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getAllowIOWithDetector(bool *value)
+{
+	const char * functionName = "getAllowIOWithDetector(bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("allow_io_with_detector", 0, value);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief enable (c true) or disable (@c false) simultaneous external I/O communication with detector communication.
+ *
+ * @param[in] value A 1-byte boolean of value @c true (1) or @c false (0).
+ *
+ * @return WError::ERR_NOT_INITIALIZED if the library has not been successfully initialized, otherwise WError::ERR_OK.
+ */
+asynStatus ElectronAnalyser::setAllowIOWithDetector(const bool *value)
+{
+	const char * functionName = "setAllowIOWithDetector(const bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("allow_io_with_detector", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the name of currently installed instrument.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length.
+ * If WSESWrapperMain::loadInstrument() has not been called, @p value is usually empty, but do not rely on it.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the name of the instrument model. Can be 0 (NULL).
+ * @param[in,out] size - If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if @c instrument_model can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getInstrumentModel(char *value, int &size)
+{
+	const char * functionName = "getInstrumentModel(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("instrument_model", 0, value, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the serial number of the currently installed instrument.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length.
+ * If WSESWrapperMain::loadInstrument() has not been called, @p value is usually empty, but do not rely on it.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the name of the instrument serial number. Can be 0 (NULL).
+ * @param[in,out] size - If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if @c instrument_serial_no can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getInstrumentSerialNo(char *value, int &size)
+{
+	const char * functionName = "getInstrumentSerialNo(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("instrument_serial_no", 0, value, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the DetectorInfo struct.
+ *
+ * @param[out] value - A pointer to a SESWrapperNS::DetectorInfo structure.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getDetectorInfo(SESWrapperNS::DetectorInfo *value)
+{
+	const char * functionName = "getDetectorInfo(SESWrapperNS::DetectorInfo *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+
+	int err = ses->getProperty("detector_info", 0, value);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the DetectorRegion structure.
+ *
+ * @param[out] value - A pointer to a SESWrapperNS::DetectorRegion structure.
+ *
+ * @return asynError if WSesWrapperMain::loadInstrument() has not been called,
+ *         otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getDetectorRegion(SESWrapperNS::DetectorRegion *value)
+{
+	const char * functionName = "getDetectorRegion(SESWrapperNS::DetectorRegion *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("detector_region", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the Detector Region struct.
+ *
+ * This will set up a new ROI (Region of Interest) for the acquisition.
+ *
+ * @param[in] value - A pointer to a SESWrapperNS::DetectorRegion structure.
+ *
+ * @return asynError if WSESWrapper::loadInstrument() has not been called, or
+ *         an error is detected in the detector region, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setDetectorRegion(const SESWrapperNS::DetectorRegion *value)
+{
+	const char * functionName = "setDetectorRegion(const SESWrapperNS::DetectorRegion *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("detector_region", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+
+/**
+ * @brief Getter for the @c element_set_count property.
+ *
+ * The @p value parameter must be a pointer to a 32-bit integer.
+ *
+ * @param[out] value A 32-bit integer that will contain the number of available element sets.
+ * 				This value can later be used as an index to the @c element_set_from_index property getter.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called,
+ *         otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getElementSetCount(int & value)
+{
+	const char * functionName = "getElementSetCount(int & value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("element_set_count", 0, &value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the current element set or pass mode.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length for the requested element set.
+ *
+ * @param[in] index - If set to -1, obtains the current element set. If 0 <= @p index < @c element_set_count, obtains the element set name for that index.
+ * @param[out] elementSet - A @c char* buffer to be filled with an element set. Can be 0 (NULL).
+ * @param[in,out] size - If @p elementSet is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting buffer.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called,
+ *         failed to report the current element set, or if index is out-of-range, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getElementSet(int index, char * elementSet, int & size)
+{
+	const char * functionName = "getElementSet(int index, char * elementSet, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("element_set", index, elementSet, size);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief sets the element set for next acquisition.
+ *
+ * @param elementSet - A null-terminated string that specifies the name of the new element set.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, or
+ *         		if the given element set is not available, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::setElementSet(const char * elementSet)
+{
+	const char * functionName = "setElementSet(const char * elementSet)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("element_set", -1, elementSet);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the number of available lens modes
+ *
+ * The @p value parameter must be a pointer to a 32-bit integer.
+ *
+ * @param[out] value - A 32-bit integer that will contain the number of available lens modes.
+ * 				This value can later be used as an index to the @c lens_mode_from_index property getter.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called,
+ *         otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getLensModeCount(int & value)
+{
+	const char * functionName = "getLensModeCount(int & value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("lens_mode_count", 0, &value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the lens mode.
+ *
+ * If the @p value parameter is 0, @p size will be modified to return the required buffer length for the requested lens mode.
+
+ * @param[in] index - If set to -1, obtains the current lens mode. If 0 <= @p index < @c lens_mode_count, obtains the lens mode name for that index.
+ * @param[out] lensMode - A @c char* buffer to be filled with the current lens mode. Can be 0 (NULL).
+ * @param[in,out] size - If @p lensMode is 0, this parameter is modified with the required size of the buffer, otherwise it is
+ *             used to determine the size of @c value.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called,
+ *         failed to report the current lens mode, or if index is out-of-range, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getLensMode(int index, char * lensMode, int & size)
+{
+	const char * functionName = "getLensMode(int index, char * lensMode, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("lens_mode", index, lensMode, size);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief sets the lens mode for next acquisition.
+ *
+ * This function reloads the pass energy list when successful.
+ * This requires updates for the pass energy lists for the calling application.
+ *
+ * @param [in] lensMode - A null-terminated string that specifies the name of the new lens mode.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, or
+ *         if the given lens mode is not available, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::setLensMode(const char * lensMode)
+{
+	const char * functionName = "setLensMode(const char * lensMode)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("lens_mode", -1, lensMode);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/*!
+ * Get the number of available pass energies for the current lens mode.
+ *
+ * The @p value parameter must be a pointer to a 32-bit integer.
+ * @note The number of available pass energies is dependent on the current lens mode. If you change the lens
+ *       mode, you need to update your internal list of pass energies, beginning with this function.
+ *
+ * @param[out] value - A 32-bit integer that will contain the number of available pass energies. This value can later
+ * 				be used as an index to the @c pass_mode_from_index property getter.
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getPassEnergyCount(int & value)
+{
+	const char * functionName = "getPassEnergyCount(int & value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("pass_energy_count", 0, &value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the pass energy.
+ *
+ * @param[in] index - If set to -1, obtains the current pass energy.
+ * 					  If 0 <= @p index < @c pass_energy_count, obtains the pass energy for that index.
+ * @param [out] passEnergy - A pointer to a @c double to be filled with the pass energy.
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, failed to report the current pass energy,
+ * 					 or if @p index is out-of-range, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getPassEnergy(int index, double &passEnergy )
+{
+	const char * functionName = "getPassEnergy(int index, double &passEnergy )";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("pass_energy", index, &passEnergy);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the pass energy for next acquisition.
+ *
+ * If the pass energy to set is taken from a list of pass energies, make sure to update that list
+ * after modifying the lens mode and before calling this function.
+ *
+ * @param [in] passEnergy - A pointer to a @c double (8-byte floating point).
+ *
+ * @return asynError if WSESWrapperMain::loadInstrument() has not been called, or
+ * 			if the given pass energy is not available, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::setPassEnergy(const double * passEnergy)
+{
+	const char * functionName = "setPassEnergy(const double * passEnergy)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("pass_energy", -1, passEnergy);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the @c analyzer_region property.
+ *
+ * @param[out] value - A pointer to a SESWrapperNS::WAnalyzerRegion structure.
+ *
+ * @return asynError if property @c analyzer_region can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *value)
+{
+	const char * functionName = "getUseExternalIO(bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("analyzer_region", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the @c analyzer_region property.
+ *
+ * These settings may be modified by the library when calling WSesWrapper::checkRegion().
+ *
+ * The WAnalyzerRegion structure contains the region setting s for the next acquisition which is used in a call to
+ * WSESWrapperMain::initAcquisition().
+ *
+ * There is no immediate checking done of the validity of the given values.
+ * If such a check is required before starting acquisition, the WSESWrapperMain::checkAnalyzerRegion() can be called.
+ *
+ * @param[in] value - A pointer to a WAnalyzerRegion structure.
+ *
+ * @return asynError if property @c analyzer_region can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value)
+{
+	const char * functionName = "setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("analyzer_region", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the boolean property that indiactes if the external I/O interface is used (@c true) or not (@c false).
+ *
+ * This is often used with spin detectors.
+ *
+ * @param[out] value A pointer to a 1-byte boolean. If @c value is 0 (or @c false), no communication with the external
+ *              I/O card is made. One example of an external I/O card is the DAQ cards from National Instruments.
+ *
+ * @return asynError if property @c use_external_io can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getUseExternalIO(bool *value)
+{
+	const char * functionName = "getUseExternalIO(bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("use_external_io", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the boolean property @c use_external_io property to enable (@c true) or disable (@c false)
+ * the external I/O interface.
+ *
+ * Modify this to toggle the use of the external I/O card, if present.
+ * This is often used with spin detectors.
+ *
+ * @param[in] value A pointer to a 1-byte boolean.
+ *
+ * @return asynError if property @c use_external_io can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setUseExternalIO(const bool *value)
+{
+	const char * functionName = "setUseExternalIO(const bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("use_external_io", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the boolean property that indicates if the detector is used (@c true) or not (@c false).
+ *
+ * @param[out] value - A pointer to a 1-byte boolean. If @c value is 0 (or @c false), no communication with the detector
+ *              is made.
+
+ * @return asynError if property @c use_detector can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getUseDetector(bool *value)
+{
+	const char * functionName = "getUseDetector(bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("use_detector", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the boolean property @c use_detector to enable or disable the detector.
+ *
+ * Modify this to toggle the use of the detector. Can be used in combination with the @c use_external_io property.
+ *
+ * @param[in] value - A pointer to a 1-byte boolean.
+ *
+ * @return asynError if property @c use_detector can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setUseDetector(const bool *value)
+{
+	const char * functionName = "setUseDetector(const bool *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("use_detector", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the name of the current region.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the name of the region. Can be 0 (NULL).
+ * @param[in,out] size If @p value is 0, this parameter is modified with the required length of the region name, otherwise
+ *             it is used to determine the size of @p value.
+ *
+ * @return asynError if property @c region_name can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getRegionName(char *value, int &size)
+{
+	const char * functionName = "getRegionName(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("region_name", 0, value, size);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief set the name of the current region. The name is limited to max 32 characters.
+ *
+ * @param[in] value - A null-terminated C string that specifies the region name. The name is limited to 32 characters,
+ *              including the null character.
+ *
+ * @return asynError if property @c region_name can not be set, otherwise asynSuccess.
+  */
+asynStatus ElectronAnalyser::setRegionName(const char *value)
+{
+	const char * functionName = "setRegionName(const char *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("region_name", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the name of the temporary file created when performing an acquisition.
+ *
+ * @param[out] value - A @c char* buffer to be filled with the name of the temporary working file created during acquisition.
+ *              Can be 0 (NULL).
+ * @param[in,out] size - If @p value is 0, this parameter is modified with the required length of the file name, otherwise
+ *             it is used to determine the size of @p value.
+ *
+ * @return asynError if property @c temp_file_name can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getTempFileName(char *value, int &size)
+{
+	const char * functionName = "getTempFileName(char *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("temp_file_name", 0, value, size);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the name of the temporary file created when performing an acquisition.
+ *
+ * @param[in] value - A null-terminated C string that specifies the name of the temporary file created during acquisition.
+ *
+ * @return asynError if property @c temp_file_name can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setTempFileName(const char *value)
+{
+	const char * functionName = "setTempFileName(const char *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("temp_file_name", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Get the value of the boolean property @c reset_data_between_iterations which enable (@c true) or disable (@c false)
+ * reset of spectrum and external I/O data between each iteration.
+ *
+ * @param[out] value A pointer to a 1-byte boolean. If @p value is 0 (or @c false), data will be accumulated
+ *                   between each call to startAcquisition unless initAcquisition is called. If it is 1 (or
+ *                   @c true), all data is reset to 0 between the iterations, even if initAcquisition is not called.
+ *
+ * @return asynError if property @c reset_data_between_iterations can not be read, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getResetDataBetweenIterations(bool * value)
+{
+	const char * functionName = "getResetDataBetweenIterations(bool * value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getProperty("reset_data_between_iterations", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief Set the boolean property @c reset_data_between_iterations to enable (@c true) or disable (@c false)
+ * reset of spectrum and external I/O data between each iteration.
+ *
+ *This method operates faster than calling WSESWrapperMain::initAcquisition().
+
+ * @param[in] reset - A pointer to a 1-byte boolean. If @p value is 0 (or @c false), data will be accumulated
+ *                   between each call to startAcquisition unless initAcquisition is called. If it is 1 (or
+ *                   @c true), all data is reset to 0 between the iterations, even if initAcquisition is not called.
+ *
+ * @return asynError if property @c reset_data_between_iterations can not be set, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::setResetDataBetweenIterations(const bool * value)
+{
+	const char * functionName = "setResetDataBetweenIterations(const bool * value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->setProperty("reset_data_between_iterations", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+
+/*******************************************************************************************//**
+ *               Access methods for Data Parameters defined in WSESWrapperMain class
+ *******************************************************************************************/
+/**
+ * @brief geta the number of channels in acquired data.
+ *
+ * If no acquisition has been performed, the number of slices is 0.
+ *
+ * @param[out] channels - A pointer to a 32-bit integer that will be modified with the number of slices in the acquired spectrum.
+ * @return asynError if @p acq_channels can not be read, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqChannels(int & channels)
+{
+	const char * functionName = "getAcqChannels(int & channels)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int dummy = 0;
 	int err = ses->getAcquiredData("acq_channels", 0, &channels,dummy);
@@ -1526,16 +2186,19 @@ asynStatus ElectronAnalyser::getChannels(int & channels)
 	return asynSuccess;
 }
 /**
- * gets the number of slices in acquired data.
- * @param [out] slices
- * @return asynError if acq_slices can not be read, otherwise asynSuccess
+ * @brief gets the number of slices in acquired data.
+ *
+ * If no acquisition has been performed, the number of slices is 0.
+ *
+ * @param[out] slices - A pointer to a 32-bit integer that will be modified with the number of slices in the acquired spectrum.
+ * @return asynError if @p acq_slices can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getSlices(int &slices)
+asynStatus ElectronAnalyser::getAcqSlices(int & slices)
 {
-	const char * functionName = "getSlices(int &slices)";
+	const char * functionName = "getAcqSlices(int & slices)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int dummy = 0;
-	int err = ses->getAcquiredData("acq_slices", 0, &slices,dummy);
+	int err = ses->getAcquiredData("acq_slices", 0, &slices, dummy);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
@@ -1543,16 +2206,24 @@ asynStatus ElectronAnalyser::getSlices(int &slices)
 	return asynSuccess;
 }
 /**
- * gets the number of calls to startAcquisition() iterations that have passed since last call to initAcquisition().
- * @param [out] sweeps
- * @return asynError if acq_iteractions can not be read, otherwise asynSuccess
+ * @brief gets the number of calls to startAcquisition() iterations that have passed
+ * since last call to initAcquisition().
+ *
+ * The number of iterations is incremented by 1 when startAcquisition() is called.
+ * The counter is reset when initAcquisition() is called.
+ * If no acquisition has been performed, the number of iterations is 0.
+ *
+ * @param[out] iterations - A pointer to a 32-bit integer that will be modified with the number of iterations that have elapsed since
+ *             the last call of initAcquisition().
+ *
+ * @return asynError if @p acq_iterations can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getSweeps(int &sweeps)
+asynStatus ElectronAnalyser::getAcqIterations(int & iterations)
 {
-	const char * functionName = "getSweeps(int &sweeps)";
+	const char * functionName = "getAcqIterations(int & iterations)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int dummy = 0;
-	int err = ses->getAcquiredData("acq_iterations", 0, &sweeps,dummy);
+	int err = ses->getAcquiredData("acq_iterations", 0, &iterations, dummy);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
@@ -1560,103 +2231,411 @@ asynStatus ElectronAnalyser::getSweeps(int &sweeps)
 	return asynSuccess;
 }
 /**
- * gets the channel scale
- * @param [out] channelScale - channel scale array
- * @return
- */
-asynStatus ElectronAnalyser::getChannelScale(double * spectrum)
-{
-	const char * functionName = "getChannelScale(double * spectrum)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int channels = 0;
-	int dummy = 0;
-	int err = ses->getAcquiredData("acq_channels", 0, &channels,dummy);
-	if (isError(err, functionName)) {
-		return asynError;
-	}
-	err = ses->getAcquiredData("acq_channel_scale", 0, spectrum, channels);
-	if (isError(err, functionName)) {
-		return asynError;
-	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	return asynSuccess;
-}
-/**
- * gets the slice scale.
- * @param [out] sliceScale - slice scale array
- * @return
- */
-asynStatus ElectronAnalyser::getSliceScale(double * spectrum)
-{
-	const char * functionName = "getSliceScale(double * spectrum)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int dummy = 0;
-	int slices = 0;
-	int err = ses->getAcquiredData("acq_slices", 0, &slices,dummy);
-	if (isError(err, functionName)) {
-		return asynError;
-	}
+ * @brief get the unit of intensity scale, e.g. "count/s"
+ *
+ * The intensity unit is a string of up to 32 characters (including the null termination)
+ * defining the unit of the intensity axis in the acquired spectrum.
 
-	err = ses->getAcquiredData("acq_slice_scale", 0, spectrum, slices);
+ * @param[out] intensityUnit - A @c char* buffer to be filled with the intensity unit. Can be 0 (NULL).
+ * @param[in,out] size - If @p intensityUnit is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getAcqIntensityUnit(char * intensityUnit, int & size)
+{
+	const char * functionName = "getAcqIntensityUnit(char * intensityUnit, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_intensity_unit", 0, intensityUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * gets the integrated spectrum.
- * @param [out] sumData - the integrated spectrum
- * @return
+ * @brief get the unit of channel scale, e.g. "eV"
+ *
+ * The channel unit is a string of up to 32 characters (including the null termination)
+ * defining the unit of the energy axis in the acquired spectrum.
+
+ * @param[out] channelUnit -  A @c char* buffer to be filled with the channel unit. Can be 0 (NULL).
+ * @param[in,out] size - If @p channelUnit is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess.
  */
-asynStatus ElectronAnalyser::getSpectrum(double * sumData)
+asynStatus ElectronAnalyser::getAcqChannelUnit(char * channelUnit, int & size)
 {
-	const char * functionName = "getSpectrum(double * sumData)";
+	const char * functionName = "getAcqChannelUnit(char * channelUnit, int & size)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int channels = 0;
-	int dummy = 0;
-	int err = ses->getAcquiredData("acq_channels", 0, &channels,dummy);
+	int err = ses->getAcquiredData("acq_channel_unit", 0, channelUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-
-	err = ses->getAcquiredData("acq_spectrum", 0, sumData, channels);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the unit of slice scale, e.g. "mm"
+ *
+ * The slice unit is a string of up to 32 characters (including the null termination)
+ * defining the unit of the Y axis in the acquired spectrum image.
+ *
+ * @param[out] sliceUnit - A @c char* buffer to be filled with the channel unit. Can be 0 (NULL).
+ * @param[in,out] size - If @p sliceUnit is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::getAcqSliceUnit(char * sliceUnit, int & size)
+{
+	const char * functionName = "getAcqSliceUnit(char * sliceUnit, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_slice_unit", 0, sliceUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the integrated spectrum - i.e. the sum of data.
+ *
+ * The spectrum is a vector of doubles (8-byte floating point values) with the integrated intensities of all slices.
+ *
+ * @param [out] pSumData - An array of doubles that will be filled with the integrated spectrum. Can be 0 (NULL).
+ * @param[in,out] size If @p pSumData is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqSpectrum(double * pSumData, int & size)
+{
+	const char * functionName = "getAcqSpectrum(double * pSumData, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_spectrum", 0, pSumData, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
 /**
- * gets the 2D matrix of acquired data  - image
- * @param [out] data -image
- * @return
+ * @brief gets the 2D matrix of acquired data  - i.e. image
+ *
+ * This method should only be call after start acquisition, otherwise the result is undefined.
+ *
+ * @param [out] pData - An array of doubles that will be filled with the acquired image. Can be 0 (NULL).
+ * @param[in,out] size If @p pData is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getData(double * data)
+asynStatus ElectronAnalyser::getAcqImage(double * pData, int & size)
 {
-	const char * functionName = "getData(double * data)";
+	const char * functionName = "getAcqImage(double * pData, int & size)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int channels = 0;
-	int dummy = 0;
-	int err = ses->getAcquiredData("acq_channels", 0, &channels,dummy);
-	if (isError(err, functionName)) {
-		return asynError;
-	}
-	int slices = 0;
-	err = ses->getAcquiredData("acq_slices", 0, &slices,dummy);
-	if (isError(err, functionName)) {
-		return asynError;
-	}
-	int size = slices*channels;
-	err = ses->getAcquiredData("acq_image", 0, data, size);
+	int err = ses->getAcquiredData("acq_image", 0, pData, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 	return asynSuccess;
 }
+/*!
+ * @brief gets one slice specified by @p index parameter from the acquired data.
+ *
+ * The index parameters specifies the slice to access.
+ *
+ * @param[in] index Specifies which slice to extract from the spectrum. Must be between 0 and the number of slices - 1.
+ * @param[out] pSliceData An array of doubles that will be filled with the elements of the slice. Can be 0 (NULL).
+ * @param[in,out] size If @p pSliceData is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed or if @p index is out-of-bounds, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqSlice(int index, double * pSliceData, int size)
+{
+	const char * functionName = "getAcqSlice(int index, double * pSliceData, int size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_slice", index, pSliceData, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the channel scale. Defines an array of doubles where each element
+ * corresponds to an energy channel. The scale is always in kinetic energy.
+ *
+ * @param [out] pSpectrum - An array of doubles that will be filled with the channel scale. Can be 0 (NULL).
+ * @param[in,out] size If @p pSpectrum is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ *
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqChannelScale(double * pSpectrum, int & size)
+{
+	const char * functionName = "getAcqChannelScale(double * pSpectrum, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_channel_scale", 0, pSpectrum, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the slice scale. Defines an array of doubles where each element
+ * corresponds to one position in the Y axis.
+ *
+ * @param [out] pSpectrum - An array of doubles that will be filled with the Y axis scale (the slices). Can be 0 (NULL).
+ * @param[in,out] size If @p pSpectrum is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * @return asynError if no acquisition has been performed,, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqSliceScale(double * pSpectrum, int & size)
+{
+	const char * functionName = "getAcqSliceScale(double * pSpectrum, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_slice_scale", 0, pSpectrum, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/*!
+ * @brief get the raw image - the last image taken by the detector.
+ *
+ * Defines a byte array that will span the data in one frame taken from the detector.
+ * If the detector is not based on frames/images, this variable will not be available.
+ *
+ * One frame usually has a size of xChannels * yChannels * byteSize, where xChannels and yChannels can be obtained
+ * from the @c detector_info property. The byteSize variable is the number of bytes used per element in the image,
+ * which is 1 for 8-bit images, or 2 for 16-bit images.
+ *
+ * @param [out] pImage - An array of bytes (unsigned char*) that will be filled with a snapshot of the detector image.
+ * 						 Can be 0 (NULL).
+ * @return asynError if @p acq_raw_image data parameters can not be read, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqRawImage(int * pImage, int &size)
+{
+	const char * functionName = "getAcqRawImage(int * pImage, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_raw_image", 0, pImage, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the current step in a swept acquisition.
+ *
+ * @param [out] currentStep - A pointer to a 32-bit integer that will be set to the current step.
+ * @return asynError if no acquisition has been performed, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqCurrentStep(int &currentStep)
+{
+	const char * functionName = "getAcqCurrentStep(int &currentStep)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int size = 0;
+	int err = ses->getAcquiredData("acq_current_step", 0, &currentStep, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief get the time in milliseconds that have passed since the last call of startAcquisition().
+ *
+ * @param [out] elapsedTime - A pointer to a 32-bit unsigned integer that will be modified to the number of millisecondes elapsed
+ *             	since the last call of startAcquisition().
+ * @return always return asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqElapsedTime(double &elapsedTime)
+{
+	const char * functionName = "getAcqElapsedTime(double &elapsedTime)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int size = 0;
+	ses->getAcquiredData("acq_elapsed_time", 0, &elapsedTime, size);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the number of ports available from External IO interface measurments.
+ *
+ * @param[out] ports - A pointer to a 32-bit integer that will be modified with the number of External I/O-ports.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOPorts(int &ports)
+{
+	const char * functionName = "getAcqIOPorts(int &ports)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int size = 0;
+	int err = ses->getAcquiredData("acq_io_ports", 0, &ports, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the size of each vector from External IO data.
+ *
+ * This is used with the External I/O mechanizm, where the data is collected from a number of ports from e.g. a DAQ card.
+ *
+ * @param[out] dataSize - A pointer to a 32-bit integer that will be modified with the number of channels in one External I/O spectrum.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOSize(int &dataSize)
+{
+	const char * functionName = "getAcqIOSize(int &dataSize)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int size = 0;
+	int err = ses->getAcquiredData("acq_io_size", 0, &dataSize, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the number of iterations that have elapsed since the last call of initAcquisition().
+ *
+ * This is used with the External I/O measurements.
+ *
+ * @param[out] iterations - A pointer to a 32-bit integer that will be modified with the number of iterations.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOIterations(int &iterations)
+{
+	const char * functionName = "getAcqIOIterations(int &iterations)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int size = 0;
+	int err = ses->getAcquiredData("acq_io_iterations", 0, &iterations, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the unit of the External IO data vectors.
+ *
+ * The External I/O unit is a string of up to 32 characters (including the null termination)
+ * defining the unit of the External I/O spectrum.
+ *
+ * @param[out] unit - A @c char* buffer to be filled with the External I/O unit. Can be 0 (NULL).
+ * @param[in,out] size If @p unit is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOUnit(char * unit, int & size)
+{
+	const char * functionName = "getAcqIOUnit(char * unit, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_io_unit", 0, unit, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the scale of the External IO data.
+ *
+ * Defines an array of doubles where each element corresponds to an External I/O step.
+ *
+ * @param[out] scale - An array of doubles that will be filled with the External I/O scale. Can be 0 (NULL).
+ * @param[in,out] size If @p scale is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOScale(double * scale, int & size)
+{
+	const char * functionName = "getAcqIOScale(double * scale, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_io_scale", 0, scale, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets data from the available port specified by @p index parameter in the External IO interface.
+ *
+ * The size of the data is acq_io_size.
+ *
+ * Defines an array of doubles where each element corresponds to an External I/O step.
+ * @param[in] index - The index of the port to be queried. Must be between 0 and @c acq_io_ports - 1.
+ * @param[out] pSpectrum - An array of doubles that will be filled with the data acquired from External I/O port @c index. Can be 0 (NULL).
+ * @param[in,out] size - If @p pSpectrum is non-null, this parameter is assumed to contain the maximum number of
+ * 				elements in the buffer. After completion, @p size is always modified to contain the length of the
+ * 				resulting array.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, or
+ * 			if @p index is out-of-bounds, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOSpectrum(int index, double * pSpectrum, int & size)
+{
+	const char * functionName = "getAcqIOSpectrum(int index, double * pSpectrum, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_io_spectrum", index, pSpectrum, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets a matrix of all data from all available ports in the External IO interface.
+ * The size of the resulting vector is acq_io_ports * acq_io_size.
+ *
+ * @param[out] pData - An array of doubles that will be filled with the spectra acquired from the External I/O ports. Can be 0 (NULL).
+ * @param[in,out] size - If @p pData is non-null, this parameter is assumed to contain the maximum number of
+ * 				elements in the buffer. After completion, @p size is always modified to contain the length of the
+ * 				resulting array.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized, or
+ * 			if @p index is out-of-bounds, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOData(double * pData, int & size)
+{
+	const char * functionName = "getAcqIOData(double * pData, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_io_data", 0, pData, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+/**
+ * @brief gets the name of the IO port indicated by the @p index parameter.
+ *
+ * @param[in] index The index of the port that will be queried. Must be between 0 and @c acq_io_ports-1.
+ * @param[out] pName - A @c char* buffer to be filled with the name of the External I/O port specified by @c index. Can be 0 (NULL).
+ * @param[in,out] size If @p name is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * @return asynError if External I/O is not available or if no acquisition has been initialized,
+ * 			or if @p index is out-of-bounds, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getAcqIOPortName(int index, char * pName, int & size)
+{
+	const char * functionName = "getAcqIOPortName(int index, char * name, int & size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	int err = ses->getAcquiredData("acq_io_port_name", index, pName, size);
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	return asynSuccess;
+}
+
 
 
 
