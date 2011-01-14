@@ -48,6 +48,7 @@
 <div class="dynheader">
 Include dependency graph for electronAnalyser.cpp:</div>
 <div class="dynsection">
+<div class="center"><img src="electron_analyser_8cpp__incl.png" border="0" usemap="#_c_1_2dls__sw_2work_2_r3_814_810_2support_2electron_analyser_2electron_analyser_app_2src_2electron_analyser_8cpp_map" alt=""/></div>
 </div>
 <table border="0" cellpadding="0" cellspacing="0">
 <tr><td colspan="2"><h2>Classes</h2></td></tr>
@@ -58,6 +59,9 @@ Include dependency graph for electronAnalyser.cpp:</div>
 <tr><td class="memItemLeft" align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#acc9794f655f61a3246ba3fd5c9c67e14">MAX_FILENAME_LEN</a>&nbsp;&nbsp;&nbsp;256</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#a4015695384da790f39102994d2fd953b">AD_STATUS_EXTENSION_START_POINT</a>&nbsp;&nbsp;&nbsp;ADStatusWaiting+1</td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">#define&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#aaed867172853f8f5e590cc2a563d59d3">NUM_ELECTRONANALYSER_PARAMS</a>&nbsp;&nbsp;&nbsp;(sizeof(electronAnalyserParamString)/sizeof(electronAnalyserParamString[0]))</td></tr>
+<tr><td colspan="2"><h2>Typedefs</h2></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; std::string &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#a686c18dacf9c5ff22583f4575804301e">NameVector</a></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top">typedef std::vector&lt; double &gt;&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#a82f6bc76e1c7a0f51bf3e95ad5d3c590">DoubleVector</a></td></tr>
 <tr><td colspan="2"><h2>Enumerations</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#aa65020d84cfb60f299249c623cbf7eaf">electronAnalyserTriggerMode_t</a> { <a class="el" href="electron_analyser_8cpp.html#aa65020d84cfb60f299249c623cbf7eafacda9ee85028a22f342355d14bd5d4956">TMInternal</a>, 
 <a class="el" href="electron_analyser_8cpp.html#aa65020d84cfb60f299249c623cbf7eafa4b7059a36ddbc3b1782404e07aba3003">TMExternal</a>, 
@@ -65,11 +69,11 @@ Include dependency graph for electronAnalyser.cpp:</div>
  }</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Electron Analyser Trigger mode choices. </p>
  <a href="electron_analyser_8cpp.html#aa65020d84cfb60f299249c623cbf7eaf">More...</a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#adc2ccf0b850d41e3f6d516d46ae7745a">lensMode_t</a> { <a class="el" href="electron_analyser_8cpp.html#adc2ccf0b850d41e3f6d516d46ae7745aabe3825e47cf8549b55aa30901d3a29e1">LensModeFixed</a>, 
-<a class="el" href="electron_analyser_8cpp.html#adc2ccf0b850d41e3f6d516d46ae7745aa71171660438dd2dc2efd22077d13fb15">LensModeSwept</a>
+<tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#a775c4039e9d9f37c8c3206840f66c018">runMode_t</a> { <a class="el" href="electron_analyser_8cpp.html#a775c4039e9d9f37c8c3206840f66c018a5ecbcf0afce98b042f35ec71ba03fa4b">Normal</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a775c4039e9d9f37c8c3206840f66c018ab8907ca4a1a3ebbe47056a004f5d0e0c">AddDimension</a>
  }</td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Enumeration for Electron analyser Lens Mode. </p>
- <a href="electron_analyser_8cpp.html#adc2ccf0b850d41e3f6d516d46ae7745a">More...</a><br/></td></tr>
+<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Enumeration for Electron analyser Run Mode. </p>
+ <a href="electron_analyser_8cpp.html#a775c4039e9d9f37c8c3206840f66c018">More...</a><br/></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">enum &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8ca">electronAnalyserParam_t</a> { <br/>
 &nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caab3dc6b66bd14a6c17e15f149973d1044">LibDescription</a> =  ADLastStdParam, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa523ad78645a3b82eff6938334ac6a04d">LibVersion</a>, 
@@ -97,61 +101,63 @@ Include dependency graph for electronAnalyser.cpp:</div>
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caae0d7417dd5097faa11beb070ed3ebb5a">DetectorSlices</a>, 
 <br/>
 &nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caac53eb8574b15b9454973cd270c5fce10">DetectorMode</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa1b43c53e14bb00897036d3f659086048">DetectorDiscriminatorLevel</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa80bfcdf1f25be7e2c77dabc73533ec59">DetectorADCMask</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caac8ffe68beeb2e0564d2d25d8b569de92">AnalyzerAcquisitionMode</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa4934a69baa3a61b889523350224a2f79">AnalyzerHighEnergy</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa4934a69baa3a61b889523350224a2f79">AnalyzerHighEnergy</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caacb6b3909896df8c81a56cfc4475c3653">AnalyzerLowEnergy</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa3b035a6e8b2793d24936507a111054d4">AnalyzerCenterEnergy</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa3b035a6e8b2793d24936507a111054d4">AnalyzerCenterEnergy</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa65f594a10dc8a2dfcb11d062103fefc4">AnalyzerEnergyStep</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa291b9d52abed42a8b5d0b20e94879895">AnalyzerDwellTime</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa291b9d52abed42a8b5d0b20e94879895">AnalyzerDwellTime</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaa3cf2b4db4fa5d4c876ba4f9f0376a39">EnergyMode</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa45a1f167868b1c2b9b40ca5e23b43d8c">RunMode</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa45a1f167868b1c2b9b40ca5e23b43d8c">RunMode</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa8784ee0aec7ec3f00c6a93060e6b421b">ElementSetCount</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa61681d5911d5365f68a6c5afafa0a5c9">ElementSets</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa8ac9ef9f7a08b05bcf0f985949a4ba2b">ElementSet</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9a069b60948d9b02c9af11a7a419a944">LensModeCount</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa8a33e06cd31de689fe46106e1ff83442">LensModes</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa63f26461f78159c8b66ee515ac91b9a8">LensMode</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa39954a93f98e5e53139696154ab9d01a">PassEnergyCount</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa83b11f40e3d386802ebc0777fa060e8e">PassEnergies</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caae54eef85ef331340e5254dd607a750c7">PassEnergy</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa187ea241310b063e8238b04d872b326d">UseExternalIO</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9fa89c8db7402a1ee4ab546516095667">UseDetector</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9fa89c8db7402a1ee4ab546516095667">UseDetector</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaf8d0d4e8857fa7233d6961191a37f619">RegionName</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa001321cf1fa09d0800c7b2b801cb2ae4">TempFileName</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa001321cf1fa09d0800c7b2b801cb2ae4">TempFileName</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaef58519c7b71e75006021cd96eda7b0b">ResetDataBetweenIterations</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caabcafbc7f61216afee764b9f5320e6df5">AcqChannels</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caabcafbc7f61216afee764b9f5320e6df5">AcqChannels</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaf809260a6d72c6f2685dcdf947eca71f">AcqSlices</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa966b7c6771fbe3f5d75f5616ff92f88d">AcqIterations</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa966b7c6771fbe3f5d75f5616ff92f88d">AcqIterations</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9c26cd453baafce14695f6a407fc3f91">AcqIntensityUnit</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa89a30c45041b1c7bef1fbef923d02f72">AcqChannelUnit</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa89a30c45041b1c7bef1fbef923d02f72">AcqChannelUnit</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa501ae4ffecd6c27c8932d7e9e5080994">AcqSliceUnit</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaaf8a3d9eff063dde3c623ae7e3b77451">AcqSpectrum</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caaaf8a3d9eff063dde3c623ae7e3b77451">AcqSpectrum</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caad458cc8178387d22376e3c6375cff465">AcqImage</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa1a38e4f79411603e95f85aaf6f91fbf9">AcqSlice</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa1a38e4f79411603e95f85aaf6f91fbf9">AcqSlice</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caae040f26b975f534bc96d97f77cb9b8d8">AcqSliceNumber</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa0a942b52bcbaa1527e237a88fa71d4d0">AcqChannelScale</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa0a942b52bcbaa1527e237a88fa71d4d0">AcqChannelScale</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa28e30a089fe6ba59701f694bc5283ab9">AcqSliceScale</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa3f2d0cb67e067b98fabf11a40272d195">AcqRawImage</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa3f2d0cb67e067b98fabf11a40272d195">AcqRawImage</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa116c068218af356a5567289dfa71401f">AcqCurrentStep</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa33bcb8e6833b9c9908c541e8c6225ace">AcqElapsedTime</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa33bcb8e6833b9c9908c541e8c6225ace">AcqElapsedTime</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa46477f75a6f169242dbd21e36a3f8f35">AcqIOPorts</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9366fa4aac3c53cc814aef1179c6e867">AcqIOSize</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa9366fa4aac3c53cc814aef1179c6e867">AcqIOSize</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caacb26baadfa744e548f753190ea569ec2">AcqIOIterations</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caad6987ec0c22796a99800a97debff3f0f">AcqIOUnit</a>, 
+<br/>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caad6987ec0c22796a99800a97debff3f0f">AcqIOUnit</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa1e9f6216dfd36d2942cb9d3e60bce257">AcqIOScale</a>, 
-<br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa24a477dd378c53c3d85b5fb7d695eeda">AcqIOSpectrum</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa24a477dd378c53c3d85b5fb7d695eeda">AcqIOSpectrum</a>, 
 <a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa264ceba7e6bf849d093cebb21cbefffb">AcqIOPortIndex</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caad4bcec5a89b582ebfe9d184af53b07b8">AcqIOData</a>, 
-<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caace7e0c06cc1d8de2a791e5fd77d2274a">AcqIOPortName</a>, 
 <br/>
-&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa596abdaa50a7774fbb20e2c10c18a829">ADLastDriverParam</a>
+&nbsp;&nbsp;<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caad4bcec5a89b582ebfe9d184af53b07b8">AcqIOData</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caace7e0c06cc1d8de2a791e5fd77d2274a">AcqIOPortName</a>, 
+<a class="el" href="electron_analyser_8cpp.html#a8455946be15b87af54bc3ed5747bf8caa596abdaa50a7774fbb20e2c10c18a829">ADLastDriverParam</a>
 <br/>
  }</td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight"><p>Define Electron Analyser driver specific parameters. </p>
@@ -208,6 +214,33 @@ Include dependency graph for electronAnalyser.cpp:</div>
       <table class="memname">
         <tr>
           <td class="memname">#define NUM_ELECTRONANALYSER_PARAMS&nbsp;&nbsp;&nbsp;(sizeof(electronAnalyserParamString)/sizeof(electronAnalyserParamString[0]))</td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+</div>
+</div>
+<hr/><h2>Typedef Documentation</h2>
+<a class="anchor" id="a82f6bc76e1c7a0f51bf3e95ad5d3c590"></a><!-- doxytag: member="electronAnalyser.cpp::DoubleVector" ref="a82f6bc76e1c7a0f51bf3e95ad5d3c590" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;double&gt; <a class="el" href="electron_analyser_8cpp.html#a82f6bc76e1c7a0f51bf3e95ad5d3c590">DoubleVector</a></td>
+        </tr>
+      </table>
+</div>
+<div class="memdoc">
+
+</div>
+</div>
+<a class="anchor" id="a686c18dacf9c5ff22583f4575804301e"></a><!-- doxytag: member="electronAnalyser.cpp::NameVector" ref="a686c18dacf9c5ff22583f4575804301e" args="" -->
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">typedef std::vector&lt;std::string&gt; <a class="el" href="electron_analyser_8cpp.html#a686c18dacf9c5ff22583f4575804301e">NameVector</a></td>
         </tr>
       </table>
 </div>
@@ -275,15 +308,13 @@ Include dependency graph for electronAnalyser.cpp:</div>
 <p>(asynInt32, r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES). </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caaac40be4ad8fac8109c2f5bcd0b6c6fea"></a><!-- doxytag: member="DetectorFirstXChannel" ref="a8455946be15b87af54bc3ed5747bf8caaac40be4ad8fac8109c2f5bcd0b6c6fea" args="" -->DetectorFirstXChannel</em>&nbsp;</td><td>
-<p>(asynInt32, r/w) Specifies the first X channel to be used on the detector (range: <code>[0. </code></p>
-<p>..electronAnalyserParam_t::XChannels_-1]. ) </p>
+<p>(asynInt32, r/w) Specifies the first X channel to be used on the detector. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa8d59a83299b1be0bcda6bb3b724051d7"></a><!-- doxytag: member="DetectorLastXChannel" ref="a8455946be15b87af54bc3ed5747bf8caa8d59a83299b1be0bcda6bb3b724051d7" args="" -->DetectorLastXChannel</em>&nbsp;</td><td>
 <p>(asynInt32, r/w) Specifies the last X channel to be used on the detector. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa4b449bfcd56f7a9794356ad363c43325"></a><!-- doxytag: member="DetectorFirstYChannel" ref="a8455946be15b87af54bc3ed5747bf8caa4b449bfcd56f7a9794356ad363c43325" args="" -->DetectorFirstYChannel</em>&nbsp;</td><td>
-<p>(asynInt32, r/w) Specifies the first Y channel to be used on the detector (range: <code>[0. </code></p>
-<p>..electronAnalyserParam_t::YChannels_-1]. ) </p>
+<p>(asynInt32, r/w) Specifies the first Y channel to be used on the detector. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa5648ab48ac9d17f5dd0b84ad44de78bd"></a><!-- doxytag: member="DetectorLastYChannel" ref="a8455946be15b87af54bc3ed5747bf8caa5648ab48ac9d17f5dd0b84ad44de78bd" args="" -->DetectorLastYChannel</em>&nbsp;</td><td>
 <p>(asynInt32, r/w) Specifies the last Y channel to be used on the detector. </p>
@@ -293,6 +324,12 @@ Include dependency graph for electronAnalyser.cpp:</div>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caac53eb8574b15b9454973cd270c5fce10"></a><!-- doxytag: member="DetectorMode" ref="a8455946be15b87af54bc3ed5747bf8caac53eb8574b15b9454973cd270c5fce10" args="" -->DetectorMode</em>&nbsp;</td><td>
 <p>(asynInt32, r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No). </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa1b43c53e14bb00897036d3f659086048"></a><!-- doxytag: member="DetectorDiscriminatorLevel" ref="a8455946be15b87af54bc3ed5747bf8caa1b43c53e14bb00897036d3f659086048" args="" -->DetectorDiscriminatorLevel</em>&nbsp;</td><td>
+<p>(asynInt32, r/w) Specifies the detector discriminator level. </p>
+</td></tr>
+<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa80bfcdf1f25be7e2c77dabc73533ec59"></a><!-- doxytag: member="DetectorADCMask" ref="a8455946be15b87af54bc3ed5747bf8caa80bfcdf1f25be7e2c77dabc73533ec59" args="" -->DetectorADCMask</em>&nbsp;</td><td>
+<p>(asynInt32, r/w) Specifies the detector ADC mask. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caac8ffe68beeb2e0564d2d25d8b569de92"></a><!-- doxytag: member="AnalyzerAcquisitionMode" ref="a8455946be15b87af54bc3ed5747bf8caac8ffe68beeb2e0564d2d25d8b569de92" args="" -->AnalyzerAcquisitionMode</em>&nbsp;</td><td>
 <p>(asynInt32, r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. </p>
@@ -316,25 +353,25 @@ Include dependency graph for electronAnalyser.cpp:</div>
 <p>(asynInt32, r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa45a1f167868b1c2b9b40ca5e23b43d8c"></a><!-- doxytag: member="RunMode" ref="a8455946be15b87af54bc3ed5747bf8caa45a1f167868b1c2b9b40ca5e23b43d8c" args="" -->RunMode</em>&nbsp;</td><td>
-<p>(asynInt32, r/w) defines how software should perform the acquisition and save data. </p>
+<p>(asynInt32, r/w) selects how software should perform the acquisition and save data. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa8784ee0aec7ec3f00c6a93060e6b421b"></a><!-- doxytag: member="ElementSetCount" ref="a8455946be15b87af54bc3ed5747bf8caa8784ee0aec7ec3f00c6a93060e6b421b" args="" -->ElementSetCount</em>&nbsp;</td><td>
 <p>(asynInt32, r/o) the number of installed element sets. </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa61681d5911d5365f68a6c5afafa0a5c9"></a><!-- doxytag: member="ElementSets" ref="a8455946be15b87af54bc3ed5747bf8caa61681d5911d5365f68a6c5afafa0a5c9" args="" -->ElementSets</em>&nbsp;</td><td>
-<p>(asynOctet, r/w) the list of names of the installed element sets </p>
+<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa8ac9ef9f7a08b05bcf0f985949a4ba2b"></a><!-- doxytag: member="ElementSet" ref="a8455946be15b87af54bc3ed5747bf8caa8ac9ef9f7a08b05bcf0f985949a4ba2b" args="" -->ElementSet</em>&nbsp;</td><td>
+<p>(asynInt32, r/w) select an element set from the list of the installed element sets </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa9a069b60948d9b02c9af11a7a419a944"></a><!-- doxytag: member="LensModeCount" ref="a8455946be15b87af54bc3ed5747bf8caa9a069b60948d9b02c9af11a7a419a944" args="" -->LensModeCount</em>&nbsp;</td><td>
 <p>(asynInt32, r/o) the number of available lens modes. </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa8a33e06cd31de689fe46106e1ff83442"></a><!-- doxytag: member="LensModes" ref="a8455946be15b87af54bc3ed5747bf8caa8a33e06cd31de689fe46106e1ff83442" args="" -->LensModes</em>&nbsp;</td><td>
-<p>(asynOctet, r/w) the list of names of available lens modes </p>
+<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa63f26461f78159c8b66ee515ac91b9a8"></a><!-- doxytag: member="LensMode" ref="a8455946be15b87af54bc3ed5747bf8caa63f26461f78159c8b66ee515ac91b9a8" args="" -->LensMode</em>&nbsp;</td><td>
+<p>(asynInt32, r/w) select an lens mode from the list of available lens modes </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa39954a93f98e5e53139696154ab9d01a"></a><!-- doxytag: member="PassEnergyCount" ref="a8455946be15b87af54bc3ed5747bf8caa39954a93f98e5e53139696154ab9d01a" args="" -->PassEnergyCount</em>&nbsp;</td><td>
 <p>(asynInt32, r/o) the number of available pass energies for the current lens mode. </p>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa83b11f40e3d386802ebc0777fa060e8e"></a><!-- doxytag: member="PassEnergies" ref="a8455946be15b87af54bc3ed5747bf8caa83b11f40e3d386802ebc0777fa060e8e" args="" -->PassEnergies</em>&nbsp;</td><td>
-<p>(asynFloat64, r/w) the list of available pass energies for the current lens mode. </p>
+<tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caae54eef85ef331340e5254dd607a750c7"></a><!-- doxytag: member="PassEnergy" ref="a8455946be15b87af54bc3ed5747bf8caae54eef85ef331340e5254dd607a750c7" args="" -->PassEnergy</em>&nbsp;</td><td>
+<p>(asynInt32, r/w) select an pas energy from the list of available pass energies for the current lens mode. </p>
 </td></tr>
 <tr><td valign="top"><em><a class="anchor" id="a8455946be15b87af54bc3ed5747bf8caa187ea241310b063e8238b04d872b326d"></a><!-- doxytag: member="UseExternalIO" ref="a8455946be15b87af54bc3ed5747bf8caa187ea241310b063e8238b04d872b326d" args="" -->UseExternalIO</em>&nbsp;</td><td>
 <p>(asynInt32, r/w) enable or disable the external IO interface (0=No, 1=YES). </p>
@@ -463,22 +500,22 @@ Include dependency graph for electronAnalyser.cpp:</div>
 
 </div>
 </div>
-<a class="anchor" id="adc2ccf0b850d41e3f6d516d46ae7745a"></a><!-- doxytag: member="electronAnalyser.cpp::lensMode_t" ref="adc2ccf0b850d41e3f6d516d46ae7745a" args="" -->
+<a class="anchor" id="a775c4039e9d9f37c8c3206840f66c018"></a><!-- doxytag: member="electronAnalyser.cpp::runMode_t" ref="a775c4039e9d9f37c8c3206840f66c018" args="" -->
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">enum <a class="el" href="electron_analyser_8cpp.html#adc2ccf0b850d41e3f6d516d46ae7745a">lensMode_t</a></td>
+          <td class="memname">enum <a class="el" href="electron_analyser_8cpp.html#a775c4039e9d9f37c8c3206840f66c018">runMode_t</a></td>
         </tr>
       </table>
 </div>
 <div class="memdoc">
 
-<p>Enumeration for Electron analyser Lens Mode. </p>
+<p>Enumeration for Electron analyser Run Mode. </p>
 <dl><dt><b>Enumerator: </b></dt><dd><table border="0" cellspacing="2" cellpadding="0">
-<tr><td valign="top"><em><a class="anchor" id="adc2ccf0b850d41e3f6d516d46ae7745aabe3825e47cf8549b55aa30901d3a29e1"></a><!-- doxytag: member="LensModeFixed" ref="adc2ccf0b850d41e3f6d516d46ae7745aabe3825e47cf8549b55aa30901d3a29e1" args="" -->LensModeFixed</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a775c4039e9d9f37c8c3206840f66c018a5ecbcf0afce98b042f35ec71ba03fa4b"></a><!-- doxytag: member="Normal" ref="a775c4039e9d9f37c8c3206840f66c018a5ecbcf0afce98b042f35ec71ba03fa4b" args="" -->Normal</em>&nbsp;</td><td>
 </td></tr>
-<tr><td valign="top"><em><a class="anchor" id="adc2ccf0b850d41e3f6d516d46ae7745aa71171660438dd2dc2efd22077d13fb15"></a><!-- doxytag: member="LensModeSwept" ref="adc2ccf0b850d41e3f6d516d46ae7745aa71171660438dd2dc2efd22077d13fb15" args="" -->LensModeSwept</em>&nbsp;</td><td>
+<tr><td valign="top"><em><a class="anchor" id="a775c4039e9d9f37c8c3206840f66c018ab8907ca4a1a3ebbe47056a004f5d0e0c"></a><!-- doxytag: member="AddDimension" ref="a775c4039e9d9f37c8c3206840f66c018ab8907ca4a1a3ebbe47056a004f5d0e0c" args="" -->AddDimension</em>&nbsp;</td><td>
 </td></tr>
 </table>
 </dd>
@@ -561,7 +598,7 @@ Include dependency graph for electronAnalyser.cpp:</div>
 </div>
 </div>
 </div>
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Fri Jan 7 18:01:07 2011 for ElectronAnalyserEW4000Detector by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Fri Jan 14 17:41:47 2011 for ElectronAnalyserEW4000Detector by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>

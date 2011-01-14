@@ -59,18 +59,15 @@ typedef enum
 {
 	TMInternal, TMExternal, TMAlignment
 } electronAnalyserTriggerMode_t;
-/** Enumeration for Electron analyser Lens Mode */
+/** Enumeration for Electron analyser Run Mode */
 typedef enum
 {
-	LensModeFixed, LensModeSwept
-} lensMode_t;
+	Normal,
+	AddDimension
+} runMode_t;
 
-/** The String representation of lens mode.*/
-static asynParamString_t lensModeString[] =
-{
-{ LensModeFixed, "Fixed" },
-{ LensModeSwept, "Swept" }, };
-/** PU Mode definition */
+typedef std::vector<std::string> NameVector;
+typedef std::vector<double> DoubleVector;
 
 static const char *driverName = "electronAnalyser";
 
@@ -124,9 +121,9 @@ private:
     virtual asynStatus resetInstrument();
     virtual asynStatus testCommunication();
 
-    virtual asynStatus getLensModeList(std::vector<string> * pLensModeList);
-    virtual asynStatus getPassEnergyList(std::vector<double> * pPassEnergyList);
-    virtual asynStatus getElementSetLlist(std::vector<string> * pElementSetList);
+    virtual asynStatus getLensModeList(NameVector * pLensModeList);
+    virtual asynStatus getPassEnergyList(DoubleVector * pPassEnergyList);
+    virtual asynStatus getElementSetLlist(NameVector * pElementSetList);
 
     bool isError(int & err, const char * functionName);
 
@@ -197,6 +194,18 @@ private:
     string instrumentFilePath;
 
 	float m_dTemperature;
+	bool m_bAllowIOWithDetector;
+	bool m_bAlwaysDelayRegion;
+	runMode_t m_RunMode;
+	NameVector m_Elementsets;
+	NameVector m_LensModes;
+	DoubleVector m_PassEnergies;
+	char * m_sCurrentElementSet;
+	char * m_sCurrentLensMode;
+	double m_dCurrentPassEnergy;
+	bool m_bUseExternalIO;
+	bool m_bUseDetector;
+	bool m_bResetDataBetweenIterations;
 };
 /* end of Electron Analyser class description */
 
@@ -238,12 +247,14 @@ typedef enum
 	ADCPresent,				/**< (asynInt32,    	r/o) Specifies whether the detector contains an ADC (0=No, 1=YES).*/
 	DiscPresent,			/**< (asynInt32,    	r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES).*/
 	// Detector Region
-	DetectorFirstXChannel,	/**< (asynInt32,    	r/w) Specifies the first X channel to be used on the detector (range: <code>[0...@ref electronAnalyserParam_t::XChannels_-1]</code>. )*/
+	DetectorFirstXChannel,	/**< (asynInt32,    	r/w) Specifies the first X channel to be used on the detector. */
 	DetectorLastXChannel,	/**< (asynInt32,    	r/w) Specifies the last X channel to be used on the detector. */
-	DetectorFirstYChannel,	/**< (asynInt32,    	r/w) Specifies the first Y channel to be used on the detector (range: <code>[0...@ref electronAnalyserParam_t::YChannels_-1]</code>. )*/
+	DetectorFirstYChannel,	/**< (asynInt32,    	r/w) Specifies the first Y channel to be used on the detector. */
 	DetectorLastYChannel,	/**< (asynInt32,    	r/w) Specifies the last Y channel to be used on the detector. */
 	DetectorSlices,			/**< (asynInt32,    	r/w) Specifies the current number of Y channels (slices). */
 	DetectorMode,			/**< (asynInt32,    	r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No).*/
+	DetectorDiscriminatorLevel,/**< (asynInt32,    	r/w) Specifies the detector discriminator level.*/
+	DetectorADCMask,		/**< (asynInt32,    	r/w) Specifies the detector ADC mask. */
 	// Analyzer Region
 	AnalyzerAcquisitionMode,/**< (asynInt32,    	r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. */
 	AnalyzerHighEnergy,		/**< (asynFloat64,  	r/w) Specifies the high-end kinetic energy (eV) for swept mode acquisition. */
@@ -253,14 +264,14 @@ typedef enum
 	AnalyzerDwellTime,		/**< (asynFloat64,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
 	// Energy Scale
 	EnergyMode,				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
-	RunMode,				/**< (asynInt32, 		r/w) defines how software should perform the acquisition and save data.*/
+	RunMode,				/**< (asynInt32, 		r/w) selects how software should perform the acquisition and save data.*/
 
 	ElementSetCount,		/**< (asynInt32,    	r/o) the number of installed element sets.*/
-	ElementSets,			/**< (asynOctet,    	r/w) the list of names of the installed element sets*/
+	ElementSet,				/**< (asynInt32,    	r/w) select an element set from the list of the installed element sets*/
 	LensModeCount,			/**< (asynInt32,		r/o) the number of available lens modes.*/
-	LensModes,				/**< (asynOctet,    	r/w) the list of names of available lens modes*/
+	LensMode,				/**< (asynInt32,    	r/w) select an lens mode from the list of available lens modes*/
 	PassEnergyCount,		/**< (asynInt32,		r/o) the number of available pass energies for the current lens mode.*/
-	PassEnergies,			/**< (asynFloat64,  	r/w) the list of available pass energies for the current lens mode.*/
+	PassEnergy,				/**< (asynInt32, 	 	r/w) select an pas energy from the list of available pass energies for the current lens mode.*/
 	UseExternalIO,			/**< (asynInt32,    	r/w) enable or disable the external IO interface (0=No, 1=YES).*/
 	UseDetector, 			/**< (asynInt32,    	r/w) enable or disable the detector (0=No, 1=YES).*/
 	RegionName, 			/**< (asynOctet,    	r/w) the name of the current region (max 32 characters)*/
@@ -334,11 +345,11 @@ static asynParamString_t electronAnalyserParamString[] =
 		{EnergyMode,			"ENERGY_MODE"},
 		{RunMode,				"EUN_MODE"},
 		{ElementSetCount,		"ELEMENT_SET_COUNT"},
-		{ElementSets,			"ELEMENT_SETS"},
+		{ElementSet,			"ELEMENT_SETS"},
 		{LensModeCount,			"LENS_MODE_COUNT"},
-		{LensModes,				"LENS_MODES"},
+		{LensMode,				"LENS_MODES"},
 		{PassEnergyCount,		"PASS_ENERGY_COUNT"},
-		{PassEnergies,			"PASS_ENERGIES"},
+		{PassEnergy,			"PASS_ENERGIES"},
 		{UseExternalIO,			"USE_EXTERNAL_IO"},
 		{UseDetector, 			"USE_DETECTOR"},
 		{RegionName, 			"REGION_NAME"},
@@ -389,6 +400,7 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 	const char *functionName = "ElectronAnalyser";
 	int eaStatus = WError::ERR_OK;
 	char message[MAX_MESSAGE_SIZE];
+	int size;
 	werror = WError::instance();
 	// Create the epicsEvents for signaling to the Electron Analyser task when acquisition starts and stops
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
@@ -415,8 +427,20 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 				functionName, werror->message(eaStatus));
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Initialising SES library failed: %s!\n", driverName, functionName, werror->message(eaStatus));
 	}
-
+	// initialise state variables from Hardware library
 	getDetectorTemperature(&m_dTemperature);
+	getAllowIOWithDetector(&m_bAllowIOWithDetector);
+	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
+	m_RunMode = Normal;
+	getElementSetLlist(&m_Elementsets);
+	getLensModeList(&m_LensModes);
+	getPassEnergyList(&m_PassEnergies);
+	getElementSet(-1, m_sCurrentElementSet, size);
+	getLensMode(-1, m_sCurrentLensMode, size);
+	getPassEnergy(-1,m_dCurrentPassEnergy);
+	getUseExternalIO(&m_bUseExternalIO);
+	getUseDetector(&m_bUseDetector);
+	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
 
 	/* Set some default values for parameters */
 	status |= setStringParam(ADManufacturer, "VG Scienta");
@@ -632,6 +656,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	int status = asynSuccess;
 	int function = pasynUser->reason;
 	const char *functionName = "writeInt32";
+	char * message = new char[MAX_MESSAGE_SIZE];
+	int size = 0;
+
 	// parameters for functions
 	int xmin, ymin, xsize, ysize;
 	int adstatus;
@@ -652,6 +679,192 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			/* Stop acquiring ( abort any hardware processings ) */
 			epicsEventSignal(this->stopEventId);
 		}
+		break;
+	case AlwaysDelayRegion:
+		if (value) {
+			m_bAlwaysDelayRegion = true;
+		} else {
+			m_bAlwaysDelayRegion = false;
+		}
+		this->setAlwaysDelayRegion(&m_bAlwaysDelayRegion);
+		break;
+	case AllowIOWithDetector:
+		if (value)
+		{
+			m_bAllowIOWithDetector = true;
+		} else {
+			m_bAllowIOWithDetector = false;
+		}
+		this->setAllowIOWithDetector(&m_bAllowIOWithDetector);
+		break;
+	case DetectorFirstXChannel:
+		if (value < 0 || value > detectorInfo.xChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.xChannels_);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.firstXChannel_=value;
+		}
+		break;
+	case DetectorLastXChannel:
+		if (value < detector.firstXChannel_ || value > detectorInfo.xChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d", detector.firstXChannel_,detectorInfo.xChannels_);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.lastXChannel_=value;
+		}
+		break;
+	case DetectorFirstYChannel:
+		if (value < 0 || value > detectorInfo.yChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.yChannels_);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.firstYChannel_=value;
+		}
+		break;
+	case DetectorLastYChannel:
+		if (value < detector.firstYChannel_ || value > detectorInfo.yChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d", detector.firstYChannel_,detectorInfo.yChannels_);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.lastYChannel_=value;
+		}
+		break;
+	case DetectorSlices:
+		if (value < 1 || value > detectorInfo.maxSlices_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between 1 and %d", detectorInfo.maxSlices_);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.slices_=value;
+		}
+		break;
+	case DetectorMode:
+		if (value)
+		{
+			// use Detector ADC mode
+			detector.adcMode_ = true;
+		}
+		else
+		{
+			// use Pulse counting mode
+			detector.adcMode_ = false;
+		}
+		break;
+	case DetectorDiscriminatorLevel:
+		//TODO any constrains?
+		detector.discLevel_=value;
+		break;
+	case DetectorADCMask:
+		//TODO any constrains?
+		detector.adcMask_=value;
+		break;
+	case AnalyzerAcquisitionMode:
+		if (value)
+		{
+			// use fixed mode
+			analyzer.fixed_ = true;
+		}
+		else
+		{
+			// use swept mode
+			analyzer.fixed_ = false;
+		}
+		break;
+	case EnergyMode:
+		if (value)
+		{
+			// use Kinetic energy scale
+			analyzer.kinetic_ = true;
+		}
+		else
+		{
+			// use Binding energy scale
+			analyzer.kinetic_ = false;
+		}
+		break;
+	case RunMode:  // driver parameters that determine how data to be saved into a file.
+		if (value == 1)
+			m_RunMode = AddDimension;
+		else
+			m_RunMode = Normal;
+		break;
+	case ElementSet: // need to map MEDM screen value to SES library values
+		getElementSetCount(size);
+		if (value < size) {
+			const char * elementSet = m_Elementsets.at(value).c_str();
+			// set element set to Library
+			this->setElementSet(elementSet);
+		} else {
+			// out of index
+			epicsSnprintf(message, sizeof(message), "set 'Element_Set' failed, index must be between 0 and %d", size);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		}
+		getElementSet(-1, m_sCurrentElementSet, size);
+		break;
+	case LensMode:
+		getLensModeCount(size);
+		if (value <size){
+			const char * lensMode = m_LensModes.at(value).c_str();
+			this->setLensMode(lensMode);
+		} else {
+			epicsSnprintf(message, sizeof(message), "set 'Lens_Mode' failed, index must be between 0 and %d", size);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		}
+		getLensMode(-1, m_sCurrentLensMode, size);
+		break;
+	case PassEnergy:
+		getPassEnergyCount(size);
+		if (value < size) {
+			const double passEnergy = m_PassEnergies.at(value);
+			this->setPassEnergy(&passEnergy);
+		} else {
+			epicsSnprintf(message, sizeof(message), "set 'Pass_Energy' failed, index must be between 0 and %d", size);
+			setStringParam(ADStatusMessage, message);
+			callParamCallbacks();
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		}
+		getPassEnergy(-1,m_dCurrentPassEnergy);
+		break;
+	case UseExternalIO:
+		if (value) {
+			m_bUseExternalIO = true;
+		} else {
+			m_bUseExternalIO = false;
+		}
+		this->setUseExternalIO(&m_bUseExternalIO);
+		break;
+	case UseDetector:
+		if (value) {
+			m_bUseDetector = true;
+		} else {
+			m_bUseDetector = false;
+		}
+		this->setUseExternalIO(&m_bUseDetector);
+		break;
+	case ResetDataBetweenIterations:
+		if (value) {
+			m_bResetDataBetweenIterations = true;
+		} else {
+			m_bResetDataBetweenIterations = false;
+		}
+		this->setResetDataBetweenIterations(&m_bResetDataBetweenIterations);
+		break;
+	case AcqSliceNumber:
+		break;
+	case AcqIOPortIndex:
 		break;
 	case ADTriggerMode:
 		break;
@@ -716,6 +929,16 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	getIntegerParam(ADStatus, &adstatus);
 	switch (function)
 	{
+	case AnalyzerHighEnergy:
+		break;
+	case AnalyzerLowEnergy:
+		break;
+	case AnalyzerCenterEnergy:
+		break;
+	case AnalyzerEnergyStep:
+		break;
+	case AnalyzerDwellTime:
+		break;
 	case ADGain:
 		break;
 	case ADAcquireTime:
@@ -775,8 +998,13 @@ asynStatus ElectronAnalyser::writeOctet(asynUser *pasynUser, const char *value,
 
 	switch (function)
 	{
-	case AnalyzerAcquisitionMode:
+	case LibWorkingDir:
 		break;
+	case RegionName:
+		break;
+	case TempFileName:
+		break;
+
 	default:
 		/* If this parameter belongs to a base class call its method */
 		if (function < ADLastStdParam)
@@ -1297,7 +1525,7 @@ asynStatus ElectronAnalyser::testCommunication()
  * @param [out] pLensModeList - pointer to the list held in a vector of string.
  * @return asynError if @p lens_mode_count or @p lens_mode_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getLensModeList(std::vector<string> *pLensModeList)
+asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 {
 	const char * functionName = "getLensModeList(std::vector<string> *pLensModeList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
@@ -1334,7 +1562,7 @@ asynStatus ElectronAnalyser::getLensModeList(std::vector<string> *pLensModeList)
  * @param [out] pEelementSetList - pointer to the list held in the vector of string
  * @return asynError if @p element_set_count or @p element_set_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getElementSetLlist(std::vector<string> *pElementSetList)
+asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 {
 	const char * functionName = "getElementSetLlist(std::vector<string> *pElementSetList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
@@ -1371,7 +1599,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(std::vector<string> *pElementSet
  * @param [out] pPassEnergyList - pointer to the list held in a vector of double
  * @return asynError if @p pass_energy_count or @p pass_energy_from_index properties can not be read, otherwise asynSuccess
  */
-asynStatus ElectronAnalyser::getPassEnergyList(std::vector<double> *pPassEnergyList)
+asynStatus ElectronAnalyser::getPassEnergyList(DoubleVector *pPassEnergyList)
 {
 	const char * functionName = "getPassEnergyList(std::vector<double> *pPassEnergyList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
