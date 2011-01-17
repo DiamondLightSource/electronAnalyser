@@ -57,7 +57,7 @@ using namespace std;
 
 using std::string;
 
-const CString SES_ROOT = getenv("SES_ROOT");
+//const CString SES_ROOT = getenv("SES_ROOT");
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
 
 /** Enumeration for Electron analyser Run Mode */
@@ -73,14 +73,16 @@ typedef std::vector<double> DoubleVector;
 static const char *driverName = "electronAnalyser";
 
 /**
- * Driver class for Pixium RF4343 Flat panel Detector System. This detector system consists of Dynamix board in
- * AcppBox for detector control and a Matrox Solios Frame Grabber in a Customer Windows PC for imaging acquisition.
- * AcppBox must be started before this class is called in EPICS IOC.
+ * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
+ * in turn depends on the installation of SES (i.e. working directory) and the name of the instrument configuration file at (@p workingDir\data\).
+ *
+ * Please note only one program can be run at the same time, either ses.exe or this IOC.
  */
 class ElectronAnalyser: public ADDriver
 {
 public:
-    ElectronAnalyser(const char *workingDir, int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority, int stackSize);
+    ElectronAnalyser(const char *workingDir, const char *instrumentFile,
+    		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority, int stackSize);
     virtual ~ElectronAnalyser();
     virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
     virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
@@ -97,7 +99,7 @@ private:
     SESWrapperNS::WDetectorInfo detectorInfo;
     asynStatus acquireData(void *pData);
     asynStatus getDetectorTemperature(float *temperature);
-    virtual void init_device();
+    virtual void init_device(const char *workingDir, const char *instrumentFile);
     void delete_device();
     virtual void updateStatus();
 
@@ -189,7 +191,7 @@ private:
     virtual asynStatus getAcqIOPortName(int index, char * pName, int & size);
 
     WError *werror;
-    string sesRootDirectory;
+    string sesWorkingDirectory;
     string instrumentFilePath;
 
 	float m_dTemperature;
@@ -209,11 +211,10 @@ private:
 /* end of Electron Analyser class description */
 
 /** A bit of C glue to make the config function available in the startup script (ioc shell) */
-extern "C" int electronAnalyserConfig(const char *workingDir, int maxSizeX,
-		int maxSizeY, int maxBuffers, size_t maxMemory, int priority,
-		int stackSize)
+extern "C" int electronAnalyserConfig(const char *workingDir, const char *instrumentFile,
+		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority,	int stackSize)
 {
-	new ElectronAnalyser(workingDir, maxSizeX, maxSizeY, maxBuffers, maxMemory,
+	new ElectronAnalyser(workingDir, instrumentFile, maxSizeX, maxSizeY, maxBuffers, maxMemory,
 			priority, stackSize);
 	return asynSuccess;
 }
@@ -388,8 +389,8 @@ static asynParamString_t electronAnalyserParamString[] =
 ElectronAnalyser::~ElectronAnalyser()
 {
 }
-ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
-		int maxSizeY, int maxBuffers, size_t maxMemory, int priority,
+ElectronAnalyser::ElectronAnalyser(const char *workingDir, const char *instrumentFile,
+		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority,
 		int stackSize) :
 	ADDriver(portName, 1, ADLastDriverParam, maxBuffers, maxMemory, 0, 0, /* No interfaces beyond those set in ADDriver.cpp */
 	ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
@@ -400,6 +401,7 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 	int eaStatus = WError::ERR_OK;
 	char message[MAX_MESSAGE_SIZE];
 	int size;
+	char * value;
 	werror = WError::instance();
 	// Create the epicsEvents for signaling to the Electron Analyser task when acquisition starts and stops
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
@@ -416,20 +418,16 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 				functionName);
 		return;
 	}
-	printf("%s:%s: Initialise SES library.\n", driverName, functionName);
-	ses = new WSESWrapperMain(workingDir);
-	eaStatus |= ses->setProperty("lib_working_dir", 0, workingDir);
-	eaStatus |= ses->initialize(0);
-	if (eaStatus != WError::ERR_OK)
-	{
-		printf("%s:%s: Initialising SES library failed: %s!\n", driverName,
-				functionName, werror->message(eaStatus));
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Initialising SES library failed: %s!\n", driverName, functionName, werror->message(eaStatus));
-	}
-	// initialise state variables from Hardware library
+	printf("%s:%s: Initialising SES library.\n", driverName, functionName);
+	this->init_device(workingDir, instrumentFile);
+
+	// initialise state variables from SES library
 	getDetectorTemperature(&m_dTemperature);
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
 	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
+	getDetectorInfo(&detectorInfo);
+	getDetectorRegion(&detector);
+	getAnalyzerRegion(&analyzer);
 	m_RunMode = Normal;
 	getElementSetLlist(&m_Elementsets);
 	getLensModeList(&m_LensModes);
@@ -442,22 +440,58 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
 
 	/* Set some default values for parameters */
+	// the setup panel parameters
 	status |= setStringParam(ADManufacturer, "VG Scienta");
-	status |= setStringParam(ADModel, "EW4000");
-	status |= setIntegerParam(ADMaxSizeX, maxSizeX);
-	status |= setIntegerParam(ADMaxSizeY, maxSizeY);
-	status |= setDoubleParam(ADTemperature, m_dTemperature);
+	getInstrumentModel(0, size);
+	value = new char[size];
+	getInstrumentModel(value, size);
+	status |= setStringParam(ADModel, value);
+	getLibDescription(0, size);
+	value=new char[size];
+	getLibDescription(value, size);
+	status |= setStringParam(LibDescription, value);
+	getLibVersion(0, size);
+	value = new char[size];
+	getLibVersion(value, size);
+	status |= setStringParam(LibVersion, value);
+	getLibWorkingDir(0, size);
+	value=new char[size];
+	getLibWorkingDir(value,size);
+	status |= setStringParam(LibWorkingDir, value);
+	getInstrumentSerialNo(0, size);
+	value =  new char[size];
+	getInstrumentSerialNo(value, size);
+	status |= setStringParam(InstrumentSerialNo, value);
 
-	//status |= setIntegerParam(NDArraySize, 0);
+	// the Readout panel parameters
+	status |= setIntegerParam(ADMaxSizeX, detectorInfo.xChannels_);
+	status |= setIntegerParam(ADMaxSizeY, detectorInfo.yChannels_);
+	status |= setIntegerParam(ADMinX, detector.firstXChannel_);
+	status |= setIntegerParam(ADMinY, detector.lastXChannel_);
+	status |= setIntegerParam(ADSizeX, detector.firstYChannel_ - detector.firstXChannel_);
+	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
+		//status |= setIntegerParam(NDArraySize, 0);
 	//status |= setIntegerParam(NDDataType,  NDInt32);
+
+	// the Collect panel
+	status |= setDoubleParam(ADAcquireTime, analyzer.dwellTime_/1000.0);
+	status |= setDoubleParam(ADAcquirePeriod, 0.0);
+	status |= setIntegerParam(ADNumImages, 1);
+	status |= setIntegerParam(ADNumExposures, 1); // number of frames per image
 	status |= setIntegerParam(ADImageMode, ADImageSingle);
 	status |= setIntegerParam(ADTriggerMode, ADTriggerInternal);
-	status |= setIntegerParam(ADNumExposures, 1); // number of frames per image
-	status |= setIntegerParam(ADNumImages, 1);
-	status |= setDoubleParam(ADAcquireTime, 0.0);
-	status |= setDoubleParam(ADAcquirePeriod, 0.0);
+	updateStatus();
 	status |= setStringParam(ADStatusMessage, message);
+
 	status |= setIntegerParam(NDAutoIncrement, 1);
+
+	status |= setDoubleParam(ADTemperature, m_dTemperature);
+
+	// Electron analyzer specific parameters
+	status |= setIntegerParam(AlwaysDelayRegion, m_bAlwaysDelayRegion?1:0);
+	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
+	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
+	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
 
 	if (status)
 	{
@@ -669,7 +703,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	case ADAcquire:
 		if (value && (adstatus == ADStatusIdle))
 		{
-			/* Send an event to wake up the pixium task.  */
+			/* Send an event to wake up the electronAnalyser task.  */
 			epicsEventSignal(this->startEventId);
 		}
 		if (!value && (adstatus != ADStatusIdle))
@@ -699,7 +733,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < 0 || value > detectorInfo.xChannels_) {
 			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.xChannels_);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.firstXChannel_=value;
@@ -710,7 +743,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < detector.firstXChannel_ || value > detectorInfo.xChannels_) {
 			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d", detector.firstXChannel_,detectorInfo.xChannels_);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.lastXChannel_=value;
@@ -721,7 +753,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < 0 || value > detectorInfo.yChannels_) {
 			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.yChannels_);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.firstYChannel_=value;
@@ -732,7 +763,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < detector.firstYChannel_ || value > detectorInfo.yChannels_) {
 			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d", detector.firstYChannel_,detectorInfo.yChannels_);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.lastYChannel_=value;
@@ -743,7 +773,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < 1 || value > detectorInfo.maxSlices_) {
 			epicsSnprintf(message, sizeof(message), "set failed, value must be between 1 and %d", detectorInfo.maxSlices_);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.slices_=value;
@@ -1054,7 +1083,7 @@ asynStatus ElectronAnalyser::writeOctet(asynUser *pasynUser, const char *value,
  */
 void ElectronAnalyser::report(FILE *fp, int details)
 {
-	fprintf(fp, "Pixium detector %s\n", this->portName);
+	fprintf(fp, "electronAnalyser detector %s\n", this->portName);
 	if (details > 0)
 	{
 		int nx, ny, dataType;
@@ -1102,7 +1131,7 @@ asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
  * sets the Area Detector's ADStatusMessage field, update any client.
  *
  * @param[in] err - the return status code
- * @param[in] functionName - the function name where Pixium API call is made.
+ * @param[in] functionName - the function name where WSESWrapper API call is made.
  * @return true if error in call return, false if err==0.
  */
 bool ElectronAnalyser::isError(int & err, const char * functionName)
@@ -1132,9 +1161,9 @@ void ElectronAnalyser::delete_device()
 		delete ses;
 	}
 	// delete all cached variables
-	if (!sesRootDirectory.empty())
+	if (!sesWorkingDirectory.empty())
 	{
-		sesRootDirectory.clear();
+		sesWorkingDirectory.clear();
 	}
 	if (!instrumentFilePath.empty())
 	{
@@ -1148,23 +1177,25 @@ void ElectronAnalyser::delete_device()
 /**
  * create and initialise the device annd instrument software library. Must be called in constructor.
  */
-void ElectronAnalyser::init_device()
+void ElectronAnalyser::init_device(const char *workingDir, const char *instrumentFile)
 {
 	const char * functionName = "init_device()";
+	char *  message = new char[MAX_MESSAGE_SIZE];
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: create device", driverName, functionName);
 	// Initialise variables to default values
-	sesRootDirectory = getenv("SES_ROOT");
-	instrumentFilePath = sesRootDirectory.append("\\data\\instrument.dat");
-
+	sesWorkingDirectory = workingDir;
+	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
 
 	// Get connection to the SES wrapper
-	ses = new WSESWrapperMain(sesRootDirectory.c_str());
-	int err = ses->initialize(0);
+	ses = new WSESWrapperMain(workingDir);
+	int err = ses->setProperty("lib_working_dir", 0, workingDir);
+	err |= ses->initialize(0);
 	if (err)
 	{
 		this->setIntegerParam(ADStatus, ADStatusError);
-		this->setStringParam(ADStatusMessage,"SES library initialisation failed");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: SES library initialisation failed", driverName, functionName);
+		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %s", werror->message(err));
+		this->setStringParam(ADStatusMessage,message);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 	}
 	else
 	{
@@ -1172,10 +1203,9 @@ void ElectronAnalyser::init_device()
 		if (err)
 		{
 			this->setIntegerParam(ADStatus, ADStatusError);
-			char * message = new char[MAX_MESSAGE_SIZE];
-			epicsSnprintf(message, sizeof(message), "LoadInstrument file : %s failed.", instrumentFilePath);
+			epicsSnprintf(message, sizeof(message), "LoadInstrument file: %s failed; %s.", instrumentFilePath, werror->message(err));
 			this->setStringParam(ADStatusMessage, message);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: LoadInstrument file : %s failed ", driverName, functionName, instrumentFilePath);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s. ", driverName, functionName, message);
 		}
 		else
 		{
@@ -1183,7 +1213,7 @@ void ElectronAnalyser::init_device()
 			{
 				this->setIntegerParam(ADStatus, ADStatusIdle);
 				this->setStringParam(ADStatusMessage,"SES library initialisation completed.");
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: completed.", driverName, functionName);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES library initialisation completed.", driverName, functionName);
 			}
 			else
 			{
@@ -1202,7 +1232,7 @@ void ElectronAnalyser::init_device()
  */
 void ElectronAnalyser::updateStatus()
 {
-	const char * functionName = "always_executed_hook()";
+	const char * functionName = "updateStatus()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
 	int status=0;
 	this->getInstrumentStatus(&status);
@@ -1221,17 +1251,17 @@ void ElectronAnalyser::updateStatus()
 	case  SesNS::AcqError :
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"Acquisition was interrupted with an error.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition was interrupted with an error.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was interrupted with an error.", driverName, functionName);
 		break;
 	case SesNS::NonOperational:
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"The library is not operational. Resetting may resolve the issue.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: The library is not operational. Resetting may resolve the issue.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The library is not operational. Resetting may resolve the issue.", driverName, functionName);
 		break;
 	case SesNS::NotInitialized :
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"The SESInstrument library has not been initialized (the GDS_Initialize function has not been called).");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: The SESInstrument library has not been initialized (the GDS_Initialize function has not been called).", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The SESInstrument library has not been initialized (the GDS_Initialize function has not been called).", driverName, functionName);
 		break;
 	}
 
@@ -1245,7 +1275,7 @@ void ElectronAnalyser::updateStatus()
 		step = channels;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Current step: %d", driverName, functionName, step);
-	this->callParamCallbacks();
+	callParamCallbacks();
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
 }
 
