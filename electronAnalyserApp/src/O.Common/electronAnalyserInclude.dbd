@@ -1,6 +1,0 @@
-include "base.dbd"
-include "asyn.dbd"
-include "ADSupport.dbd"
-include "pluginSupport.dbd"
-include "electronAnalyserSupport.dbd"
-include "busySupport.dbd"

@@ -1,9 +1,0 @@
-# DO NOT EDIT: This file created by mkmf.pl,v 1.5 2002/03/25 21:33:24 jba Exp $ 
-
-wsesinstrument.obj : ../include//wsesinstrument.h
-wsesinstrument.obj : ../include//common.hpp
-wsesinstrument.obj : ../include//wlibrary.h
-wsesinstrument.obj : ../include//sestypes.h
-wsesinstrument.obj : ../include//types.h
-
-

@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include "stdafx.h"
 #include <atlstr.h>
-#include <string>
 #include <vector>
 #include <list>
 #include <algorithm>
@@ -49,16 +48,18 @@
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
 
+#include <io.h>   // For access().
+#include <sys/types.h>  // For stat().
+#include <sys/stat.h>   // For stat().
+#include <iostream>
+#include <string>
+using namespace std;
+
 using std::string;
 
 const CString SES_ROOT = getenv("SES_ROOT");
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
 
-/** Electron Analyser Trigger mode choices */
-typedef enum
-{
-	TMInternal, TMExternal, TMAlignment
-} electronAnalyserTriggerMode_t;
 /** Enumeration for Electron analyser Run Mode */
 typedef enum
 {
@@ -95,8 +96,6 @@ private:
     SESWrapperNS::WDetectorRegion detector;
     SESWrapperNS::WDetectorInfo detectorInfo;
     asynStatus acquireData(void *pData);
-    asynStatus setROI(int xmin, int ymin, int xsize, int ysize);
-    asynStatus updateROI();
     asynStatus getDetectorTemperature(float *temperature);
     virtual void init_device();
     void delete_device();
@@ -261,7 +260,7 @@ typedef enum
 	AnalyzerLowEnergy,		/**< (asynFloat64,  	r/w) Specifies the low-end kinetic energy (eV) for swept mode acquisition. */
 	AnalyzerCenterEnergy,	/**< (asynFloat64,  	r/w) Specifies the center energy (eV) for fixed mode acquisition (the low and high end energies is calculated from this value and the current pass energy). */
 	AnalyzerEnergyStep,		/**< (asynFloat64,  	r/w) Specifies the energy step size (eV) for swept mode acquisition. */
-	AnalyzerDwellTime,		/**< (asynFloat64,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
+	AnalyzerDwellTime,		/**< (asynInt32,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
 	// Energy Scale
 	EnergyMode,				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
 	RunMode,				/**< (asynInt32, 		r/w) selects how software should perform the acquisition and save data.*/
@@ -452,7 +451,7 @@ ElectronAnalyser::ElectronAnalyser(const char *workingDir, int maxSizeX,
 	//status |= setIntegerParam(NDArraySize, 0);
 	//status |= setIntegerParam(NDDataType,  NDInt32);
 	status |= setIntegerParam(ADImageMode, ADImageSingle);
-	status |= setIntegerParam(ADTriggerMode, TMInternal);
+	status |= setIntegerParam(ADTriggerMode, ADTriggerInternal);
 	status |= setIntegerParam(ADNumExposures, 1); // number of frames per image
 	status |= setIntegerParam(ADNumImages, 1);
 	status |= setDoubleParam(ADAcquireTime, 0.0);
@@ -660,7 +659,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	int size = 0;
 
 	// parameters for functions
-	int xmin, ymin, xsize, ysize;
 	int adstatus;
 
 	status = setIntegerParam(function, value);
@@ -705,6 +703,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.firstXChannel_=value;
+			setIntegerParam(ADMinX, detector.firstXChannel_);
 		}
 		break;
 	case DetectorLastXChannel:
@@ -715,6 +714,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.lastXChannel_=value;
+			setIntegerParam(ADSizeX, detector.lastXChannel_- detector.firstXChannel_);
 		}
 		break;
 	case DetectorFirstYChannel:
@@ -725,6 +725,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.firstYChannel_=value;
+			setIntegerParam(ADMinY,detector.firstYChannel_);
 		}
 		break;
 	case DetectorLastYChannel:
@@ -735,6 +736,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			detector.lastYChannel_=value;
+			setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
 		break;
 	case DetectorSlices:
@@ -791,6 +793,15 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			analyzer.kinetic_ = false;
 		}
 		break;
+	case AnalyzerDwellTime:
+		if (value <= 0) {
+			epicsSnprintf(message, sizeof(message), "Analyzer dwell time must be > 0");
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			analyzer.dwellTime_ = value;
+		}
+		break;
 	case RunMode:  // driver parameters that determine how data to be saved into a file.
 		if (value == 1)
 			m_RunMode = AddDimension;
@@ -807,7 +818,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			// out of index
 			epicsSnprintf(message, sizeof(message), "set 'Element_Set' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		}
 		getElementSet(-1, m_sCurrentElementSet, size);
@@ -820,7 +830,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Lens_Mode' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		}
 		getLensMode(-1, m_sCurrentLensMode, size);
@@ -833,7 +842,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Pass_Energy' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
-			callParamCallbacks();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		}
 		getPassEnergy(-1,m_dCurrentPassEnergy);
@@ -863,25 +871,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		this->setResetDataBetweenIterations(&m_bResetDataBetweenIterations);
 		break;
 	case AcqSliceNumber:
+		// no action, value used by get slice function
 		break;
 	case AcqIOPortIndex:
-		break;
-	case ADTriggerMode:
-		break;
-	case ADBinX:
-		break;
-	case ADBinY:
-		break;
-	case ADSizeX:
-	case ADSizeY:
-	case ADMinX:
-	case ADMinY:
-		//TODO hardware ROI settings
-		status = getIntegerParam(ADSizeX, &xsize);
-		status |= getIntegerParam(ADSizeY, &ysize);
-		status |= getIntegerParam(ADMinX, &xmin);
-		status |= getIntegerParam(ADMinY, &ymin);
-		//this->setROI(xmin, ymin, xsize, ysize);
+		// no action, value used by get IO spectrum call and get port name call.
 		break;
 	default:
 		/* If this is not a parameter we have handled call the base class */
@@ -921,6 +914,7 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	int function = pasynUser->reason;
 	asynStatus status = asynSuccess;
 	const char *functionName = "writeFloat64";
+	char * message = new char[MAX_MESSAGE_SIZE];
 	int adstatus;
 
 	/* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
@@ -930,36 +924,16 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	switch (function)
 	{
 	case AnalyzerHighEnergy:
+		analyzer.highEnergy_ = value;
 		break;
 	case AnalyzerLowEnergy:
+		analyzer.lowEnergy_ = value;
 		break;
 	case AnalyzerCenterEnergy:
+		analyzer.centerEnergy_ = value;
 		break;
 	case AnalyzerEnergyStep:
-		break;
-	case AnalyzerDwellTime:
-		break;
-	case ADGain:
-		break;
-	case ADAcquireTime:
-		if (adstatus == ADStatusIdle)
-		{
-			setIntegerParam(ADStatus, ADStatusWaiting);
-			callParamCallbacks();
-			asynPrint(pasynUser, ASYN_TRACE_FLOW,"%s:%s: Set acquire tiem to %f seconds.\n", driverName, functionName, value);
-			setIntegerParam(ADStatus, ADStatusIdle);
-			callParamCallbacks();
-		}
-		break;
-	case ADAcquirePeriod:
-		if (adstatus == ADStatusIdle)
-		{
-			setIntegerParam(ADStatus, ADStatusWaiting);
-			callParamCallbacks();
-			asynPrint(pasynUser, ASYN_TRACE_FLOW,"%s:%s: Set acquire period to %f seconds.\n", driverName, functionName, value);
-			setIntegerParam(ADStatus, ADStatusIdle);
-			callParamCallbacks();
-		}
+		analyzer.energyStep_ = value;
 		break;
 	default:
 		/* If this parameter belongs to a base class call its method */
@@ -992,17 +966,62 @@ asynStatus ElectronAnalyser::writeOctet(asynUser *pasynUser, const char *value,
 	int function = pasynUser->reason;
 	asynStatus status = asynSuccess;
 	const char *functionName = "writeOctet";
+	char * message = new char[MAX_MESSAGE_SIZE];
+	int adstatus;
 
 	/* Set the parameter in the parameter library. */
 	status = (asynStatus) setStringParam(function, (char *) value);
+	getIntegerParam(ADStatus, &adstatus);
 
 	switch (function)
 	{
 	case LibWorkingDir:
+		if (adstatus == ADStatusIdle)
+		{
+			if (access(value, 0) == 0)
+			{ // check if directory exist before set it.
+				struct stat st;
+				stat(value, &st);
+
+				if (st.st_mode & S_IFDIR)
+				{
+					epicsSnprintf(message, sizeof(message),
+							"Library working directory is set to %s", value);
+					setStringParam(ADStatusMessage, message);
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s", driverName, functionName, message);
+					status = this->setLibWorkingDir(value);
+				}
+				else
+				{
+					epicsSnprintf(message, sizeof(message),
+							"%s is a file not a directory.", value);
+					setStringParam(ADStatusMessage, message);
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s", driverName, functionName, message);
+				}
+			}
+			else
+			{
+				epicsSnprintf(
+						message,
+						sizeof(message),
+						"Library working directory specified %s does not exist.",
+						value);
+				setStringParam(ADStatusMessage, message);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s", driverName, functionName, message);
+			}
+		}
 		break;
 	case RegionName:
+		if (adstatus == ADStatusIdle)
+		{
+			status = this->setRegionName(value);
+		}
 		break;
 	case TempFileName:
+		if (adstatus == ADStatusIdle)
+		{
+			status = this->setTempFileName(value);
+		}
 		break;
 
 	default:
@@ -1065,46 +1084,6 @@ asynStatus ElectronAnalyser::drvUserCreate(asynUser *pasynUser,
 	return (status);
 }
 
-/** \brief set a single ROI for the detector
- *
- * On success, update AD ROI parameters
- * \param[in] xmin
- * \param[in] ymin
- * \param[in] xsize
- * \param[in] ysize
- * \return asynStatus
- */
-asynStatus ElectronAnalyser::setROI(int xmin, int ymin, int xsize, int ysize)
-{
-
-	int eaint = 0;
-	asynStatus status = asynSuccess;
-	const char * functionName = "setROI";
-	//TODO call firmware to set ROI
-	updateROI();
-	return status;
-}
-/* \brief poll ROI from Detector and Update
- *
- */
-asynStatus ElectronAnalyser::updateROI()
-{
-	int eaStatus = 0;
-	int status = asynSuccess;
-	const char * functionName = "updateROI";
-	int minx, miny, sizex, sizey;
-	//TODO get ROI from Analyser
-
-	// set the outputs
-	status = setIntegerParam(ADMinX, minx);
-	status |= setIntegerParam(ADMinY, miny);
-	status |= setIntegerParam(ADSizeX, sizex);
-	status |= setIntegerParam(ADSizeY, sizey);
-	status |= callParamCallbacks();
-	if (status)
-		return asynError;
-	return asynSuccess;
-}
 
 asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
 {
@@ -1428,7 +1407,7 @@ asynStatus ElectronAnalyser::start()
 		setStringParam(ADStatusMessage, message);
 		callParamCallbacks();
 	}
-
+	//TODO  should this be here?
 	err = ses->startAcquisition();
 	setIntegerParam(ADStatus, ADStatusAcquire);
 	if (isError(err, functionName)) {

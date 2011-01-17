@@ -1,9 +1,0 @@
-# DO NOT EDIT: This file created by mkmf.pl,v 1.5 2002/03/25 21:33:24 jba Exp $ 
-
-drvElectronAnalyserRegistrar.obj : C:/dls_sw/epics/R3.14.10/base/include/iocsh.h
-drvElectronAnalyserRegistrar.obj : C:/dls_sw/epics/R3.14.10/base/include/drvSup.h
-drvElectronAnalyserRegistrar.obj : C:/dls_sw/epics/R3.14.10/base/include/epicsExport.h
-drvElectronAnalyserRegistrar.obj : ../include//drvElectronAnalyser.h
-drvElectronAnalyserRegistrar.obj : C:/dls_sw/epics/R3.14.10/base/include/shareLib.h
-
-
