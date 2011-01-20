@@ -829,6 +829,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
 			analyzer.dwellTime_ = value;
+			setDoubleParam(ADAcquireTime, value/1000.0);
 		}
 		break;
 	case RunMode:  // driver parameters that determine how data to be saved into a file.
@@ -905,6 +906,46 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	case AcqIOPortIndex:
 		// no action, value used by get IO spectrum call and get port name call.
 		break;
+	case ADMinX:
+		if (value < 0 || value > detectorInfo.xChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.xChannels_);
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.firstXChannel_=value;
+			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
+		}
+		break;
+	case ADMinY:
+		if (value < 0 || value > detectorInfo.yChannels_) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d", detectorInfo.yChannels_);
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.firstYChannel_=value;
+			setIntegerParam(DetectorFirstYChannel,detector.firstYChannel_);
+		}
+		break;
+	case ADSizeX:
+		if (value > detectorInfo.xChannels_ - detector.firstXChannel_ ) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be less than %d", detectorInfo.xChannels_-detector.firstXChannel_);
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.lastXChannel_=value - detector.firstXChannel_;
+			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
+		}
+		break;
+	case ADSizeY:
+		if (value > detectorInfo.yChannels_ - detector.firstYChannel_ ) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be less than %d", detectorInfo.yChannels_ - detector.firstYChannel_);
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			detector.lastYChannel_=value - detector.firstYChannel_;
+			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
+		}
+		break;
 	default:
 		/* If this is not a parameter we have handled call the base class */
 		if (function < ADLastStdParam)
@@ -963,6 +1004,10 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		break;
 	case AnalyzerEnergyStep:
 		analyzer.energyStep_ = value;
+		break;
+	case ADAcquireTime:
+		analyzer.dwellTime_ = int(value * 1000);
+		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
 		break;
 	default:
 		/* If this parameter belongs to a base class call its method */
