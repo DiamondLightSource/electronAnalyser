@@ -22,7 +22,7 @@ LIBRARY_IOC += electronAnalyserSupport
 USR_CFLAGS +=   -DWIN32
 USR_CXXFLAGS += -DWIN32
 USR_CFLAGS_WIN32 += 
-USR_INCLUDES_WIN32 += -I../include/
+USR_INCLUDES_WIN32 += -I../include
 USR_LIBS_WIN32 +=
 
 

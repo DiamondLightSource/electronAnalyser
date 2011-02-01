@@ -170,7 +170,7 @@ int WSESWrapperMain::finalize()
  * @return WError::ERR_PARAMETER_NOT_FOUND if the @p property was not a valid variable name, other wise the
  *         return code is dependent on the type of variable.
  *
- * @see WSESWrapperBase, @ref variables_page
+ * @see WSESWrapperBase,
  */
 int WSESWrapperMain::getProperty(const char *property, int index, void *value, int &size)
 {
@@ -203,7 +203,7 @@ int WSESWrapperMain::getProperty(const char *name, int index, void *value)
  * @return An error code, as defined by the corresponding setter. If the property is not found, a
  *         WError::ERR_PARAMETER_NOT_FOUND code is returned.
  *
- * @see WSESWrapperBase, @ref variables_page
+ * @see WSESWrapperBase,
  */
 int WSESWrapperMain::setProperty(const char *property, int reserved, const void *value)
 {

@@ -21,11 +21,11 @@ using namespace SESWrapperNS;
 /*! @class WSESWrapperBase
  * @brief This class collects all variables and objects for SESWrapper. 
  *
- * It serves as a container for property callbacks used when "setting" or "getting" values for the @ref properties_sec.
+ * It serves as a container for property callbacks used when "setting" or "getting" values for the properties.
  */
 
 /*!
- * Creates  a WSESWrapperBase instance. Also creates the hash table for the @ref properties_sec, where the property
+ * Creates  a WSESWrapperBase instance. Also creates the hash table for the properties, where the property
  * names are linked to their corresponding callbacks through instances of the WVariable template class.
  *
  * @param[in] workingDir The current working directory.

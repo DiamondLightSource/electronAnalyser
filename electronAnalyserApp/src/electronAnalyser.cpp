@@ -151,7 +151,7 @@ static const char *driverName = "electronAnalyser";
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
- * in turn depends on the installation of SES (i.e. working directory) and the name of the instrument configuration file at (@p workingDir\data\).
+ * in turn depends on the installation of SES (i.e. working directory) and the name of the instrument configuration file at workingDir/data/.
  *
  * Please note only one program can be run at the same time, either ses.exe or this IOC.
  */
@@ -1452,8 +1452,7 @@ asynStatus ElectronAnalyser::getEnergyMode(bool *b){
  * This method also changes the EPICS areaDetector status to @p ADStatusAcquire on successfully start,
  * or @p ADStatusError if failed to start.
  *
- * @return asynError if @p detector_region, @p analyzer_region, @fn initAcquisition(false, false), or
- * @fn startAcquisition() failed, otherwise asynSuccess.
+ * @return asynError if failed, otherwise asynSuccess.
  */
 asynStatus ElectronAnalyser::start()
 {
