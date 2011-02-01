@@ -16,7 +16,7 @@ DATA+=electronAnalyserclient.py
 # in the files t be expanded.                                            #
 ##########################################################################
 # The electronAnalyser installation directory on deployment PC.
-EXPAND_VARS += ELECTRON_ANALYSER_INSTALL=$(ELECTRON_ANALYSER_INSTALL)
+#EXPAND_VARS += ELECTRON_ANALYSER_INSTALL=$(ELECTRON_ANALYSER_INSTALL)
 # The EPICS Installation on deployment PC.
 EXPAND_VARS += EPICS_INSTALL=W:
 
@@ -25,9 +25,9 @@ EXPAND_VARS += AREA_DETECTOR=w:/prod/$(EPICS_RELEASE)/support/areaDetector/$(ARE
 EXPAND_VARS += ASYN=w:/prod/$(EPICS_RELEASE)/support/asyn/$(ASYN_RELEASE)
 
 # build parameters for Pixium MEDM or EDM GUI - startgui.sh - for Linux.  
-EXPAND_VARS += ELECTRON_ANALYSER_LINUX=/dls_sw/work/R3.14.10/support/electronAnalyser
-EXPAND_VARS += AREA_DETECTOR_LINUX=/dls_sw/prod/R3.14.10/support/areaDetector/1-5
-EXPAND_VARS += ASYN_LINUX=/dls_sw/prod/R3.14.10/support/asyn/4-12
+EXPAND_VARS += ELECTRON_ANALYSER_LINUX=/dls_sw/work/$(EPICS_RELEASE)/support/electronAnalyser
+EXPAND_VARS += AREA_DETECTOR_LINUX=/dls_sw/prod/$(EPICS_RELEASE)/support/areaDetector/$(AREA_DETECTOR_RELEASE)
+EXPAND_VARS += ASYN_LINUX=/dls_sw/prod/$(EPICS_RELEASE)/support/asyn/$(ASYN_RELEASE)
 
 ######################################################
 # File to be expanded.                               #
