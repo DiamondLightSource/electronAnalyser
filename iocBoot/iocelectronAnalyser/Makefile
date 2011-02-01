@@ -16,13 +16,13 @@ DATA+=electronAnalyserclient.py
 # in the files t be expanded.                                            #
 ##########################################################################
 # The electronAnalyser installation directory on deployment PC.
-EXPAND_VARS += ELECTRON_ANALYSER_INSTALL=$(INSTALL_LOCATION_APP)
+EXPAND_VARS += ELECTRON_ANALYSER_INSTALL=$(ELECTRON_ANALYSER_INSTALL)
 # The EPICS Installation on deployment PC.
 EXPAND_VARS += EPICS_INSTALL=W:
 
 EXPAND_VARS += ELECTRON_ANALYSER=$(shell perl $(TOOLS)/fullPathName.pl $(TOP))
-EXPAND_VARS += AREA_DETECTOR=$(AREA_DETECTOR)
-EXPAND_VARS += ASYN=$(ASYN)
+EXPAND_VARS += AREA_DETECTOR=w:/prod/$(EPICS_RELEASE)/support/areaDetector/$(AREA_DETECTOR_RELEASE)
+EXPAND_VARS += ASYN=w:/prod/$(EPICS_RELEASE)/support/asyn/$(ASYN_RELEASE)
 
 # build parameters for Pixium MEDM or EDM GUI - startgui.sh - for Linux.  
 EXPAND_VARS += ELECTRON_ANALYSER_LINUX=/dls_sw/work/R3.14.10/support/electronAnalyser

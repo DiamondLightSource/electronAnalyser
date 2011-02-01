@@ -6,10 +6,12 @@
 <cconfiguration id="cdt.managedbuild.toolchain.gnu.mingw.base.1640747552">
 <storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.toolchain.gnu.mingw.base.1640747552" moduleId="org.eclipse.cdt.core.settings" name="Default">
 <macros>
-<stringMacro name="FrameworkSDKDir" type="VALUE_TEXT" value="C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1"/>
 <stringMacro name="EPICS_ROOT" type="VALUE_TEXT" value="C:\dls_sw"/>
-<stringMacro name="MSVCDir" type="VALUE_TEXT" value="C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7"/>
-<stringMacro name="EPICS_BASE" type="VALUE_TEXT" value="${EPICS_ROOT}\epics\R3.14.10\base"/>
+<stringMacro name="EPICS_RELEASE" type="VALUE_TEXT" value="R3.14.11"/>
+<stringMacro name="EPICS_SUPPORT" type="VALUE_TEXT" value="${EPICS_ROOT}/prod/${EPICS_RELEASE}/support"/>
+<stringMacro name="ASYN_VERSION" type="VALUE_TEXT" value="4-14"/>
+<stringMacro name="AREA_DETECTOR_VERSION" type="VALUE_TEXT" value="1-6"/>
+<stringMacro name="EPICS_BASE" type="VALUE_TEXT" value="${EPICS_ROOT}/epics/${EPICS_RELEASE}/base"/>
 </macros>
 <externalSettings/>
 <extensions>
@@ -25,18 +27,9 @@
 <folderInfo id="cdt.managedbuild.toolchain.gnu.mingw.base.1640747552.231215186" name="/" resourcePath="">
 <toolChain id="cdt.managedbuild.toolchain.gnu.mingw.base.1876838467" name="cdt.managedbuild.toolchain.gnu.mingw.base" superClass="cdt.managedbuild.toolchain.gnu.mingw.base">
 <targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.PE" id="cdt.managedbuild.target.gnu.platform.mingw.base.229555586" name="Debug Platform" osList="win32" superClass="cdt.managedbuild.target.gnu.platform.mingw.base"/>
-<builder command="mingw32-make" id="cdt.managedbuild.toolchain.gnu.mingw.base.1640747552.151793057" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
+<builder cleanBuildTarget="clean uninstall" command="mingw32-make" enableAutoBuild="false" enableCleanBuild="true" id="cdt.managedbuild.toolchain.gnu.mingw.base.1640747552.151793057" keepEnvironmentInBuildfile="false" managedBuildOn="false" name="Gnu Make Builder" stopOnErr="true" superClass="org.eclipse.cdt.build.core.settings.default.builder"/>
 <tool id="cdt.managedbuild.tool.gnu.assembler.mingw.base.986498125" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.mingw.base">
-<option id="gnu.both.asm.option.include.paths.1631914550" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
-<listOptionValue builtIn="false" value="&quot;${EPICS_BASE}/include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${EPICS_BASE}/include/os/${EPICS_HOST}&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/areaDetector/1-5/include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/asyn/4-12/include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\atlmfc\include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\SDK\v1.1\include&quot;"/>
-</option>
+<option id="gnu.both.asm.option.include.paths.1631914550" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths"/>
 <inputType id="cdt.managedbuild.tool.gnu.assembler.input.741049558" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.archiver.mingw.base.1742711281" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.mingw.base"/>
@@ -44,8 +37,8 @@
 <option id="gnu.cpp.compiler.option.include.paths.679590898" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 <listOptionValue builtIn="false" value="&quot;${EPICS_BASE}/include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;${EPICS_BASE}/include/os/${EPICS_HOST}&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/areaDetector/1-5/include&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/asyn/4-12/include&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/areaDetector/${AREA_DETECTOR_VERSION}/include&quot;"/>
+<listOptionValue builtIn="false" value="&quot;${EPICS_SUPPORT}/asyn/${ASYN_VERSION}/include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\atlmfc\include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\PlatformSDK\Include&quot;"/>
 <listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\include&quot;"/>
@@ -332,6 +325,6 @@
 </cconfiguration>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<project id="pixium.null.1648460779" name="pixium"/>
+<project id="electronAnalyser.null.894559202" name="electronAnalyser"/>
 </storageModule>
 </cproject>

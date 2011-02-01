@@ -1,13 +1,19 @@
-SUPPORT=C:/dls_sw/prod/R3.14.10/support
-WORK=C:/dls_sw/work/R3.14.10/support
+# EPICS software for development - local on Windows
+EPICS_ROOT=C:/dls_sw
 
-EPICS_BASE=C:/dls_sw/epics/R3.14.10/base
+SUPPORT=$(EPICS_ROOT)/prod/$(EPICS_RELEASE)/support
+WORK=$(EPICS_ROOT)/work/$(EPICS_RELEASE)/support
 
-ASYN=$(SUPPORT)/asyn/4-12
-AREA_DETECTOR=$(SUPPORT)/areaDetector/1-5
-BUSY=$(SUPPORT)/busy/1-2dls1
+ASYN		=$(SUPPORT)/asyn/$(ASYN_RELEASE)
+BUSY		=$(SUPPORT)/busy/$(BUSY_RELEASE)
+CALC     	= $(SUPPORT)/calc/$(CALC_RELEASE)
+SSCAN    	= $(SUPPORT)/sscan/$(SSCAN_RELEASE)
+MCA      	= $(SUPPORT)/mca/$(MCA_RELEASE)
+AUTOSAVE 	= $(SUPPORT)/autosave/$(AUTOSAVE_RELEASE)
+AREA_DETECTOR=$(SUPPORT)/areaDetector/$(AREA_DETECTOR_RELEASE)
 
-# If you don't want to install into $(TOP) then
-# define INSTALL_LOCATION_APP here
-INSTALL_LOCATION_APP=c:\\ElectronAnalyzerIOC
+EPICS_BASE=$(EPICS_ROOT)/epics/$(EPICS_RELEASE)/base
+TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
+ELECTRON_ANALYSER_INSTALL=c:\\electronAnalyserIOC
+#SES_ROOT=E:/SES 1.2.6-r6

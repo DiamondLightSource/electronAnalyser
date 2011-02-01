@@ -14,7 +14,7 @@
 extern "C"
 {
 #endif
-int electronAnalyserConfig(const char *workingDir, const char *instrumentFile, int maxSizeX, int maxSizeY,
+int electronAnalyserConfig(const char *portName, const char *workingDir, const char *instrumentFile, int maxSizeX, int maxSizeY,
 		int maxBuffers, size_t maxMemory, int priority, int stackSize);
 #ifdef __cplusplus
 }

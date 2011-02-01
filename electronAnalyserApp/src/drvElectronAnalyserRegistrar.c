@@ -17,14 +17,15 @@
 #include "drvElectronAnalyser.h"
 
 /* Code for iocsh registration */
-static const iocshArg electronAnalyserConfigArg0 = {"workingDir", iocshArgString};
-static const iocshArg electronAnalyserConfigArg1 = {"instrumentFile", iocshArgString};
-static const iocshArg electronAnalyserConfigArg2 = {"maxSizeX", iocshArgInt};
-static const iocshArg electronAnalyserConfigArg3 = {"maxSizeY", iocshArgInt};
-static const iocshArg electronAnalyserConfigArg4 = {"max number of NDArray buffers", iocshArgInt};
-static const iocshArg electronAnalyserConfigArg5 = {"maxMemory", iocshArgInt};
-static const iocshArg electronAnalyserConfigArg6 = {"priority", iocshArgInt};
-static const iocshArg electronAnalyserConfigArg7 = {"stackSize", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg0 = {"portName", iocshArgString};
+static const iocshArg electronAnalyserConfigArg1 = {"workingDir", iocshArgString};
+static const iocshArg electronAnalyserConfigArg2 = {"instrumentFile", iocshArgString};
+static const iocshArg electronAnalyserConfigArg3 = {"maxSizeX", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg4 = {"maxSizeY", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg5 = {"max number of NDArray buffers", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg6 = {"maxMemory", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg7 = {"priority", iocshArgInt};
+static const iocshArg electronAnalyserConfigArg8 = {"stackSize", iocshArgInt};
 static const iocshArg * const electronAnalyserConfigArgs[] =  {&electronAnalyserConfigArg0,
                                                           &electronAnalyserConfigArg1,
                                                           &electronAnalyserConfigArg2,
@@ -32,12 +33,13 @@ static const iocshArg * const electronAnalyserConfigArgs[] =  {&electronAnalyser
                                                           &electronAnalyserConfigArg4,
                                                           &electronAnalyserConfigArg5,
                                                           &electronAnalyserConfigArg6,
-                                                          &electronAnalyserConfigArg7};
-static const iocshFuncDef configElectronAnalyser = {"electronAnalyserConfig", 8, electronAnalyserConfigArgs};
+                                                          &electronAnalyserConfigArg7,
+                                                          &electronAnalyserConfigArg8};
+static const iocshFuncDef configElectronAnalyser = {"electronAnalyserConfig", 9, electronAnalyserConfigArgs};
 static void configElectronAnalyserCallFunc(const iocshArgBuf *args)
 {
-    electronAnalyserConfig(args[0].sval, args[1].sval, args[2].ival, args[3].ival,
-    		args[4].ival, args[5].ival, args[6].ival, args[7].ival);
+    electronAnalyserConfig(args[0].sval, args[1].sval, args[2].sval, args[3].ival,
+    		args[4].ival, args[5].ival, args[6].ival, args[7].ival,args[8].ival);
 }
 
 static void electronAnalyserRegister(void)

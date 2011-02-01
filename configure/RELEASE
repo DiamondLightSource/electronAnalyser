@@ -8,30 +8,52 @@
 # each time EPICS_BASE, SNCSEQ, or any other external
 # module defined in the RELEASE file is rebuilt.
 
-TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
-SUPPORT=/dls_sw/prod/R3.14.10/support
-WORK=/dls_sw/work/R3.14.10/support
+# specify dependency release version
+AREA_DETECTOR_RELEASE=1-6
+ASYN_RELEASE=4-14
+AUTOSAVE_RELEASE=4-6dls1
+BUSY_RELEASE=1-3dls3
+CALC_RELEASE=2-8dls2
+MCA_RELEASE=6-12-1dls2
+SNCSEQ_RELEASE=2-0-12dls1
+SSCAN_RELEASE=2-6-6dls1
+EPICS_RELEASE=R3.14.11
 
-# ASYN - for device driver support
-ASYN=$(SUPPORT)/asyn/4-12
+# where EPICS software for development
+EPICS_ROOT=/dls_sw
 
-# Area Detector support
-AREA_DETECTOR=$(SUPPORT)/areaDetector/1-5
-
-# Busy record support
-BUSY=$(SUPPORT)/busy/1-2dls1
+SUPPORT=$(EPICS_ROOT)/prod/$(EPICS_RELEASE)/support
+WORK=$(EPICS_ROOT)/work/$(EPICS_RELEASE)/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
-#INSTALL_LOCATION_APP=<fullpathname>
+INSTALL_LOCATION_APP=c:/electronAnalyserIOC
 
-#If using the sequencer, uncomment this line:
-#SNCSEQ=/home/diamond/R3.14.7/prod/support/seq/2-0-10
+#If using the sequencer, point SNCSEQ at its top directory:
+#SNCSEQ=$(SUPPORT)/seq/$(SNCSEQ_RELEASE)
+
+# ASYN is needed for sockets and for smartControl
+ASYN=$(SUPPORT)/asyn/${ASYN_RELEASE)
+
+# CALC is needed for scalcout record that SSCAN uses
+CALC=$(SUPPORT)/calc/$(CALC_RELEASE)
+
+# SSCAN is needed for scanning threshold on Pilatus
+SSCAN=$(SUPPORT)/sscan/$(SSCAN_RELEASE)
+
+# BUSY is needed for busy record
+BUSY=$(SUPPORT)/busy/$(BUSY_RELEASE)
+
+# MCA is needed for fast accumulation of ROI counts
+MCA=$(SUPPORT)/mca/$(MCA_RELEASE)
+
+#AUTOSAVE is needed for save_restore
+AUTOSAVE=$(SUPPORT)/autosave/$(AUTOSAVE_RELEASE)
+
+AREA_DETECTOR=$(SUPPORT)/areaDetector/$(AREA_DETECTOR_RELEASE)
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/dls_sw/epics/R3.14.8.2/base
+EPICS_BASE=$(EPICS_ROOT)/epics/$(EPICS_RELEASE)/base
+TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-#Capfast users may need the following definitions
-#CAPFAST_TEMPLATES=
-#SCH2EDIF_PATH=
 -include $(TOP)/configure/RELEASE.private
