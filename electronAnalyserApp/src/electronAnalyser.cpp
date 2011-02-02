@@ -57,7 +57,6 @@ using namespace std;
 
 using std::string;
 
-//const CString SES_ROOT = getenv("SES_ROOT");
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
 
 /** Enumeration for Electron analyser Run Mode */
@@ -72,7 +71,7 @@ typedef std::vector<double> DoubleVector;
 
 static const char *driverName = "electronAnalyser";
 
-/** Strings defining parameters that affect the behaviour of the pixium detector.
+/** Strings defining parameters that affect the behaviour of the electron analyser detector.
   * These are the values passed to drvUserCreate.
   * The driver will place in pasynUser->reason an integer to be used when the standard asyn interface methods are called. */
  /*         						String                 			  asyn interface access   Description  */
@@ -170,16 +169,16 @@ public:
     void electronAnalyserTask();
 protected:
 	//Properties
-    int LibDescription; 	/**< (asynOctet,    	r/o) the library description*/
+    int LibDescription; 		/**< (asynOctet,    	r/o) the library description*/
 	#define FIRST_ELECTRONANALYZER_PARAM LibDescription
-	int LibVersion;			/**< (asynOctet,    	r/o) the library version*/
-	int LibWorkingDir;		/**< (asynOctet,    	r/w) the woring directory of the current application*/
-	int InstrumentStatus;	/**< (asynInt32,    	r/o) the status of instrument specified at SesNS::InstrumentStatus.*/
-	int AlwaysDelayRegion;	/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
-	int AllowIOWithDetector;/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
-	int InstrumentSerialNo;	/**< (asynOctet,    	r/o) the instrument serial number*/
+	int LibVersion;				/**< (asynOctet,    	r/o) the library version*/
+	int LibWorkingDir;			/**< (asynOctet,    	r/w) the woring directory of the current application*/
+	int InstrumentStatus;		/**< (asynInt32,    	r/o) the status of instrument specified at SesNS::InstrumentStatus.*/
+	int AlwaysDelayRegion;		/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
+	int AllowIOWithDetector;	/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
+	int InstrumentSerialNo;		/**< (asynOctet,    	r/o) the instrument serial number*/
 	//Detector Info
-	int TimerControlled;	/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
+	int TimerControlled;		/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
 	int XChannels;				/**< (asynInt32,    	r/o) Specifies the number of X channels currently shown on the detector.*/
 	int YChannels;				/**< (asynInt32,    	r/o) Specifies the number of Y channels (slices) currently shown on the detector.*/
 	int MaxSlices;				/**< (asynInt32,    	r/o) Specifies the maximum number of Y channels (slices).*/
@@ -251,7 +250,7 @@ private:
     SESWrapperNS::WDetectorRegion detector;
     SESWrapperNS::WDetectorInfo detectorInfo;
     asynStatus acquireData(void *pData);
-    asynStatus getDetectorTemperature(float *temperature);
+    //asynStatus getDetectorTemperature(float *temperature);
     virtual void init_device(const char *workingDir, const char *instrumentFile);
     void delete_device();
     virtual void updateStatus();
@@ -393,24 +392,22 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 {
 	int status = asynSuccess;
 	const char *functionName = "ElectronAnalyser";
-	int eaStatus = WError::ERR_OK;
+	//int eaStatus = WError::ERR_OK;
 	char message[MAX_MESSAGE_SIZE];
 	int size;
 	char * value;
 	werror = WError::instance();
-	// Create the epicsEvents for signaling to the Electron Analyser task when acquisition starts and stops
+	// Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts and stops
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
 	{
-		printf("%s:%s epicsEventCreate failure for start event\n", driverName,
-				functionName);
+		printf("%s:%s epicsEventCreate failure for start event\n", driverName,functionName);
 		return;
 	}
 	this->stopEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->stopEventId)
 	{
-		printf("%s:%s epicsEventCreate failure for stop event\n", driverName,
-				functionName);
+		printf("%s:%s epicsEventCreate failure for stop event\n", driverName,functionName);
 		return;
 	}
 	printf("%s:%s: Initialising SES library.\n", driverName, functionName);
@@ -491,7 +488,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 
 
 	// initialise state variables from SES library
-	getDetectorTemperature(&m_dTemperature);
+//	getDetectorTemperature(&m_dTemperature);
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
 	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
 	getDetectorInfo(&detectorInfo);
@@ -601,7 +598,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	NDArray *pImage;
 	int dims[2];
 	NDDataType_t dataType;
-	float temperature;
+	//float temperature;
 	const char *functionName = "electronAnalyserTask";
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: thread started!\n", driverName, functionName);
@@ -617,8 +614,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		{
 			setStringParam(ADStatusMessage, "Waiting for acquire command");
 			setIntegerParam(ADStatus, ADStatusIdle);
-			getDetectorTemperature(&temperature);
-			setDoubleParam(ADTemperature, temperature);
+			//getDetectorTemperature(&temperature);
+			//setDoubleParam(ADTemperature, temperature);
 			callParamCallbacks();
 			/* Release the lock while we wait for an event that says acquire has started, then lock again */
 			this->unlock();
@@ -629,8 +626,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		}
 		/* We are acquiring. */
 		epicsTimeGetCurrent(&startTime);
-		getDetectorTemperature(&temperature);
-		setDoubleParam(ADTemperature, temperature);
+		//getDetectorTemperature(&temperature);
+		//setDoubleParam(ADTemperature, temperature);
 
 		/* Get the exposure parameters */
 		getDoubleParam(ADAcquireTime, &acquireTime);
@@ -1166,15 +1163,15 @@ void ElectronAnalyser::report(FILE *fp, int details)
 	ADDriver::report(fp, details);
 }
 
-asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
-{
-	int eaStatus = 0;
-	asynStatus status = asynSuccess;
-	const char * functionName = "getDetectorTemperature";
-	//TODO  get temperature from analyser
-	*temperature = 20.0;
-	return status;
-}
+//asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
+//{
+//	int eaStatus = 0;
+//	asynStatus status = asynSuccess;
+//	const char * functionName = "getDetectorTemperature";
+//	//TODO  get temperature from analyser
+//	*temperature = 20.0;
+//	return status;
+//}
 
 /**
  * @brief check if call to instrument API return error.
@@ -1227,7 +1224,7 @@ void ElectronAnalyser::delete_device()
 }
 
 /**
- * create and initialise the device annd instrument software library. Must be called in constructor.
+ * create and initialise the device and instrument software library. Must be called in constructor.
  */
 void ElectronAnalyser::init_device(const char *workingDir, const char *instrumentFile)
 {

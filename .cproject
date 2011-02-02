@@ -52,10 +52,7 @@
 </tool>
 <tool id="cdt.managedbuild.tool.gnu.c.linker.mingw.base.753163740" name="MinGW C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.mingw.base"/>
 <tool id="cdt.managedbuild.tool.gnu.cpp.linker.mingw.base.1504191752" name="MinGW C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.mingw.base">
-<option id="gnu.cpp.link.option.paths.60734738" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-<listOptionValue builtIn="false" value="&quot;${workspace_loc:/electronAnalyser/electronAnalyserApp/src/lib}&quot;"/>
-<listOptionValue builtIn="false" value="&quot;${workspace_loc:/electronAnalyser/electronAnalyserApp/src/dll}&quot;"/>
-</option>
+<option id="gnu.cpp.link.option.paths.60734738" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths"/>
 <inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1885794849" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 <additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 <additionalInput kind="additionalinput" paths="$(LIBS)"/>
