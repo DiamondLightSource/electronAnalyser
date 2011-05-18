@@ -28,7 +28,7 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
 : WSESWrapperBase(workingDir), initialized_(false)
 {
   this_ = this;
-
+  printf("In constructor: workingDir = %s\n", workingDir);
   // Create data parameter database
   dataParameters_.insert(DataParameterKeyValue("acq_channels", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqChannels, DataParameter::TYPE_INT32)));
   dataParameters_.insert(DataParameterKeyValue("acq_slices", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqSlices, DataParameter::TYPE_INT32)));
@@ -55,9 +55,11 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
 
   if (!workingDir_.empty())
   {
+	printf("Working directory is not empty (Contains %s)\n", workingDir);
     char *tmpDir = _getcwd(0, 0);
     _chdir(workingDir_.c_str());
-    bool success = lib_->load("dll\\SESInstrument");
+    bool success = lib_->load("dll\\SESInstrument.dll");
+    printf("Success of the load = %d\n", success);
     _chdir(tmpDir);
     free(tmpDir);
   }
@@ -105,6 +107,7 @@ bool WSESWrapperMain::isInitialized()
  */
 int WSESWrapperMain::initialize(void *reserved)
 {
+	printf("In WSESWrapperMain::initialize\n");
   int errorCode = WError::ERR_OK;
 
   if (initialized_)
@@ -115,7 +118,7 @@ int WSESWrapperMain::initialize(void *reserved)
   char *tmpDir = _getcwd(0, 0);
   _chdir(workingDir_.c_str());
 
-  if (!lib_->load("dll/SESInstrument.dll"))
+  if (!lib_->load("dll\\SESInstrument.dll"))
     errorCode = WError::ERR_FAIL;
 
   if (errorCode == WError::ERR_OK && lib_->GDS_Initialize(errorNotify, reinterpret_cast<HWND>(reserved)) != 0)
@@ -125,7 +128,7 @@ int WSESWrapperMain::initialize(void *reserved)
   free(tmpDir);
 
   initialized_ = (errorCode == WError::ERR_OK);
-
+  printf("Result code from WSESWrapperMain::initialize = %d\n", errorCode);
   return errorCode;
 }
 
@@ -286,17 +289,19 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
 {
   instrumentLoaded_ = false;
   memset(&sesInstrumentInfo_, 0, sizeof(SesNS::WInstrumentInfo));
-
+  printf("Inside WSESWrapperMain::loadInstrument\n");
+  printf("File here = %s\n", fileName);
   if (!initialized_)
-    return WError::ERR_NOT_INITIALIZED;
+	  return WError::ERR_NOT_INITIALIZED;
 
   if (*fileName == 0)
-    return WError::ERR_FAIL;
+      return WError::ERR_FAIL;
 
   lib_->GDS_GetDetectorInfo(&sesDetectorInfo_);
   int errorCode = WError::ERR_OK;
   if (lib_->GDS_LoadInstrument(fileName) == 0)
   {
+	printf("Load successful\n");
     lib_->GDS_GetInstrumentInfo(&sesInstrumentInfo_);
     int length = *sesInstrumentInfo_.Model;
     memmove(sesInstrumentInfo_.Model, sesInstrumentInfo_.Model + 1, length);
@@ -307,10 +312,15 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
     instrumentLoaded_ = true;
   }
   else
+  {
     errorCode = WError::ERR_FAIL;
+  }
 
   if (!loadElementSets() || !loadLensModes() || (lensModes_.size() > 0 && !loadPassEnergies(lensModes_[0], passEnergies_)))
+  {
+	printf("Some other error\n");
     errorCode = WError::ERR_FAIL;
+  }
 
   return errorCode;
 }
@@ -420,12 +430,27 @@ int WSESWrapperMain::checkAnalyzerRegion(WAnalyzerRegion *analyzerRegion, int *s
     return WError::ERR_NO_INSTRUMENT;
 
   int error = lib_->GDS_CheckRegion(&sesRegion_, steps, time_ms, minEnergyStep_eV);
+  //*minEnergyStep_eV = 200.0;
+  //*time_ms = 500.0;
+  printf("\n\n\n######## Setting analyzerRegion = sesRegion in wseswrappermain.cpp########\n");
+  printf("\nsesRegion Energy Mode = %d\n", sesRegion_.Fixed);
+  printf("sesRegion Energy Step = %f\n", sesRegion_.EnergyStep);
+  printf("sesRegion Low Energy = %f\n", sesRegion_.LowEnergy);
+  printf("sesRegion Centre Energy = %f\n", sesRegion_.FixEnergy);
+  printf("sesRegion High Energy = %f\n", sesRegion_.HighEnergy);
+  printf("sesRegion Dwell Time = %d\n\n\n", sesRegion_.StepTime);
   analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
   analyzerRegion->dwellTime_ = sesRegion_.StepTime;
   analyzerRegion->energyStep_ = sesRegion_.EnergyStep;
   analyzerRegion->fixed_ = sesRegion_.Fixed;
   analyzerRegion->highEnergy_ = sesRegion_.HighEnergy;
   analyzerRegion->lowEnergy_ = sesRegion_.LowEnergy;
+  printf("\nanalyzerRegion Energy Mode = %d\n", analyzerRegion->fixed_);
+  printf("analyzerRegion Energy Step = %f\n", analyzerRegion->energyStep_);
+  printf("analyzerRegion Low Energy = %f\n", analyzerRegion->lowEnergy_);
+  printf("analyzerRegion Centre Energy = %f\n", analyzerRegion->centerEnergy_);
+  printf("analyzerRegion High Energy = %f\n", analyzerRegion->highEnergy_);
+  printf("analyzerRegion Dwell Time = %d\n\n", analyzerRegion->dwellTime_);
   return error == 0 ? WError::ERR_OK : WError::ERR_INCORRECT_ANALYZER_REGION;
 }
 
@@ -499,7 +524,7 @@ int WSESWrapperMain::startAcquisition()
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
+  printf("\nAcquisition running....\n");
   int sesStatus = SesNS::NonOperational;
   lib_->GDS_GetStatus(&sesStatus);
   if (sesStatus == SesNS::Running)
@@ -533,7 +558,14 @@ int WSESWrapperMain::startAcquisition()
     if (lib_->GDS_GetCurrSignals != 0)
       lib_->GDS_GetCurrSignals(&sesSignals_);
   }
-
+  if(result == 0)
+  {
+	  printf("\nAcquisition completed successfully....\n\n");
+  }
+  else
+  {
+	  printf("\nAcquisition failed....\n\n");
+  }
   return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 

@@ -541,12 +541,25 @@ int WSESWrapperBase::getAnalyzerRegion(int index, void *value, int &size)
   SESWrapperNS::AnalyzerRegion *analyzerRegion = reinterpret_cast<SESWrapperNS::AnalyzerRegion *>(value);
   if (analyzerRegion != 0)
   {
-    analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
+	printf("\n\n\n######## Setting analyzerRegion = sesRegion in wseswrapperbase.cpp ########\n");
+	printf("\nsesRegion Energy Mode = %d\n", sesRegion_.Fixed);
+	printf("sesRegion Energy Step = %f\n", sesRegion_.EnergyStep);
+	printf("sesRegion Low Energy = %f\n", sesRegion_.LowEnergy);
+	printf("sesRegion Centre Energy = %f\n", sesRegion_.FixEnergy);
+	printf("sesRegion High Energy = %f\n", sesRegion_.HighEnergy);
+	printf("sesRegion Dwell Time = %d\n\n\n", sesRegion_.StepTime);
+	analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
     analyzerRegion->dwellTime_ = sesRegion_.StepTime;
     analyzerRegion->energyStep_ = sesRegion_.EnergyStep;
     analyzerRegion->fixed_ = sesRegion_.Fixed;
     analyzerRegion->highEnergy_ = sesRegion_.HighEnergy;
     analyzerRegion->lowEnergy_ = sesRegion_.LowEnergy;
+    printf("\nanalyzerRegion Energy Mode = %d\n", analyzerRegion->fixed_);
+    printf("analyzerRegion Energy Step = %f\n", analyzerRegion->energyStep_);
+    printf("analyzerRegion Low Energy = %f\n", analyzerRegion->lowEnergy_);
+    printf("analyzerRegion Centre Energy = %f\n", analyzerRegion->centerEnergy_);
+    printf("analyzerRegion High Energy = %f\n", analyzerRegion->highEnergy_);
+    printf("analyzerRegion Dwell Time = %d\n\n", analyzerRegion->dwellTime_);
   }
   size = sizeof(SESWrapperNS::AnalyzerRegion);
   return WError::ERR_OK;
@@ -680,6 +693,7 @@ int WSESWrapperBase::readOnlyStub(int index, const void *value)
 int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 {
   const char *strValue = reinterpret_cast<const char *>(value);
+  printf("setting working dir = %s\n", value);
   if (strValue != 0)
   {
     _chdir(strValue);
@@ -871,8 +885,15 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
   const WAnalyzerRegion *analyzerRegion = reinterpret_cast<const WAnalyzerRegion *>(value);
   if (analyzerRegion != 0)
   {
-    sesRegion_.DriftRegion = false;
-    sesRegion_.EnergyStep = analyzerRegion->energyStep_;
+	printf("\n\n\n######## Setting sesRegion = analyzerRegion in wseswrapperbase.cpp ########\n");
+	printf("\nanalyzerRegion Energy Mode = %d\n", analyzerRegion->fixed_);
+	printf("analyzerRegion Energy Step = %f\n", analyzerRegion->energyStep_);
+	printf("analyzerRegion Low Energy = %f\n", analyzerRegion->lowEnergy_);
+	printf("analyzerRegion Centre Energy = %f\n", analyzerRegion->centerEnergy_);
+	printf("analyzerRegion High Energy = %f\n", analyzerRegion->highEnergy_);
+	printf("analyzerRegion Dwell Time = %d\n\n", analyzerRegion->dwellTime_);
+	sesRegion_.DriftRegion = false;
+    sesRegion_.EnergyStep = analyzerRegion->energyStep_; //0.2
     sesRegion_.ExcEnergy = 0;
     sesRegion_.Fixed = analyzerRegion->fixed_;
     sesRegion_.FixEnergy = analyzerRegion->centerEnergy_;
@@ -883,8 +904,14 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
     sesRegion_.LowEnergy = analyzerRegion->lowEnergy_;
     sesRegion_.Order = 0;
     sesRegion_.Slit = 0;
-    sesRegion_.StepTime = analyzerRegion->dwellTime_;
+    sesRegion_.StepTime = analyzerRegion->dwellTime_; //0.1
     sesRegion_.UseRegionDetector = false;
+    printf("\n\nsesRegion Energy Mode = %d\n", sesRegion_.Fixed);
+    printf("sesRegion Energy Step = %f\n", sesRegion_.EnergyStep);
+    printf("sesRegion Low Energy = %f\n", sesRegion_.LowEnergy);
+    printf("sesRegion Centre Energy = %f\n", sesRegion_.FixEnergy);
+    printf("sesRegion High Energy = %f\n", sesRegion_.HighEnergy);
+    printf("sesRegion Dwell Time = %d\n\n\n", sesRegion_.StepTime);
   }
   return WError::ERR_OK;
 }
@@ -977,8 +1004,8 @@ bool WSESWrapperBase::loadElementSets()
 {
   elementSets_.clear();
 
-  if (!instrumentLoaded_)
-    return false;
+  /*if (!instrumentLoaded_)
+    return false;*/
 
   char *buffer = 0;
   int bufferSize = 0;
@@ -1006,8 +1033,8 @@ bool WSESWrapperBase::loadLensModes()
 {
   lensModes_.clear();
 
-  if (!instrumentLoaded_)
-    return false;
+  /*if (!instrumentLoaded_)
+    return false;*/
 
   char *buffer = 0;
   int bufferSize = 0;
@@ -1035,8 +1062,8 @@ bool WSESWrapperBase::loadPassEnergies(const std::string &lensMode, DoubleVector
 {
   passEnergies_.clear();
 
-  if (!instrumentLoaded_)
-    return false;
+  /*if (!instrumentLoaded_)
+    return false;*/
 
   char *buffer = 0;
   int bufferSize = 0;

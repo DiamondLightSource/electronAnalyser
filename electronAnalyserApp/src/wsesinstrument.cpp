@@ -30,7 +30,7 @@ WSesInstrument::~WSesInstrument()
 bool WSesInstrument::load(const char *fileName)
 {
   bool success = true;
-
+  printf("\n\nInside WSesInstrument::load.  Filename to load = %s\n\n\n", fileName);
   if (!isLoaded() && !WLibrary::load(fileName))
     return false;
 

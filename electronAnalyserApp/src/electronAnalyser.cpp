@@ -495,15 +495,51 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	getDetectorRegion(&detector);
 	getAnalyzerRegion(&analyzer);
 	m_RunMode = Normal;
-	getElementSetLlist(&m_Elementsets);
-	getLensModeList(&m_LensModes);
+	getElementSetLlist(&m_Elementsets);					/* glitch? */
+	getLensModeList(&m_LensModes);						/* glitch? */
 	getPassEnergyList(&m_PassEnergies);
-	getElementSet(-1, m_sCurrentElementSet, size);
-	getLensMode(-1, m_sCurrentLensMode, size);
+	getElementSet(-1, m_sCurrentElementSet, size);		/* glitch? */
+	getLensMode(-1, m_sCurrentLensMode, size);			/* glitch? */
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 	getUseDetector(&m_bUseDetector);
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
+
+	/****** Setting up the experiment settings *******/
+
+	ses->setProperty("element_set", -1, "Laser (L)");
+	ses->setProperty("lens_mode", -1, "Transmission");
+
+	double Epass = 10;
+	ses->setProperty("pass_energy", -1, &Epass);
+
+	/*************************************************/
+
+	size = 2;
+
+	getElementSet(-1, m_sCurrentElementSet, size);
+	printf("\n***** The element is %s*****\n", m_sCurrentElementSet);
+
+	int detector_info_size = sizeof(SESWrapperNS::WDetectorInfo);
+
+	ses->getProperty("detector_info", 0, &detectorInfo, detector_info_size);
+	detector.firstXChannel_ = 0;
+	detector.lastXChannel_ = detectorInfo.xChannels_ - 1;
+	printf("Last X Channel = %d\n", detector.lastXChannel_);
+	detector.firstYChannel_ = 0;
+	detector.lastYChannel_ = detectorInfo.yChannels_ - 1;
+	printf("Last Y Channel = %d\n", detector.lastYChannel_);
+	detector.slices_ = 1;
+	detector.adcMode_ = true;
+	ses->setProperty("detector_region", 0, &detector);
+
+	analyzer.fixed_ = false;
+	analyzer.highEnergy_ = 90;
+	analyzer.centerEnergy_ = 86;
+	analyzer.lowEnergy_ = 82;
+	analyzer.energyStep_ = 400;
+	analyzer.dwellTime_ = 1000;
+	ses->setProperty("analyzer_region", 0, &analyzer);
 
 	/* Set some default values for parameters */
 	// the setup panel parameters
@@ -527,6 +563,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	getInstrumentSerialNo(0, size);
 	value =  new char[size];
 	getInstrumentSerialNo(value, size);
+	printf("\n\nInstrument serial number = %s\n\n", value);
 	status |= setStringParam(InstrumentSerialNo, value);
 
 	// the Readout panel parameters
@@ -536,8 +573,11 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setIntegerParam(ADMinY, detector.lastXChannel_);
 	status |= setIntegerParam(ADSizeX, detector.firstYChannel_ - detector.firstXChannel_);
 	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
-		//status |= setIntegerParam(NDArraySize, 0);
-	//status |= setIntegerParam(NDDataType,  NDInt32);
+
+	// Set NDArray parameters
+	status |= setIntegerParam(NDArraySizeX, 1024);
+	status |= setIntegerParam(NDArraySizeY, 1000);
+	status |= setIntegerParam(NDDataType,  NDUInt8);
 
 	// the Collect panel
 	status |= setDoubleParam(ADAcquireTime, analyzer.dwellTime_/1000.0);
@@ -558,6 +598,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
+
+
 
 	if (status)
 	{
@@ -603,6 +645,8 @@ void ElectronAnalyser::electronAnalyserTask()
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: thread started!\n", driverName, functionName);
 
+	printf("\n\n******* In polling thread *******\n\n");
+
 	this->lock();
 	while (1)
 	{
@@ -612,6 +656,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* If we are not acquiring then wait for a semaphore that is given when acquisition is started */
 		if (!acquire)
 		{
+			printf("Waiting for acquire command\n\n");
 			setStringParam(ADStatusMessage, "Waiting for acquire command");
 			setIntegerParam(ADStatus, ADStatusIdle);
 			//getDetectorTemperature(&temperature);
@@ -625,6 +670,8 @@ void ElectronAnalyser::electronAnalyserTask()
 			getIntegerParam(ADAcquire, &acquire);
 		}
 		/* We are acquiring. */
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "We are acquiring\n", driverName, functionName);
+
 		epicsTimeGetCurrent(&startTime);
 		//getDetectorTemperature(&temperature);
 		//setDoubleParam(ADTemperature, temperature);
@@ -644,18 +691,20 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDArraySizeX, &dims[0]);
 		getIntegerParam(NDArraySizeY, &dims[1]);
 		getIntegerParam(NDDataType, (int *) &dataType);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 		pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
-
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: pData = %p\n", driverName, functionName, pImage->pData);
 		/* We release the mutex when acquire image, because this may take a long time and
 		 * we need to allow abort operations to get through */
 		this->unlock();
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: collect data from electron analyser\n", driverName, functionName);
 		status = this->acquireData(pImage->pData);
+		printf("Status = %d\n", status);
 		this->lock();
 		/* If there was an error jump to bottom of the loop */
 		if (status)
 		{
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: probelm in collecting data from electron analyser \n",driverName, functionName);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: problem in collecting data from electron analyser \n",driverName, functionName);
 			setStringParam(ADStatusMessage,
 					"Failed to collect data from electron analyser.");
 			acquire = 0;
@@ -741,6 +790,56 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	asynStatus status = asynSuccess;
 	const char *functionName = "acquireData";
 
+	status = start();
+	int channels = 0;
+	int size = 4;
+
+	ses->getAcquiredData("acq_channels", 0, &channels, size);
+
+	printf("\n\nNumber of channels = %d\n\n", channels);
+	int max_iteration = 1;
+	for(int i = 0; i < max_iteration; i++)
+	{
+		printf("\nStarting acquisition %d of %d.....\n", i+1, max_iteration);
+		ses->startAcquisition();
+		ses->waitForRegionReady(-1);
+		ses->continueAcquisition();
+	}
+
+	char *intensity_unit = new char[32];
+	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, channels);
+	char *channel_unit = new char[32];
+	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, channels);
+
+	printf("\n\nChannel units = %s\n", channel_unit);
+	printf("Intensity units = %s\n", intensity_unit);
+
+	int *raw_image = new int[channels];
+	ses->getAcquiredData("acq_raw_image", 0, raw_image, channels);
+	int *slice = new int[channels];
+	ses->getAcquiredData("acq_slices", 0, slice, channels);
+	printf("Number of slices in the acquired data = %d\n", slice);
+	double *image = new double[channels];
+	ses->getAcquiredData("acq_image", 0, image, channels);
+	double *spectrum = new double[channels];
+	ses->getAcquiredData("acq_spectrum", 0, spectrum, channels);
+
+	printf("\nanalyzer Low energy = %f\n", analyzer.lowEnergy_);
+	printf("analyzer Centre energy = %f\n", analyzer.centerEnergy_);
+	printf("analyzer High energy = %f\n", analyzer.highEnergy_);
+	printf("analyzer Energy step = %f\n", analyzer.energyStep_);
+	printf("analyzer Dwell time = %d\n\n", analyzer.dwellTime_);
+
+	for(i = 0; i < channels; i++)
+	{
+		printf("At kinetic energy %f, counts = %f\n", (analyzer.lowEnergy_ + (i * (analyzer.energyStep_ / 1000))), *spectrum);
+		//printf("image = %f\n", *image);
+		spectrum++;
+		//printf("RAW IMAGE %d = %d\n", i, *raw_image);
+		raw_image++;
+		image++;
+	}
+	//printf("Number of channels for loop = %d\n", channels);
 	return status;
 }
 
@@ -1233,8 +1332,9 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: create device", driverName, functionName);
 	// Initialise variables to default values
 	sesWorkingDirectory = workingDir;
+	std::cout << endl << "SES Working Directory: " << sesWorkingDirectory << endl;
 	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
-
+	std::cout << endl << "Instrument File Path: " << instrumentFilePath << endl;
 	// Get connection to the SES wrapper
 	ses = new WSESWrapperMain(workingDir);
 	int err = ses->setProperty("lib_working_dir", 0, workingDir);
@@ -1248,7 +1348,9 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	}
 	else
 	{
+		printf("Calling function to load instrument file\n");
 		err = ses->loadInstrument(instrumentFilePath.c_str());
+		printf("\nLoading error code = %d\n", err);
 		if (err)
 		{
 			this->setIntegerParam(ADStatus, ADStatusError);
@@ -1260,18 +1362,21 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 		{
 			if (ses->isInitialized())
 			{
+				printf("\n\nSES Initialisation Successful\n\n");
 				this->setIntegerParam(ADStatus, ADStatusIdle);
 				this->setStringParam(ADStatusMessage,"SES library initialisation completed.");
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES library initialisation completed.", driverName, functionName);
 			}
 			else
 			{
+				printf("\n\nSES Initialisation Failed\n\n");
 				this->setIntegerParam(ADStatus, ADStatusError);
 				this->setStringParam(ADStatusMessage,"SES initialisation failed");
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES nitialisation failed", driverName, functionName);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES initialisation failed", driverName, functionName);
 			}
 		}
 	}
+
 	callParamCallbacks();
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: - out", driverName, functionName);
 }
@@ -1326,6 +1431,7 @@ void ElectronAnalyser::updateStatus()
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Current step: %d", driverName, functionName, step);
 	callParamCallbacks();
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	printf("%s:%s: exit.", driverName, functionName);
 }
 
 /*!
@@ -1469,18 +1575,23 @@ asynStatus ElectronAnalyser::start()
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition initialisation completed.", driverName, functionName);
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition initialisation completed.\n", driverName, functionName);
 	setStringParam(ADStatusMessage, "acquisition initialisation completed.");
 	callParamCallbacks();
 	int steps=0;
 	double dtime=0;
 	double minEnergyStep=0;
 	err=ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-	if (isError(err, functionName)) {
+	if (isError(err, functionName))
+	{
 		return asynError;
-	} else {
+	}
+	else
+	{
 		char * message = new char[MAX_MESSAGE_SIZE];
 		epicsSnprintf(message, sizeof(message),"Number of steps: %d; Dwell time: %f; minimum energy step: %f.",steps, dtime, minEnergyStep );
+		printf("Number of steps: %d; Dwell time: %f; minimum energy step: %f\n",steps, dtime, minEnergyStep);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.", driverName, functionName, message);
 		setStringParam(ADStatusMessage, message);
 		callParamCallbacks();
@@ -1493,7 +1604,7 @@ asynStatus ElectronAnalyser::start()
 		callParamCallbacks();
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: start acquisition.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: start acquisition.\n", driverName, functionName);
 	setStringParam(ADStatusMessage, "start acquisition.");
 	callParamCallbacks();
 	return asynSuccess;
@@ -1596,13 +1707,14 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 	for(int i=0; i<max;i++)
 	{
 		char* lens = 0;
-		int size  = 0;
-		err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
-		if (isError(err, functionName)) {
+		int size  = 30;
+		/*err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
+		/*if (isError(err, functionName)) {
 			return asynError;
-		}
-		lens =  new char[size];
-		err = ses->getProperty("lens_mode",i,lens, size);
+		}*/
+		lens =  new char[30];
+		err = ses->getProperty("lens_mode", i, lens, size);
+		printf("Lens #%d = %s\n", i, lens);
 		if (isError(err, functionName)) {
 			delete [] lens;
 			return asynError;
@@ -1633,13 +1745,14 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 	for(int i=0; i<max;i++)
 	{
 		char* set = 0;
-		int size  = 0;
-		err = ses->getProperty("element_set", i, set, size); // there is no @c element_set_from_index defined in the wrapper
+		int size  = 30;
+		/*err = ses->getProperty("element_set", i, set, size); // there is no @c element_set_from_index defined in the wrapper
 		if (isError(err, functionName)) {
 			return asynError;
-		}
+		}*/
 		set =  new char[size];
 		err = ses->getProperty("element_set",i,set, size);
+		printf("Element set #%d = %s\n", i, set);
 		if (isError(err, functionName)) {
 			delete [] set;
 			return asynError;
@@ -2039,7 +2152,7 @@ asynStatus ElectronAnalyser::getElementSet(int index, char * elementSet, int & s
 {
 	const char * functionName = "getElementSet(int index, char * elementSet, int & size)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->getProperty("element_set", index, elementSet, size);
+	int err = ses->getProperty("element_set", index, elementSet);
 	if(isError(err, functionName)){
 		return asynError;
 	}
@@ -2104,7 +2217,7 @@ asynStatus ElectronAnalyser::getLensMode(int index, char * lensMode, int & size)
 {
 	const char * functionName = "getLensMode(int index, char * lensMode, int & size)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
-	int err = ses->getProperty("lens_mode", index, lensMode, size);
+	int err = ses->getProperty("lens_mode", index, lensMode);
 	if(isError(err, functionName)){
 		return asynError;
 	}
