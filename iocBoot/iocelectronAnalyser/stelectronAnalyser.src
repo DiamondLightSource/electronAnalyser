@@ -1,42 +1,31 @@
+
+#!$(INSTALL)/bin/$(ARCH)/example
+
+cd "$(INSTALL)"
+
 ## Register all support components
 dbLoadDatabase("$(INSTALL)/dbd/electronAnalyser.dbd")
 electronAnalyser_registerRecordDeviceDriver(pdbbase)
 
 # Configure electron analyser driver plugin. Runs the electron analyser constructor.
+#
 # Max memory calculation:
 #   size 1024 x 1000 x 2 bytes per pixel = 2048000 bytes
 #   Number of plugin buffers: 10
 #   total number of NDArray buffers needed; 10 + 1 = 11
-#  Max memory: 2048000 bytes x 11 = 22528000 bytes. Rounded up: ~25MB
-electronAnalyserConfig(electronAnalyser, E:/SES 1.2.6-r6, 4es203WALInstrument.dat, 1024, 1000, 30, 25000000)
+#   Max memory: 2048000 bytes x 11 = 22528000 bytes. Rounded up: ~25MB
+#
+# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, XSize, YSize, 30, Max Memory)
 
-# Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
-asynSetTraceMask("electronAnalyser", 0, 0x01)
-
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/ADBase.template","P=BL12I-EA-DET-05:,R=PIX:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template","P=BL12I-EA-DET-05:,R=PIX:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
-dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=BL12I-EA-DET-05:,R=PIX:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
-
-# Create a standard arrays plugin
-# Configure a NDStdArray to allow reading the image data over Channel Access as waveform. The waveform must be large enough for the maximum image size of the detector.
-NDStdArraysConfigure("PixArray", 5, 0, "electronAnalyser", 0, -1)
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDPluginBase.template","P=BL12I-EA-DET-05:,R=ARR1:,PORT=PixArray,ADDR=0,TIMEOUT=1,NDARRAY_PORT=electronAnalyser,NDARRAY_ADDR=0")
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDStdArrays.template", "P=BL12I-EA-DET-05:,R=ARR1:,PORT=PixArray,ADDR=0,TIMEOUT=1,TYPE=Int32,FTVL=ULONG,NELEMENTS=1024000")
-
-# Create a TIFF file saving plugin for full image
-NDFileTIFFConfigure("electronAnalyserFileTIFF", 20, 0, "electronAnalyser", 0)
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDPluginBase.template","P=BL12I-EA-DET-05:,R=TIFF:,PORT=electronAnalyserFileTIFF,ADDR=0,TIMEOUT=1,NDARRAY_PORT=electronAnalyser,NDARRAY_ADDR=0")
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template",      "P=BL12I-EA-DET-05:,R=TIFF:,PORT=electronAnalyserFileTIFF,ADDR=0,TIMEOUT=1")
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFileTIFF.template",  "P=BL12I-EA-DET-05:,R=TIFF:,PORT=electronAnalyserFileTIFF,ADDR=0,TIMEOUT=1")
-
-# Create and Configure the ROI plugin to produce 8 regions of interest
-NDROIConfigure("electronAnalyserROI", 5, 0, "electronAnalyser", 0, 10, 20, -1)
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDPluginBase.template","P=BL12I-EA-DET-05:,R=ROI1:,  PORT=electronAnalyserROI,ADDR=0,TIMEOUT=1,NDARRAY_PORT=electronAnalyser,NDARRAY_ADDR=0")
-dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDROI.template",       "P=BL12I-EA-DET-05:,R=ROI1:,  PORT=electronAnalyserROI,ADDR=0,TIMEOUT=1")
-
-# Instantiate one set of the AD base template for electronAnalyser Detector driver
-#dbLoadRecords("db/electronAnalyser.db")
+electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 1024, 1000, 30, 25000000)
+asynSetTraceMask("electronAnalyser", 0, 0x1)
+dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/ADBase.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1,gda_template='',gda_desc=''")
+#dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
 
 iocInit()
+asynSetTraceMask("electronAnalyser", 0, 0x11)
+# Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
 
+
+dbpf "ELECTRON-ANALYSER-01:TEST:Acquire", "Acquire"
 #asynReport(10, "electronAnalyser")
