@@ -23,9 +23,9 @@ public:
   void unload();
 
   SesNS::FnGDS_GetLastError GDS_GetLastError; /*!< Retrieves the last reported error code */
-  SesNS::FnGDS_GetLastErrorString GDS_GetLastErrorString; /*!< Retrieves the las reported error string */
-  SesNS::FnGDS_Initialize GDS_Initialize; /*!< Initializes the library */
-  SesNS::FnGDS_Finalize GDS_Finalize; /*!< Finalizes the library */
+  SesNS::FnGDS_GetLastErrorString GDS_GetLastErrorString; /*!< Retrieves the last reported error string */
+  SesNS::FnGDS_Initialize GDS_Initialize; /*!< Initialises the library */
+  SesNS::FnGDS_Finalize GDS_Finalize; /*!< Finalises the library */
   SesNS::FnGDS_LoadInstrument GDS_LoadInstrument; /*!< Loads an instrument configuration */
   SesNS::FnGDS_SaveInstrument GDS_SaveInstrument; /*!< Saves the instrument configuration */
   SesNS::FnGDS_NewInstrument GDS_NewInstrument; /*!< Creates a default instrument configuration */
