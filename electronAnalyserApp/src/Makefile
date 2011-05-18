@@ -124,4 +124,12 @@ electronAnalyser_SYS_LIBS_solaris    += tiff
 #    sncExample_LIBS     += $(EPICS_BASE_HOST_LIBS)
 #endif
 
+# install the areaDetector and dxp DLL libraries locally in our bin dir
+
+BIN_INSTALLS_WIN32 += $(wildcard $(AREA_DETECTOR)/bin/win32-x86/*.dll)
+
+# install caRepeater.exe in the bin dir so we dont depend on EPICS being preinstalled
+# on our Windows target machine
+BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe
+
 include $(TOP)/configure/RULES
