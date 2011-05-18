@@ -20,14 +20,14 @@ SSCAN_RELEASE=2-6-6dls1
 EPICS_RELEASE=R3.14.11
 
 # where EPICS software for development
-EPICS_ROOT=/dls_sw
+EPICS_ROOT=c:/epics
 
 SUPPORT=$(EPICS_ROOT)/prod/$(EPICS_RELEASE)/support
 WORK=$(EPICS_ROOT)/work/$(EPICS_RELEASE)/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
-INSTALL_LOCATION_APP=c:/electronAnalyserIOC
+#INSTALL_LOCATION_APP=c:/Projects/electronAnalyser
 
 #If using the sequencer, point SNCSEQ at its top directory:
 #SNCSEQ=$(SUPPORT)/seq/$(SNCSEQ_RELEASE)
