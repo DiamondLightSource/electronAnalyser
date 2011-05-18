@@ -1,5 +1,5 @@
 # EPICS software for development - local on Windows
-EPICS_ROOT=C:/dls_sw
+EPICS_ROOT=C:/epics
 
 SUPPORT=$(EPICS_ROOT)/prod/$(EPICS_RELEASE)/support
 WORK=$(EPICS_ROOT)/work/$(EPICS_RELEASE)/support
@@ -15,5 +15,5 @@ AREA_DETECTOR=$(SUPPORT)/areaDetector/$(AREA_DETECTOR_RELEASE)
 EPICS_BASE=$(EPICS_ROOT)/epics/$(EPICS_RELEASE)/base
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-ELECTRON_ANALYSER_INSTALL=c:\\electronAnalyserIOC
+#ELECTRON_ANALYSER_INSTALL=C:/Projects/electronAnalyser
 #SES_ROOT=E:/SES 1.2.6-r6
