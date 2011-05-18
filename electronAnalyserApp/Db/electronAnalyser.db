@@ -1,0 +1,9 @@
+
+file ADBase.template
+{
+pattern { P,                    R,      PORT,              ADDR, TIMEOUT }
+        { ELECTRON-ANALYSER-01, :TEST:, electronAnalyser,  0,    1,      }
+}
+
+
+
