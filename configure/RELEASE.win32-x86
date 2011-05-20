@@ -1,19 +1,10 @@
-# EPICS software for development - local on Windows
-EPICS_ROOT=C:/epics
 
-SUPPORT=$(EPICS_ROOT)/prod/$(EPICS_RELEASE)/support
-WORK=$(EPICS_ROOT)/work/$(EPICS_RELEASE)/support
+TEMPLATE_TOP=	$(EPICS_BASE)/templates/makeBaseApp/top
 
-ASYN		=$(SUPPORT)/asyn/$(ASYN_RELEASE)
-BUSY		=$(SUPPORT)/busy/$(BUSY_RELEASE)
-CALC     	= $(SUPPORT)/calc/$(CALC_RELEASE)
-SSCAN    	= $(SUPPORT)/sscan/$(SSCAN_RELEASE)
-MCA      	= $(SUPPORT)/mca/$(MCA_RELEASE)
-AUTOSAVE 	= $(SUPPORT)/autosave/$(AUTOSAVE_RELEASE)
-AREA_DETECTOR=$(SUPPORT)/areaDetector/$(AREA_DETECTOR_RELEASE)
+EPICS_ROOT=	W:/
 
-EPICS_BASE=$(EPICS_ROOT)/epics/$(EPICS_RELEASE)/base
-TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
+SUPPORT=	$(EPICS_ROOT)/prod/R3.14.11/support
+WORK=		$(EPICS_ROOT)/work/R3.14.11/support
 
-#ELECTRON_ANALYSER_INSTALL=C:/Projects/electronAnalyser
-#SES_ROOT=E:/SES 1.2.6-r6
+EPICS_BASE=	$(EPICS_ROOT)/epics/R3.14.11/base
+
