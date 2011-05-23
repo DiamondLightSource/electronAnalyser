@@ -16,7 +16,7 @@ include $(TOP)/configure/CONFIG
 # -------------------------------
 
 #define the library name
-LIBRARY_IOC += electronAnalyserSupport
+LIBRARY_IOC_WIN32 += electronAnalyserSupport
 
 # Any specific external resources (not epics) that we need to link to
 USR_CFLAGS +=   -DWIN32
@@ -24,7 +24,6 @@ USR_CXXFLAGS += -DWIN32
 USR_CFLAGS_WIN32 += 
 USR_INCLUDES_WIN32 += 
 USR_LIBS_WIN32 +=
-
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS_WIN32 += cexports.cpp werror.cpp wevent.cpp wlibrary.cpp wmutex.cpp wsesinstrument.cpp wvariable.cpp wseswrapperbase.cpp wseswrappermain.cpp electronAnalyser.cpp
@@ -34,7 +33,7 @@ electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
 # Build an IOC Application
 # ------------------------
 
-PROD_IOC += electronAnalyser
+PROD_IOC_WIN32 += electronAnalyser
 
 # electronAnalyser.dbd will be installed into <top>/dbd
 # <name>.dbd will be created from <name>Include.dbd
