@@ -886,14 +886,9 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
   if (analyzerRegion != 0)
   {
 	printf("\n\n\n######## Setting sesRegion = analyzerRegion in wseswrapperbase.cpp ########\n");
-	printf("\nanalyzerRegion Energy Mode = %d\n", analyzerRegion->fixed_);
-	printf("analyzerRegion Energy Step = %f\n", analyzerRegion->energyStep_);
-	printf("analyzerRegion Low Energy = %f\n", analyzerRegion->lowEnergy_);
-	printf("analyzerRegion Centre Energy = %f\n", analyzerRegion->centerEnergy_);
-	printf("analyzerRegion High Energy = %f\n", analyzerRegion->highEnergy_);
-	printf("analyzerRegion Dwell Time = %d\n\n", analyzerRegion->dwellTime_);
+
 	sesRegion_.DriftRegion = false;
-    sesRegion_.EnergyStep = analyzerRegion->energyStep_; //0.2
+    sesRegion_.EnergyStep = analyzerRegion->energyStep_;
     sesRegion_.ExcEnergy = 0;
     sesRegion_.Fixed = analyzerRegion->fixed_;
     sesRegion_.FixEnergy = analyzerRegion->centerEnergy_;
@@ -904,14 +899,8 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
     sesRegion_.LowEnergy = analyzerRegion->lowEnergy_;
     sesRegion_.Order = 0;
     sesRegion_.Slit = 0;
-    sesRegion_.StepTime = analyzerRegion->dwellTime_; //0.1
+    sesRegion_.StepTime = analyzerRegion->dwellTime_;
     sesRegion_.UseRegionDetector = false;
-    printf("\n\nsesRegion Energy Mode = %d\n", sesRegion_.Fixed);
-    printf("sesRegion Energy Step = %f\n", sesRegion_.EnergyStep);
-    printf("sesRegion Low Energy = %f\n", sesRegion_.LowEnergy);
-    printf("sesRegion Centre Energy = %f\n", sesRegion_.FixEnergy);
-    printf("sesRegion High Energy = %f\n", sesRegion_.HighEnergy);
-    printf("sesRegion Dwell Time = %d\n\n\n", sesRegion_.StepTime);
   }
   return WError::ERR_OK;
 }
