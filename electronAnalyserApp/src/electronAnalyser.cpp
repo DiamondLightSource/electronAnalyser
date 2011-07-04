@@ -102,7 +102,7 @@ static const char *driverName = "electronAnalyser";
 #define DetectorDiscriminatorLevelString "DETECTOR_DISC_LEVEL"
 #define DetectorADCMaskString		"DETECTOR_ADC_MASK"
 // Analyzer Region
-#define AnalyzerAcquisitionModeString "ACQISITION_MODE"
+#define AnalyzerAcquisitionModeString "ACQUISITION_MODE"
 #define AnalyzerHighEnergyString 	"HIGH_ENERGY"
 #define AnalyzerLowEnergyString  	"LOW_ENERGY"
 #define AnalyzerCenterEnergyString 	"CENTER_ENERGY"
@@ -110,13 +110,13 @@ static const char *driverName = "electronAnalyser";
 #define AnalyzerDwellTimeString 	"DWELL_TIME"
 // Energy Scale
 #define EnergyModeString 			"ENERGY_MODE"
-#define RunModeString 				"EUN_MODE"
+#define RunModeString 				"RUN_MODE"
 #define ElementSetCountString 		"ELEMENT_SET_COUNT"
 #define ElementSetString 			"ELEMENT_SETS"
 #define LensModeCountString 		"LENS_MODE_COUNT"
 #define LensModeString 				"LENS_MODES"
 #define PassEnergyCountString 		"PASS_ENERGY_COUNT"
-#define PassEnergyString 			"PASS_ENERGIES"
+#define PassEnergyString 			"PASS_ENERGY"
 #define UseExternalIOString 		"USE_EXTERNAL_IO"
 #define UseDetectorString  			"USE_DETECTOR"
 #define RegionNameString  			"REGION_NAME"
@@ -211,7 +211,7 @@ protected:
 	int LensModeCount;			/**< (asynInt32,		r/o) the number of available lens modes.*/
 	int LensMode;				/**< (asynInt32,    	r/w) select an lens mode from the list of available lens modes*/
 	int PassEnergyCount;		/**< (asynInt32,		r/o) the number of available pass energies for the current lens mode.*/
-	int PassEnergy;				/**< (asynInt32, 	 	r/w) select an pas energy from the list of available pass energies for the current lens mode.*/
+	int PassEnergy;				/**< (asynInt32, 	 	r/w) select a pass energy from the list of available pass energies for the current lens mode.*/
 	int UseExternalIO;			/**< (asynInt32,    	r/w) enable or disable the external IO interface (0=No, 1=YES).*/
 	int UseDetector; 			/**< (asynInt32,    	r/w) enable or disable the detector (0=No, 1=YES).*/
 	int RegionName; 			/**< (asynOctet,    	r/w) the name of the current region (max 32 characters)*/
@@ -486,39 +486,19 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AcqIODataString, asynParamFloat64Array, &AcqIOData);
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
 
-
 	// initialise state variables from SES library
-//	getDetectorTemperature(&m_dTemperature);
+	//	getDetectorTemperature(&m_dTemperature);
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
 	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
 	getDetectorInfo(&detectorInfo);
-	getDetectorRegion(&detector);
-	getAnalyzerRegion(&analyzer);
+	//getDetectorRegion(&detector);
+	//getAnalyzerRegion(&analyzer);
 	m_RunMode = Normal;
-	getElementSetLlist(&m_Elementsets);					/* glitch? */
-	getLensModeList(&m_LensModes);						/* glitch? */
 	getPassEnergyList(&m_PassEnergies);
-	getElementSet(-1, m_sCurrentElementSet, size);		/* glitch? */
-	getLensMode(-1, m_sCurrentLensMode, size);			/* glitch? */
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 	getUseDetector(&m_bUseDetector);
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
-
-	/****** Setting up the experiment settings *******/
-
-	ses->setProperty("element_set", -1, "Laser (L)");
-	ses->setProperty("lens_mode", -1, "Transmission");
-
-	double Epass = 10;
-	ses->setProperty("pass_energy", -1, &Epass);
-
-	/*************************************************/
-
-	size = 2;
-
-	getElementSet(-1, m_sCurrentElementSet, size);
-	printf("\n***** The element is %s*****\n", m_sCurrentElementSet);
 
 	int detector_info_size = sizeof(SESWrapperNS::WDetectorInfo);
 
@@ -533,13 +513,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	detector.adcMode_ = true;
 	ses->setProperty("detector_region", 0, &detector);
 
-	analyzer.fixed_ = false;
-	analyzer.highEnergy_ = 90;
-	analyzer.centerEnergy_ = 86;
-	analyzer.lowEnergy_ = 82;
-	analyzer.energyStep_ = 400;
-	analyzer.dwellTime_ = 1000;
-	ses->setProperty("analyzer_region", 0, &analyzer);
+	// Previously set energy settings, dwell time, etc, here....
 
 	/* Set some default values for parameters */
 	// the setup panel parameters
@@ -814,17 +788,26 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	printf("\n\nChannel units = %s\n", channel_unit);
 	printf("Intensity units = %s\n", intensity_unit);
 
-	int *raw_image = new int[channels];
-	ses->getAcquiredData("acq_raw_image", 0, raw_image, channels);
-	int *slice = new int[channels];
-	ses->getAcquiredData("acq_slices", 0, slice, channels);
-	printf("Number of slices in the acquired data = %d\n", slice);
-	double *image = new double[channels];
+	/*int *slices;
+	slices = (int *)pData;
+	ses->getAcquiredData("acq_slices", 0, slices, channels);
+	printf("Number of slices in the acquired data = %d\n", slices);
+
+	double *image;
+	image = (double *)pData;
 	ses->getAcquiredData("acq_image", 0, image, channels);
-	double *spectrum = new double[channels];
+
+	double *slice;
+	slice = (double *)pData;
+	ses->getAcquiredData("acq_slice", 8, slice, channels);*/
+
+	//*** Use pData instead of spectrum ***//
+	double *spectrum;
+	spectrum = (double *)pData;
 	ses->getAcquiredData("acq_spectrum", 0, spectrum, channels);
 
-	printf("\nanalyzer Low energy = %f\n", analyzer.lowEnergy_);
+	printf("\nanalyzer Acquisition mode = %d\n", analyzer.fixed_);
+	printf("analyzer Low energy = %f\n", analyzer.lowEnergy_);
 	printf("analyzer Centre energy = %f\n", analyzer.centerEnergy_);
 	printf("analyzer High energy = %f\n", analyzer.highEnergy_);
 	printf("analyzer Energy step = %f\n", analyzer.energyStep_);
@@ -832,14 +815,12 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 	for(i = 0; i < channels; i++)
 	{
-		printf("At kinetic energy %f, counts = %f\n", (analyzer.lowEnergy_ + (i * (analyzer.energyStep_ / 1000))), *spectrum);
-		//printf("image = %f\n", *image);
+		printf("At kinetic energy %f, counts = %f\n", (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), *spectrum);
+		//printf("image %d = %f with slice = %f\n", i+1, *image, *slice);
 		spectrum++;
-		//printf("RAW IMAGE %d = %d\n", i, *raw_image);
-		raw_image++;
-		image++;
+		//image++;
 	}
-	//printf("Number of channels for loop = %d\n", channels);
+
 	return status;
 }
 
@@ -988,10 +969,13 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			m_RunMode = Normal;
 	} else if (function == ElementSet){ // need to map MEDM screen value to SES library values
 		getElementSetCount(size);
+		getElementSetLlist(&m_Elementsets);					/* glitch? */
+		printf("\n\n\n%d elements are available to use\n\n\n", size);
 		if (value < size) {
 			const char * elementSet = m_Elementsets.at(value).c_str();
 			// set element set to Library
 			this->setElementSet(elementSet);
+			printf("\n\n\nSelected element set = %s\n\n\n", elementSet);
 		} else {
 			// out of index
 			epicsSnprintf(message, sizeof(message), "set 'Element_Set' failed, index must be between 0 and %d", size);
@@ -1001,9 +985,12 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		getElementSet(-1, m_sCurrentElementSet, size);
 	} else if (function == LensMode){
 		getLensModeCount(size);
+		getLensModeList(&m_LensModes);						/* glitch? */
+		printf("\n\n\n%d lenses are available to use\n\n\n", size);
 		if (value <size){
 			const char * lensMode = m_LensModes.at(value).c_str();
 			this->setLensMode(lensMode);
+			printf("\n\n\nSelected lens mode = %s\n\n\n", lensMode);
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Lens_Mode' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
@@ -1590,7 +1577,7 @@ asynStatus ElectronAnalyser::start()
 	else
 	{
 		char * message = new char[MAX_MESSAGE_SIZE];
-		epicsSnprintf(message, sizeof(message),"Number of steps: %d; Dwell time: %f; minimum energy step: %f.",steps, dtime, minEnergyStep );
+		epicsSnprintf(message, sizeof(message),"Number of steps: %d; Dwell time: %f; minimum energy step: %f.",steps, analyzer.dwellTime_, analyzer.energyStep_);
 		printf("Number of steps: %d; Dwell time: %f; minimum energy step: %f\n",steps, dtime, minEnergyStep);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.", driverName, functionName, message);
 		setStringParam(ADStatusMessage, message);
