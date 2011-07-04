@@ -1,9 +1,159 @@
 
-file ADBase.template
+#file ADBase.template
+#{
+#pattern { P,                    R,      PORT,              ADDR, TIMEOUT }
+#        { ELECTRON-ANALYSER-01, :TEST:, electronAnalyser,  0,    1,      }
+#}
+
+######################## Modes ########################### 
+
+record(bo, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE")
 {
-pattern { P,                    R,      PORT,              ADDR, TIMEOUT }
-        { ELECTRON-ANALYSER-01, :TEST:, electronAnalyser,  0,    1,      }
+  field(DESC, "Acquisition Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)ACQUISITION_MODE")
+  field(ZNAM, "Swept")
+  field(ONAM, "Fixed")
 }
 
+record(bo, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE")
+{
+  field(DESC, "Energy Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)ENERGY_MODE")
+  field(ZNAM, "Binding")
+  field(ONAM, "Kinetic")
+}
 
+#record(bo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE")
+#{
+#  field(DESC, "Acquisition Mode")
+#  field(DTYP, "asynInt32")
+#  field(OUT,  "@asyn(electronAnalyser 0)LENS_MODES")
+#  field(ZNAM, "Transmission")
+#  field(ONAM, "Angular")
+#}
 
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST") 
+{
+  field(DESC, "Lens Mode")
+  field(DTYP, "Soft Channel")
+  field(OUT,  "ELECTRON-ANALYSER-01:TEST:LENS_MODE_CONVERT")
+  field(ZRST, "Transmission")
+  field(ZRVL, "0")
+  field(ONST, "Angular14")
+  field(ONVL, "1")
+  field(TWST, "Angular7_fix")
+  field(TWVL, "2")
+  field(THST, "Angular30")
+  field(THVL, "3")
+  field(FRST, "Angular7")
+  field(FRVL, "4")
+  field(FVST, "A14small")
+  field(FVVL, "5")
+  field(SXST, "A30small")
+  field(SXVL, "6")  
+}
+
+record(calcout, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_CONVERT")
+{
+  field(CALC, "A")
+  field(INPA, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST")
+  field(OUT,  "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(DTYP, "asynInt32")
+  field(SCAN, ".5 second")
+  field(OOPT, "Every Time")
+}
+
+###################### Energy (eV) ########################
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY") 
+{
+  field(DESC, "Pass Energy")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)PASS_ENERGY")
+  field(ZRST, "1")
+  field(ZRVL, "0")
+  field(ONST, "2")
+  field(ONVL, "1")
+  field(TWST, "5")
+  field(TWVL, "2")
+  field(THST, "10")
+  field(THVL, "3")
+  field(FRST, "20")
+  field(FRVL, "4")
+  field(FVST, "50")
+  field(FVVL, "5")
+  field(SXST, "100")
+  field(SXVL, "6")  
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY") 
+{
+  field(DESC, "Low Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY") 
+{
+  field(DESC, "Centre Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)CENTER_ENERGY")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY") 
+{
+  field(DESC, "High Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)HIGH_ENERGY")
+  field(PREC, "3")
+}
+
+###################### Step ########################
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:ENERGY_STEP") 
+{
+  field(DESC, "Energy Step Size")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)ENERGY_STEP")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:DWELL_TIME") 
+{
+  field(DESC, "Dwell Time")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn(electronAnalyser 0)DWELL_TIME")
+  field(PREC, "3")
+}
+
+#record(bo, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET")
+#{
+ # field(DESC, "Element Set")
+ # field(DTYP, "asynInt32")
+ # field(OUT,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
+ # field(ZNAM, "Laser (L)")
+ # field(ONAM, "He I (H)")
+#}
+
+#record(ao, "ELECTRON-ANALYSER-01:TEST:LENS_MODE") 
+#{
+#  field(DESC, "Element Set")
+#  field(DTYP, "asynInt32")
+#  #field(DOL, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST")
+#  field(OUT, "@asyn(electronAnalyser 0)LENS_MODES")
+#  field(PREC, "3")
+#}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET") 
+{
+  field(DESC, "Element Set")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn(electronAnalyser 0)ELEMENT_SETS")
+  field(PREC, "3")
+}
+
+###################################################
