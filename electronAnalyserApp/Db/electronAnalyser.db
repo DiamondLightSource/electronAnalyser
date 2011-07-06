@@ -5,40 +5,77 @@
 #        { ELECTRON-ANALYSER-01, :TEST:, electronAnalyser,  0,    1,      }
 #}
 
+#record(stringout, "ELECTRON-ANALYSER-01:TEST:REGION_NAME_OUT")
+#{
+#  field(DESC, "Region Name")
+#  field(DTYP, "asynOctet")
+#  field(OUT,  "@asyn(electronAnalyser 0)REGION_NAME")
+#  field(DOL,  "ELECTRON-ANALYSER-01:TEST:REGION_NAME")
+#  field(OMSL, "supervisory")
+#}
+
+#record(stringout, "ELECTRON-ANALYSER-01:TEST:REGION_NAME_OUT")
+#{
+#  field(DESC, "Region Name")
+#  field(DTYP, "asynOctet")
+#  field(OUT,  "@asyn(electronAnalyser 0)REGION_NAME")
+#  field(DOL,  "ELECTRON-ANALYSER-01:TEST:REGION_NAME")
+#  field(OMSL, "supervisory")
+#}
+
 ######################## Modes ########################### 
 
-record(bo, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE")
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE")
 {
   field(DESC, "Acquisition Mode")
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn(electronAnalyser 0)ACQUISITION_MODE")
-  field(ZNAM, "Swept")
-  field(ONAM, "Fixed")
+  field(ZRST, "Swept")
+  field(ZRVL, "0")
+  field(ONST, "Fixed")
+  field(ONVL, "1")
 }
 
-record(bo, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE")
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE_RBV")
+{
+  field(DESC, "Acquisition Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ACQUISITION_MODE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Swept")
+  field(ZRVL, "0")
+  field(ONST, "Fixed")
+  field(ONVL, "1")
+}
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE")
 {
   field(DESC, "Energy Mode")
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn(electronAnalyser 0)ENERGY_MODE")
-  field(ZNAM, "Binding")
-  field(ONAM, "Kinetic")
+  field(ZRST, "Binding")
+  field(ZRVL, "0")
+  field(ONST, "Kinetic")
+  field(ONVL, "1")
 }
 
-#record(bo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE")
-#{
-#  field(DESC, "Acquisition Mode")
-#  field(DTYP, "asynInt32")
-#  field(OUT,  "@asyn(electronAnalyser 0)LENS_MODES")
-#  field(ZNAM, "Transmission")
-#  field(ONAM, "Angular")
-#}
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE_RBV")
+{
+  field(DESC, "Energy Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ENERGY_MODE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Binding")
+  field(ZRVL, "0")
+  field(ONST, "Kinetic")
+  field(ONVL, "1")
+}
 
-record(mbbo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST") 
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE") 
 {
   field(DESC, "Lens Mode")
-  field(DTYP, "Soft Channel")
-  field(OUT,  "ELECTRON-ANALYSER-01:TEST:LENS_MODE_CONVERT")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)LENS_MODES")
   field(ZRST, "Transmission")
   field(ZRVL, "0")
   field(ONST, "Angular14")
@@ -55,14 +92,26 @@ record(mbbo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST")
   field(SXVL, "6")  
 }
 
-record(calcout, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_CONVERT")
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_RBV") 
 {
-  field(CALC, "A")
-  field(INPA, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST")
-  field(OUT,  "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(DESC, "Lens Mode Readback")
   field(DTYP, "asynInt32")
-  field(SCAN, ".5 second")
-  field(OOPT, "Every Time")
+  field(INP,  "@asyn(electronAnalyser 0)LENS_MODES")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Transmission")
+  field(ZRVL, "0")
+  field(ONST, "Angular14")
+  field(ONVL, "1")
+  field(TWST, "Angular7_fix")
+  field(TWVL, "2")
+  field(THST, "Angular30")
+  field(THVL, "3")
+  field(FRST, "Angular7")
+  field(FRVL, "4")
+  field(FVST, "A14small")
+  field(FVVL, "5")
+  field(SXST, "A30small")
+  field(SXVL, "6")  
 }
 
 ###################### Energy (eV) ########################
@@ -88,11 +137,42 @@ record(mbbo, "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY")
   field(SXVL, "6")  
 }
 
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY_RBV") 
+{
+  field(DESC, "Pass Energy Readback")
+  field(DTYP, "asynInt32")
+  field(SCAN, "I/O Intr")
+  field(INP,  "@asyn(electronAnalyser 0)PASS_ENERGY")
+  field(ZRST, "1")
+  field(ZRVL, "0")
+  field(ONST, "2")
+  field(ONVL, "1")
+  field(TWST, "5")
+  field(TWVL, "2")
+  field(THST, "10")
+  field(THVL, "3")
+  field(FRST, "20")
+  field(FRVL, "4")
+  field(FVST, "50")
+  field(FVVL, "5")
+  field(SXST, "100")
+  field(SXVL, "6")  
+}
+
 record(ao, "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY") 
 {
   field(DESC, "Low Energy")
   field(DTYP, "asynFloat64")
   field(OUT, "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY_RBV") 
+{
+  field(DESC, "Low Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(SCAN, "I/O Intr")
   field(PREC, "3")
 }
 
@@ -104,6 +184,15 @@ record(ao, "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY")
   field(PREC, "3")
 }
 
+record(ai, "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY_RBV") 
+{
+  field(DESC, "Centre Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)CENTER_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
 record(ao, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY") 
 {
   field(DESC, "High Energy")
@@ -112,9 +201,18 @@ record(ao, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY")
   field(PREC, "3")
 }
 
+record(ai, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY_RBV") 
+{
+  field(DESC, "High Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)HIGH_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
 ###################### Step ########################
 
-record(ao, "ELECTRON-ANALYSER-01:TEST:ENERGY_STEP") 
+record(ao, "ELECTRON-ANALYSER-01:TEST:STEP_SIZE") 
 {
   field(DESC, "Energy Step Size")
   field(DTYP, "asynFloat64")
@@ -122,7 +220,16 @@ record(ao, "ELECTRON-ANALYSER-01:TEST:ENERGY_STEP")
   field(PREC, "3")
 }
 
-record(ao, "ELECTRON-ANALYSER-01:TEST:DWELL_TIME") 
+record(ai, "ELECTRON-ANALYSER-01:TEST:STEP_SIZE_RBV") 
+{
+  field(DESC, "Energy Step Size Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)ENERGY_STEP")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:STEP_TIME") 
 {
   field(DESC, "Dwell Time")
   field(DTYP, "asynInt32")
@@ -130,30 +237,38 @@ record(ao, "ELECTRON-ANALYSER-01:TEST:DWELL_TIME")
   field(PREC, "3")
 }
 
-#record(bo, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET")
-#{
- # field(DESC, "Element Set")
- # field(DTYP, "asynInt32")
- # field(OUT,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
- # field(ZNAM, "Laser (L)")
- # field(ONAM, "He I (H)")
-#}
+record(ai, "ELECTRON-ANALYSER-01:TEST:STEP_TIME_RBV") 
+{
+  field(DESC, "Step Time Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)DWELL_TIME")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
 
-#record(ao, "ELECTRON-ANALYSER-01:TEST:LENS_MODE") 
-#{
-#  field(DESC, "Element Set")
-#  field(DTYP, "asynInt32")
-#  #field(DOL, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_LIST")
-#  field(OUT, "@asyn(electronAnalyser 0)LENS_MODES")
-#  field(PREC, "3")
-#}
+################## Element Sets ####################
 
-record(ao, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET") 
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET")
 {
   field(DESC, "Element Set")
   field(DTYP, "asynInt32")
-  field(OUT, "@asyn(electronAnalyser 0)ELEMENT_SETS")
-  field(PREC, "3")
+  field(OUT,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
+  field(ZRST, "Laser")
+  field(ZRVL, "0")
+  field(ONST, "He I")
+  field(ONVL, "1")
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET_RBV")
+{
+  field(DESC, "Element Set Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Laser")
+  field(ZRVL, "0")
+  field(ONST, "He I")
+  field(ONVL, "1")
 }
 
 ###################################################
