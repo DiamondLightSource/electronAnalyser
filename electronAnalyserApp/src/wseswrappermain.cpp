@@ -28,7 +28,6 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
 : WSESWrapperBase(workingDir), initialized_(false)
 {
   this_ = this;
-  printf("In constructor: workingDir = %s\n", workingDir);
   // Create data parameter database
   dataParameters_.insert(DataParameterKeyValue("acq_channels", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqChannels, DataParameter::TYPE_INT32)));
   dataParameters_.insert(DataParameterKeyValue("acq_slices", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqSlices, DataParameter::TYPE_INT32)));
@@ -55,7 +54,6 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
 
   if (!workingDir_.empty())
   {
-	printf("Working directory is not empty (Contains %s)\n", workingDir);
     char *tmpDir = _getcwd(0, 0);
     _chdir(workingDir_.c_str());
     instrumentLoaded_ = lib_->load("dll\\SESInstrument.dll");
@@ -106,7 +104,6 @@ bool WSESWrapperMain::isInitialized()
  */
 int WSESWrapperMain::initialize(void *reserved)
 {
-	printf("In WSESWrapperMain::initialize\n");
   int errorCode = WError::ERR_OK;
 
   if (initialized_)
@@ -130,7 +127,6 @@ int WSESWrapperMain::initialize(void *reserved)
   free(tmpDir);
 
   initialized_ = (errorCode == WError::ERR_OK);
-  printf("Result code from WSESWrapperMain::initialize = %d\n", errorCode);
   return errorCode;
 }
 
@@ -291,8 +287,6 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
 {
   instrumentLoaded_ = false;
   memset(&sesInstrumentInfo_, 0, sizeof(SesNS::WInstrumentInfo));
-  printf("Inside WSESWrapperMain::loadInstrument\n");
-  printf("File here = %s\n", fileName);
   if (!initialized_)
 	  return WError::ERR_NOT_INITIALIZED;
 
@@ -303,7 +297,7 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
   int errorCode = WError::ERR_OK;
   if (lib_->GDS_LoadInstrument(fileName) == 0)
   {
-	printf("Load successful\n");
+	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument configuration file loaded successfully\n", driverName, functionName);
     lib_->GDS_GetInstrumentInfo(&sesInstrumentInfo_);
     int length = *sesInstrumentInfo_.Model;
     memmove(sesInstrumentInfo_.Model, sesInstrumentInfo_.Model + 1, length);
@@ -320,7 +314,6 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
 
   if (!loadElementSets() || !loadLensModes() || (lensModes_.size() > 0 && !loadPassEnergies(lensModes_[0], passEnergies_)))
   {
-	printf("Some other error\n");
     errorCode = WError::ERR_FAIL;
   }
 
@@ -430,13 +423,9 @@ int WSESWrapperMain::checkAnalyzerRegion(WAnalyzerRegion *analyzerRegion, int *s
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
   int error = lib_->GDS_CheckRegion(&sesRegion_, steps, time_ms, minEnergyStep_eV);
-
-  printf("\n\n\n######## Setting analyzerRegion = sesRegion in wseswrappermain.cpp########\n");
-
   analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
-  analyzerRegion->dwellTime_ = sesRegion_.StepTime;
+  analyzerRegion->dwellTime_ =  sesRegion_.StepTime;
   analyzerRegion->energyStep_ = sesRegion_.EnergyStep;
   analyzerRegion->fixed_ = sesRegion_.Fixed;
   analyzerRegion->highEnergy_ = sesRegion_.HighEnergy;
@@ -515,7 +504,7 @@ int WSESWrapperMain::startAcquisition()
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-  printf("\nAcquisition running....\n");
+  //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition running....\n", driverName, functionName);
   int sesStatus = SesNS::NonOperational;
   lib_->GDS_GetStatus(&sesStatus);
   if (sesStatus == SesNS::Running)
@@ -551,11 +540,11 @@ int WSESWrapperMain::startAcquisition()
   }
   if(result == 0)
   {
-	  printf("\nAcquisition completed successfully....\n\n");
+	  //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition completed successfully\n", driverName, functionName);
   }
   else
   {
-	  printf("\nAcquisition failed....\n\n");
+	  ////asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition failed\n", driverName, functionName);
   }
   return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
@@ -638,7 +627,7 @@ int WSESWrapperMain::waitForPointReady(int timeout_ms)
 /*!
  * Blocks execution of the callers thread until the current region has been completed.
  * If @p timeout_ms is set to -1, there is no time-out. This can be used for both fixed and swept mode acquisitions.
- * The WError::ERR_TIMEOUT is a warning code (error code > 0) which can be used to separate behavior from
+ * The WError::ERR_TIMEOUT is a warning code (error code > 0) which can be used to separate behaviour from
  * more serious errors.
  *
  * @param[in] timeout_ms The number of milliseconds to wait until time-out.
@@ -646,7 +635,7 @@ int WSESWrapperMain::waitForPointReady(int timeout_ms)
  * @return WError::ERR_NO_INSTRUMENT if loadInstrument() has not been called.
  *         Returns immediately with a WError::ERR_OK if there is no acquisition running.
  *         WError::ERR_OK is returned when the measured region has been completed. WError::ERR_TIMEOUT is returned if
- *         the function times out before comletion of the point.
+ *         the function times out before completion of the point.
  *
  * @see continueAcquisition(), waitForPointReady(),
  *      initAcquisition(), startAcquisition(), stopAcquisition()

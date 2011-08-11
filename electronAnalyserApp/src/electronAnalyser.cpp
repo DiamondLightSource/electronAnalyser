@@ -28,7 +28,6 @@
 #include <list>
 #include <algorithm>
 #include <math.h>
-#include <stdlib.h>
 
 // EPICS includes
 #include <epicsString.h>
@@ -83,6 +82,9 @@ static const char *driverName = "electronAnalyser";
 #define AlwaysDelayRegionString 	"ALWAYS_DELAY_REGION"
 #define AllowIOWithDetectorString 	"ALLOW_IO_WITH_DETECTOR"
 #define InstrumentSerialNoString 	"INSTRUMENT_SERIAL_NUMBER"
+// Added by JO
+#define IterationsString			"ITERATIONS"
+//
 //Detector Info
 #define TimerControlledString 		"TIMER_CONTROLLED"
 #define XChannelsString 			"X_CHANNELS"
@@ -158,14 +160,12 @@ class ElectronAnalyser: public ADDriver
 {
 public:
     ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-    		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority, int stackSize);
+    		int maxBuffers, size_t maxMemory, int priority, int stackSize);
     virtual ~ElectronAnalyser();
     virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
     virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
     virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t nChars, size_t *nActual);
     void report(FILE *fp, int details);
-    epicsEventId startEventId;
-    epicsEventId stopEventId;
     void electronAnalyserTask();
 protected:
 	//Properties
@@ -177,6 +177,9 @@ protected:
 	int AlwaysDelayRegion;		/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
 	int AllowIOWithDetector;	/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
 	int InstrumentSerialNo;		/**< (asynOctet,    	r/o) the instrument serial number*/
+	// Added by JO
+	int Iterations;			/**< (asynInt32,		r/w) The number of acquisition iterations */
+	//
 	//Detector Info
 	int TimerControlled;		/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
 	int XChannels;				/**< (asynInt32,    	r/o) Specifies the number of X channels currently shown on the detector.*/
@@ -254,6 +257,9 @@ private:
     virtual void init_device(const char *workingDir, const char *instrumentFile);
     void delete_device();
     virtual void updateStatus();
+
+    epicsEventId startEventId;
+    epicsEventId stopEventId;
 
     // Anaylzer specific parameters
     virtual asynStatus getKineticEnergy(double *kineticEnergy);
@@ -364,9 +370,9 @@ private:
 
 /** A bit of C glue to make the config function available in the startup script (ioc shell) */
 extern "C" int electronAnalyserConfig(const char *portName, const char *workingDir, const char *instrumentFile,
-		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority,	int stackSize)
+		int maxBuffers, size_t maxMemory, int priority,	int stackSize)
 {
-	new ElectronAnalyser(portName, workingDir, instrumentFile, maxSizeX, maxSizeY, maxBuffers, maxMemory,
+	new ElectronAnalyser(portName, workingDir, instrumentFile, maxBuffers, maxMemory,
 			priority, stackSize);
 	return asynSuccess;
 }
@@ -385,8 +391,8 @@ ElectronAnalyser::~ElectronAnalyser()
 {
 }
 ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-		int maxSizeX, int maxSizeY, int maxBuffers, size_t maxMemory, int priority,	int stackSize) :
-	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, 0, 0, /* No interfaces beyond those set in ADDriver.cpp */
+		int maxBuffers, size_t maxMemory, int priority,	int stackSize) :
+	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
 	ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
 			priority, stackSize) // thread priority and stack size (0=default)
 {
@@ -401,16 +407,16 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
 	{
-		printf("%s:%s epicsEventCreate failure for start event\n", driverName,functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s epicsEventCreate failure for start event\n", driverName, functionName);
 		return;
 	}
 	this->stopEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->stopEventId)
 	{
-		printf("%s:%s epicsEventCreate failure for stop event\n", driverName,functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: epicsEventCreate failure for stop event\n", driverName, functionName);
 		return;
 	}
-	printf("%s:%s: Initialising SES library.\n", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Initialising the SES library....\n", driverName, functionName);
 	this->init_device(workingDir, instrumentFile);
 
     createParam(LibDescriptionString, asynParamOctet, &LibDescription);
@@ -420,6 +426,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AlwaysDelayRegionString, asynParamInt32, &AlwaysDelayRegion);
 	createParam(AllowIOWithDetectorString, asynParamInt32, &AllowIOWithDetector);
 	createParam(InstrumentSerialNoString, asynParamOctet, &InstrumentSerialNo);
+	// Added by JO
+	createParam(IterationsString, asynParamInt32, &Iterations);
+	//
 	//Detector Info
 	createParam(TimerControlledString, asynParamInt32, &TimerControlled);
 	createParam(XChannelsString, asynParamInt32, &XChannels);
@@ -487,36 +496,46 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
 
 	// initialise state variables from SES library
-	//	getDetectorTemperature(&m_dTemperature);
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
 	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
 	getDetectorInfo(&detectorInfo);
-	//getDetectorRegion(&detector);
-	//getAnalyzerRegion(&analyzer);
+	getDetectorRegion(&detector);
+	getAnalyzerRegion(&analyzer);
 	m_RunMode = Normal;
+	getLensModeList(&m_LensModes);						/* glitch? */
+	getElementSetLlist(&m_Elementsets);					/* glitch? */
 	getPassEnergyList(&m_PassEnergies);
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 	getUseDetector(&m_bUseDetector);
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
 
-	int detector_info_size = sizeof(SESWrapperNS::WDetectorInfo);
+	/* The following are redundant when getDetectorInfo is used above */
+	/* int detector_info_size = sizeof(SESWrapperNS::WDetectorInfo);
+	   ses->getProperty("detector_info", 0, &detectorInfo, detector_info_size); */
 
-	ses->getProperty("detector_info", 0, &detectorInfo, detector_info_size);
-	detector.firstXChannel_ = 0;
-	detector.lastXChannel_ = detectorInfo.xChannels_ - 1;
-	printf("Last X Channel = %d\n", detector.lastXChannel_);
-	detector.firstYChannel_ = 0;
-	detector.lastYChannel_ = detectorInfo.yChannels_ - 1;
-	printf("Last Y Channel = %d\n", detector.lastYChannel_);
-	detector.slices_ = 1;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s X Channels = %d\nY Channels = %d\nMax Channels = %d\nMax Slices = %d\nFrame Rate = %d\n\n\n\n", driverName, functionName, detectorInfo.xChannels_, detectorInfo.yChannels_, detectorInfo.maxChannels_, detectorInfo.maxSlices_, detectorInfo.frameRate_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\nLast X Channel = %d\nFirst Y Channel = %d\nLast Y Channel = %d\nSlices = %d\n\n\n\n", driverName, functionName, detector.firstXChannel_, detector.lastXChannel_, detector.firstYChannel_, detector.lastYChannel_, detector.slices_);
+
+	//detector.firstXChannel_ = 0;
+	//detector.lastXChannel_ = detectorInfo.xChannels_ - 1;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	//detector.firstYChannel_ = 0;
+	//detector.lastYChannel_ = detectorInfo.yChannels_ - 1;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y channel = %d\n", driverName, functionName, detector.lastYChannel_);
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: detector mode = %d\n\n\n", driverName, functionName, detector.adcMode_);
 	detector.adcMode_ = true;
-	ses->setProperty("detector_region", 0, &detector);
 
-	// Previously set energy settings, dwell time, etc, here....
+	setDetectorRegion(&detector);
+	//ses->setProperty("detector_region", 0, &detector);
 
-	/* Set some default values for parameters */
-	// the setup panel parameters
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: X Channels = %d\nY Channels = %d\nMax Channels = %d\nMax Slices = %d\nFrame Rate = %d\n\n\n\n", driverName, functionName, detectorInfo.xChannels_, detectorInfo.yChannels_, detectorInfo.maxChannels_, detectorInfo.maxSlices_, detectorInfo.frameRate_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\nLast X Channel = %d\nFirst Y Channel = %d\nLast Y Channel = %d\nSlices = %d\n\n\n\n", driverName, functionName, detector.firstXChannel_, detector.lastXChannel_, detector.firstYChannel_, detector.lastYChannel_, detector.slices_);
+
+	/* Set some default values for parameters (the setup panel parameters) */
 	status |= setStringParam(ADManufacturer, "VG Scienta");
 	getInstrumentModel(0, size);
 	value = new char[size];
@@ -537,20 +556,20 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	getInstrumentSerialNo(0, size);
 	value =  new char[size];
 	getInstrumentSerialNo(value, size);
-	printf("\n\nInstrument serial number = %s\n\n", value);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument serial number = %s\n", driverName, functionName, value);
 	status |= setStringParam(InstrumentSerialNo, value);
 
 	// the Readout panel parameters
 	status |= setIntegerParam(ADMaxSizeX, detectorInfo.xChannels_);
 	status |= setIntegerParam(ADMaxSizeY, detectorInfo.yChannels_);
-	status |= setIntegerParam(ADMinX, detector.firstXChannel_);
-	status |= setIntegerParam(ADMinY, detector.lastXChannel_);
-	status |= setIntegerParam(ADSizeX, detector.firstYChannel_ - detector.firstXChannel_);
-	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
+	status |= setIntegerParam(ADMinX, detector.firstXChannel_ - 1);
+	status |= setIntegerParam(ADMinY, detector.firstYChannel_ - 1);
+	status |= setIntegerParam(ADSizeX, detector.lastXChannel_ - 1);
+	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - 1);
 
 	// Set NDArray parameters
-	status |= setIntegerParam(NDArraySizeX, 1024);
-	status |= setIntegerParam(NDArraySizeY, 1000);
+	status |= setIntegerParam(NDArraySizeX, detectorInfo.xChannels_);
+	status |= setIntegerParam(NDArraySizeY, detectorInfo.yChannels_);
 	status |= setIntegerParam(NDDataType,  NDUInt8);
 
 	// the Collect panel
@@ -573,16 +592,13 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
 
-
-
 	if (status)
 	{
-		printf("%s:%s: unable to set detector parameters\n", driverName,
-				functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Unable to set detector parameters\n", driverName, functionName);
 		return;
 	}
 
-	printf("  Starting up polling task...\n");
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Starting up polling task....\n", driverName, functionName);
 	/* Create the thread that updates the images */
 	status = (epicsThreadCreate("ElectronAnalyserTask",
 			epicsThreadPriorityMedium, epicsThreadGetStackSize(
@@ -590,8 +606,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 			(EPICSTHREADFUNC) electronAnalyserTaskC, this) == NULL);
 	if (status)
 	{
-		printf("%s:%s epicsThreadCreate failure for image task\n", driverName,
-				functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: epicsTheadCreate failure for image task\n", driverName, functionName);
 		return;
 	}
 }
@@ -617,21 +632,17 @@ void ElectronAnalyser::electronAnalyserTask()
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: thread started!\n", driverName, functionName);
-
-	printf("\n\n******* In polling thread *******\n\n");
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Polling thread started\n", driverName, functionName);
 
 	this->lock();
 	while (1)
 	{
-		/* Is acquisition active? */
 		getIntegerParam(ADAcquire, &acquire);
-
 		/* If we are not acquiring then wait for a semaphore that is given when acquisition is started */
 		if (!acquire)
 		{
-			printf("Waiting for acquire command\n\n");
-			setStringParam(ADStatusMessage, "Waiting for acquire command");
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Waiting for the acquire command\n", driverName, functionName);
+			setStringParam(ADStatusMessage, "Waiting for the acquire command");
 			setIntegerParam(ADStatus, ADStatusIdle);
 			//getDetectorTemperature(&temperature);
 			//setDoubleParam(ADTemperature, temperature);
@@ -644,7 +655,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			getIntegerParam(ADAcquire, &acquire);
 		}
 		/* We are acquiring. */
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "We are acquiring\n", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: We are acquiring\n", driverName, functionName);
 
 		epicsTimeGetCurrent(&startTime);
 		//getDetectorTemperature(&temperature);
@@ -653,6 +664,9 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* Get the exposure parameters */
 		getDoubleParam(ADAcquireTime, &acquireTime);
 		getDoubleParam(ADAcquirePeriod, &acquirePeriod);
+		/* Reset the counters */
+		setIntegerParam(ADNumExposuresCounter, 0);
+		setIntegerParam(ADNumImagesCounter, 0);
 
 		/* Get the acquisition parameters */
 		//getIntegerParam(ADTriggerMode, &triggerMode);
@@ -667,21 +681,21 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDDataType, (int *) &dataType);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 		pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: pData = %p\n", driverName, functionName, pImage->pData);
 		/* We release the mutex when acquire image, because this may take a long time and
 		 * we need to allow abort operations to get through */
 		this->unlock();
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: collect data from electron analyser\n", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Collecting data from electron analyser....\n", driverName, functionName);
 		status = this->acquireData(pImage->pData);
-		printf("Status = %d\n", status);
 		this->lock();
 		/* If there was an error jump to bottom of the loop */
 		if (status)
 		{
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: problem in collecting data from electron analyser \n",driverName, functionName);
-			setStringParam(ADStatusMessage,
-					"Failed to collect data from electron analyser.");
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Problem when collecting data from electron analyser \n",driverName, functionName);
+			setStringParam(ADStatusMessage,	"Failed to collect data from the electron analyser");
+			setIntegerParam(ADStatus, ADStatusError);
+			/* Reset both acquire and ADAcquire back to zero */
 			acquire = 0;
+			setIntegerParam(ADAcquire, acquire);
 			pImage->release();
 			continue;
 		}
@@ -726,8 +740,6 @@ void ElectronAnalyser::electronAnalyserTask()
 		if ((imageMode == ADImageSingle) || ((imageMode == ADImageMultiple)
 				&& (numImagesCounter >= numImages)))
 		{
-			setIntegerParam(ADNumExposuresCounter, 0);
-			setIntegerParam(ADNumImagesCounter, 0);
 			setIntegerParam(ADAcquire, 0);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition completed\n", driverName, functionName);
 		}
@@ -767,59 +779,98 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	status = start();
 	int channels = 0;
 	int size = 4;
-
 	ses->getAcquiredData("acq_channels", 0, &channels, size);
 
-	printf("\n\nNumber of channels = %d\n\n", channels);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of channels = %d\n", driverName, functionName, channels);
 	int max_iteration = 1;
 	for(int i = 0; i < max_iteration; i++)
 	{
-		printf("\nStarting acquisition %d of %d.....\n", i+1, max_iteration);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Starting acquisition %d of %d....\n", driverName, functionName, i+1, max_iteration);
 		ses->startAcquisition();
-		ses->waitForRegionReady(-1);
-		ses->continueAcquisition();
+		/* Check for timeout or user abort condition*/
+		//while waitforregionnready(10) != timeout
+		//{
+		//	epicseventtrywait
+		//  continue_acquisition
+		//}
+
+		/*for(j = 0; j < channels; j++)
+		{
+			printf("point ready = %d", ses->waitForPointReady(45000));
+			ses->startAcquisition();
+			//ses->continueAcquisition();
+		}*/
+
+		/*printf("region ready = %d", ses->waitForRegionReady(100000));*/
+
+		if ((ses->waitForRegionReady(100000) != WError::ERR_TIMEOUT) || (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK))
+		{
+			/* No timeout */
+			ses->continueAcquisition();
+		}
+		else
+		{
+			/* Timeout */
+			ses->stopAcquisition();
+			status = asynError;
+			return status;
+		}
 	}
 
 	char *intensity_unit = new char[32];
 	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, channels);
+	setStringParam(AcqIntensityUnit, intensity_unit);
+
 	char *channel_unit = new char[32];
 	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, channels);
+	setStringParam(AcqChannelUnit, channel_unit);
 
-	printf("\n\nChannel units = %s\n", channel_unit);
-	printf("Intensity units = %s\n", intensity_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
 
-	/*int *slices;
-	slices = (int *)pData;
-	ses->getAcquiredData("acq_slices", 0, slices, channels);
-	printf("Number of slices in the acquired data = %d\n", slices);
+	//double *image;
+	//image = (double *)pData;
+	//ses->getAcquiredData("acq_image", 0, image, channels);
 
-	double *image;
-	image = (double *)pData;
-	ses->getAcquiredData("acq_image", 0, image, channels);
+	//int num_slices;
+	//this->getAcqSlices(num_slices);
+	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of slices = %d\n", driverName, functionName, num_slices);
 
-	double *slice;
+	/*double *slice;
 	slice = (double *)pData;
 	ses->getAcquiredData("acq_slice", 8, slice, channels);*/
 
 	//*** Use pData instead of spectrum ***//
 	double *spectrum;
-	spectrum = (double *)pData;
+	spectrum = (double *)calloc(1024, sizeof(epicsFloat64));
+	//spectrum = (double *)pData;
 	ses->getAcquiredData("acq_spectrum", 0, spectrum, channels);
 
-	printf("\nanalyzer Acquisition mode = %d\n", analyzer.fixed_);
-	printf("analyzer Low energy = %f\n", analyzer.lowEnergy_);
-	printf("analyzer Centre energy = %f\n", analyzer.centerEnergy_);
-	printf("analyzer High energy = %f\n", analyzer.highEnergy_);
-	printf("analyzer Energy step = %f\n", analyzer.energyStep_);
-	printf("analyzer Dwell time = %d\n\n", analyzer.dwellTime_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channels = %d\n", driverName, functionName, channels);
+
+	this->lock();
+	status = doCallbacksFloat64Array(spectrum, channels, AcqSpectrum, 0);
+	this->unlock();
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Low Energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Centre Energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: High Energy = %f\n", driverName, functionName, analyzer.highEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Energy Step = %f\n", driverName, functionName, analyzer.energyStep_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Dwell Time = %d\n", driverName, functionName, analyzer.dwellTime_);
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Frame Rate = %d\n", driverName, functionName, detectorInfo.frameRate_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info X Channels = %d\n", driverName, functionName, detectorInfo.xChannels_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info Y Channels = %d\n", driverName, functionName, detectorInfo.yChannels_);
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\n\nSlices = %d\n\n\n", driverName, functionName, detector.slices_);
 
 	for(i = 0; i < channels; i++)
 	{
-		printf("At kinetic energy %f, counts = %f\n", (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), *spectrum);
-		//printf("image %d = %f with slice = %f\n", i+1, *image, *slice);
-		spectrum++;
-		//image++;
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), *(spectrum+i));
+		//printf("image %d = %f with slice = %f\n", i+1, *(image+i));
 	}
+	free(spectrum);
 
 	return status;
 }
@@ -914,6 +965,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			detector.slices_=value;
 		}
+	} else if (function == Iterations){
+		if (value < 1) {
+			epicsSnprintf(message, sizeof(message), "set failed, value must be greater than 0");
+			setStringParam(ADStatusMessage, message);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
+		} else {
+			// Set iterations
+		}
 	} else if (function == DetectorMode) {
 		if (value)
 		{
@@ -935,22 +994,26 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value)
 		{
 			// use fixed mode
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Fixed\n", driverName, functionName);
 			analyzer.fixed_ = true;
 		}
 		else
 		{
 			// use swept mode
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Swept\n", driverName, functionName);
 			analyzer.fixed_ = false;
 		}
 	} else if (function == EnergyMode){
 		if (value)
 		{
 			// use Kinetic energy scale
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the energy mode = Kinetic\n", driverName, functionName);
 			analyzer.kinetic_ = true;
 		}
 		else
 		{
 			// use Binding energy scale
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Binding\n", driverName, functionName);
 			analyzer.kinetic_ = false;
 		}
 	} else if (function == AnalyzerDwellTime){
@@ -959,7 +1022,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s", driverName, functionName, message);
 		} else {
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting step time to %d secs\n", driverName, functionName, value);
 			analyzer.dwellTime_ = value;
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nsetting analyzer dwell time = %d (from added function)\n\n", driverName, functionName, analyzer.dwellTime_);
 			setDoubleParam(ADAcquireTime, value/1000.0);
 		}
 	} else if (function == RunMode){  // driver parameters that determine how data to be saved into a file.
@@ -969,13 +1034,12 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			m_RunMode = Normal;
 	} else if (function == ElementSet){ // need to map MEDM screen value to SES library values
 		getElementSetCount(size);
-		getElementSetLlist(&m_Elementsets);					/* glitch? */
-		printf("\n\n\n%d elements are available to use\n\n\n", size);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d elements are available to use\n", driverName, functionName, size);
 		if (value < size) {
 			const char * elementSet = m_Elementsets.at(value).c_str();
 			// set element set to Library
 			this->setElementSet(elementSet);
-			printf("\n\n\nSelected element set = %s\n\n\n", elementSet);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
 		} else {
 			// out of index
 			epicsSnprintf(message, sizeof(message), "set 'Element_Set' failed, index must be between 0 and %d", size);
@@ -985,12 +1049,11 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		getElementSet(-1, m_sCurrentElementSet, size);
 	} else if (function == LensMode){
 		getLensModeCount(size);
-		getLensModeList(&m_LensModes);						/* glitch? */
-		printf("\n\n\n%d lenses are available to use\n\n\n", size);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d lenses are available to use\n", driverName, functionName, size);
 		if (value <size){
 			const char * lensMode = m_LensModes.at(value).c_str();
 			this->setLensMode(lensMode);
-			printf("\n\n\nSelected lens mode = %s\n\n\n", lensMode);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting lens mode to %s\n", driverName, functionName, lensMode);
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Lens_Mode' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
@@ -1002,6 +1065,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value < size) {
 			const double passEnergy = m_PassEnergies.at(value);
 			this->setPassEnergy(&passEnergy);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting pass energy to %f eV\n", driverName, functionName, passEnergy);
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Pass_Energy' failed, index must be between 0 and %d", size);
 			setStringParam(ADStatusMessage, message);
@@ -1115,15 +1179,20 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	getIntegerParam(ADStatus, &adstatus);
 	if (function == AnalyzerHighEnergy){
 		analyzer.highEnergy_ = value;
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting high energy to %f eV\n", driverName, functionName, value);
 	} else if (function == AnalyzerLowEnergy){
 		analyzer.lowEnergy_ = value;
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting low energy to %f eV\n", driverName, functionName, value);
 	} else if (function == AnalyzerCenterEnergy){
 		analyzer.centerEnergy_ = value;
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting centre energy to %f eV\n", driverName, functionName, value);
 	} else if (function == AnalyzerEnergyStep){
 		analyzer.energyStep_ = value;
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting energy step size to %f meV\n", driverName, functionName, value);
 	} else if (function == ADAcquireTime){
 		analyzer.dwellTime_ = int(value * 1000);
 		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nanalyzer dwell time = %d\n\n", driverName, functionName, analyzer.dwellTime_);
 	} else {
 		/* If this parameter belongs to a base class call its method */
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
@@ -1132,13 +1201,9 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
 	if (status)
-		asynPrint(pasynUser, ASYN_TRACE_ERROR,
-				"%s:%s error, status=%d function=%d, value=%f\n",
-				driverName, functionName, status, function, value);
+		asynPrint(pasynUser, ASYN_TRACE_ERROR,"%s:%s error, status=%d function=%d, value=%f\n",	driverName, functionName, status, function, value);
 	else
-		asynPrint(pasynUser, ASYN_TRACEIO_DRIVER,
-				"%s:%s: function=%d, value=%f\n",
-				driverName, functionName, function, value);
+		asynPrint(pasynUser, ASYN_TRACEIO_DRIVER,"%s:%s: function=%d, value=%f\n",driverName, functionName, function, value);
 	return status;
 }
 /** Called when asyn clients call pasynOctet->write().
@@ -1319,9 +1384,9 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: create device", driverName, functionName);
 	// Initialise variables to default values
 	sesWorkingDirectory = workingDir;
-	std::cout << endl << "SES Working Directory: " << sesWorkingDirectory << endl;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory: %s\n", driverName, functionName, sesWorkingDirectory);
 	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
-	std::cout << endl << "Instrument File Path: " << instrumentFilePath << endl;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
 	ses = new WSESWrapperMain(workingDir);
 	int err = ses->setProperty("lib_working_dir", 0, workingDir);
@@ -1335,9 +1400,8 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	}
 	else
 	{
-		printf("Calling function to load instrument file\n");
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Loading instrument file....\n", driverName, functionName);
 		err = ses->loadInstrument(instrumentFilePath.c_str());
-		printf("\nLoading error code = %d\n", err);
 		if (err)
 		{
 			this->setIntegerParam(ADStatus, ADStatusError);
@@ -1349,17 +1413,15 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 		{
 			if (ses->isInitialized())
 			{
-				printf("\n\nSES Initialisation Successful\n\n");
 				this->setIntegerParam(ADStatus, ADStatusIdle);
 				this->setStringParam(ADStatusMessage,"SES library initialisation completed.");
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES library initialisation completed.", driverName, functionName);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES librabry initialisation successful\n", driverName, functionName);
 			}
 			else
 			{
-				printf("\n\nSES Initialisation Failed\n\n");
 				this->setIntegerParam(ADStatus, ADStatusError);
 				this->setStringParam(ADStatusMessage,"SES initialisation failed");
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES initialisation failed", driverName, functionName);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: SES initialisation failed", driverName, functionName);
 			}
 		}
 	}
@@ -1374,7 +1436,7 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 void ElectronAnalyser::updateStatus()
 {
 	const char * functionName = "updateStatus()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int status=0;
 	this->getInstrumentStatus(&status);
 	switch(status)
@@ -1382,27 +1444,27 @@ void ElectronAnalyser::updateStatus()
 	case SesNS::Normal:
 		this->setIntegerParam(ADStatus, ADStatusIdle);
 		this->setStringParam(ADStatusMessage,"Analyser READY.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Analyser READY.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Analyser ready\n", driverName, functionName);
 		break;
 	case  SesNS::Running:
 		this->setIntegerParam(ADStatus, ADStatusAcquire);
 		this->setStringParam(ADStatusMessage,"Analyser BUSY.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Analyser BUSY.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Analyser busy\n", driverName, functionName);
 		break;
 	case  SesNS::AcqError :
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"Acquisition was interrupted with an error.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was interrupted with an error.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was interrupted with an error\n", driverName, functionName);
 		break;
 	case SesNS::NonOperational:
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"The library is not operational. Resetting may resolve the issue.");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The library is not operational. Resetting may resolve the issue.", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The library is not operational. Resetting may resolve the issue\n", driverName, functionName);
 		break;
 	case SesNS::NotInitialized :
 		this->setIntegerParam(ADStatus, ADStatusError);
 		this->setStringParam(ADStatusMessage,"The SESInstrument library has not been initialized (the GDS_Initialize function has not been called).");
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The SESInstrument library has not been initialized (the GDS_Initialize function has not been called).", driverName, functionName);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: The SESInstrument library has not been initialized (the GDS_Initialize function has not been called)\n", driverName, functionName);
 		break;
 	}
 
@@ -1417,8 +1479,7 @@ void ElectronAnalyser::updateStatus()
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Current step: %d", driverName, functionName, step);
 	callParamCallbacks();
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
-	printf("%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 }
 
 /*!
@@ -1430,10 +1491,10 @@ void ElectronAnalyser::updateStatus()
 asynStatus ElectronAnalyser::getKineticEnergy(double *kineticEnergy)
 {
 	const char * functionName = "getKineticEnergy(double *kineticEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getKineticEnergy(kineticEnergy);
     if(isError(err, functionName)) return asynError;
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+    //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting...\n", driverName, functionName);
 	return asynSuccess;
 }
 
@@ -1448,10 +1509,10 @@ asynStatus ElectronAnalyser::getKineticEnergy(double *kineticEnergy)
 asynStatus ElectronAnalyser::setKineticEnergy(const double kineticEnergy)
 {
 	const char * functionName = "setKineticEnergy(const double kineticEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err =  ses->setKineticEnergy(kineticEnergy);
     if(isError(err, functionName)) return asynError;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1466,10 +1527,10 @@ asynStatus ElectronAnalyser::setKineticEnergy(const double kineticEnergy)
 asynStatus ElectronAnalyser::getElementVoltage(const char *elementName, double *voltage)
 {
 	const char * functionName = "getElementVoltage(const char *elementName, double *voltage)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getElementVoltage(elementName, voltage);
     if(isError(err, functionName)) return asynError;
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 
@@ -1485,10 +1546,10 @@ asynStatus ElectronAnalyser::getElementVoltage(const char *elementName, double *
 asynStatus ElectronAnalyser::setElementVoltage(const char *elementName, const double voltage)
 {
 	const char * functionName = "setElementVoltage(const char *elementName, const double voltage)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err =  ses->setElementVoltage(elementName, voltage);
     if(isError(err, functionName)) return asynError;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1547,18 +1608,20 @@ asynStatus ElectronAnalyser::getEnergyMode(bool *b){
 asynStatus ElectronAnalyser::start()
 {
 	const char * functionName = "start()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	// set acquisition parameters on the wrapper
 	int err=ses->setProperty("detector_region", 0, &detector);
+
 	if (isError(err, functionName)) {
 		return asynError;
 	}
 	err = ses->setProperty("analyzer_region", 0, &analyzer);
+
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-
 	err = ses->initAcquisition(false, false);
+
 	if (isError(err, functionName)) {
 		return asynError;
 	}
@@ -1566,10 +1629,12 @@ asynStatus ElectronAnalyser::start()
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition initialisation completed.\n", driverName, functionName);
 	setStringParam(ADStatusMessage, "acquisition initialisation completed.");
 	callParamCallbacks();
+
 	int steps=0;
 	double dtime=0;
 	double minEnergyStep=0;
 	err=ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+
 	if (isError(err, functionName))
 	{
 		return asynError;
@@ -1578,7 +1643,6 @@ asynStatus ElectronAnalyser::start()
 	{
 		char * message = new char[MAX_MESSAGE_SIZE];
 		epicsSnprintf(message, sizeof(message),"Number of steps: %d; Dwell time: %f; minimum energy step: %f.",steps, analyzer.dwellTime_, analyzer.energyStep_);
-		printf("Number of steps: %d; Dwell time: %f; minimum energy step: %f\n",steps, dtime, minEnergyStep);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.", driverName, functionName, message);
 		setStringParam(ADStatusMessage, message);
 		callParamCallbacks();
@@ -1592,7 +1656,7 @@ asynStatus ElectronAnalyser::start()
 		return asynError;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: start acquisition.\n", driverName, functionName);
-	setStringParam(ADStatusMessage, "start acquisition.");
+	setStringParam(ADStatusMessage, "Acquiring....");
 	callParamCallbacks();
 	return asynSuccess;
 }
@@ -1606,7 +1670,7 @@ asynStatus ElectronAnalyser::start()
 asynStatus ElectronAnalyser::stop()
 {
 	const char * functionName = "stop()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->stopAcquisition();
 	if (isError(err, functionName)) {
 		setStringParam(ADStatusMessage, "error stop acquisition.");
@@ -1615,7 +1679,7 @@ asynStatus ElectronAnalyser::stop()
 	}
 	setIntegerParam(ADStatus, ADStatusIdle);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition stopped.", driverName, functionName);
-	setStringParam(ADStatusMessage, "acquisition stopped.");
+	setStringParam(ADStatusMessage, "Acquisition stopped");
 	callParamCallbacks();
 	return asynSuccess;
 }
@@ -1627,14 +1691,14 @@ asynStatus ElectronAnalyser::stop()
 asynStatus ElectronAnalyser::resetInstrument()
 {
 	const char * functionName = "resetInstrument()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err =ses->resetHW();
 	if (isError(err, functionName)) {
 		setStringParam(ADStatusMessage, "error reset instrument.");
 		callParamCallbacks();
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1645,14 +1709,14 @@ asynStatus ElectronAnalyser::resetInstrument()
 asynStatus ElectronAnalyser::zeroSupplies()
 {
 	const char * functionName = "resetSupplies()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err =ses->zeroSupplies();
 	if (isError(err, functionName)) {
 		setStringParam(ADStatusMessage, "error reset supplies to zero.");
 		callParamCallbacks();
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1663,7 +1727,7 @@ asynStatus ElectronAnalyser::zeroSupplies()
 asynStatus ElectronAnalyser::testCommunication()
 {
 	const char * functionName = "testCommunication()";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->testHW();
 	if (isError(err, functionName)) {
@@ -1671,7 +1735,7 @@ asynStatus ElectronAnalyser::testCommunication()
 		callParamCallbacks();
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1683,7 +1747,7 @@ asynStatus ElectronAnalyser::testCommunication()
 asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 {
 	const char * functionName = "getLensModeList(std::vector<string> *pLensModeList)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int max =0;
 	int err = ses->getProperty("lens_mode_count",0,&max);
@@ -1701,7 +1765,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 		}*/
 		lens =  new char[30];
 		err = ses->getProperty("lens_mode", i, lens, size);
-		printf("Lens #%d = %s\n", i, lens);
+		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Lens #%d = %s\n", driverName, functionName, i, lens);
 		if (isError(err, functionName)) {
 			delete [] lens;
 			return asynError;
@@ -1709,7 +1773,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 		pLensModeList->push_back(lens);
 		delete [] lens;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1721,7 +1785,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 {
 	const char * functionName = "getElementSetLlist(std::vector<string> *pElementSetList)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int max =0;
 	int err = ses->getProperty("element_set_count",0,&max);
@@ -1739,7 +1803,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 		}*/
 		set =  new char[size];
 		err = ses->getProperty("element_set",i,set, size);
-		printf("Element set #%d = %s\n", i, set);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Element set #%d = %s\n", driverName, functionName, i, set);
 		if (isError(err, functionName)) {
 			delete [] set;
 			return asynError;
@@ -1747,7 +1811,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 		pElementSetList->push_back(set);
 		delete [] set;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1759,7 +1823,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 asynStatus ElectronAnalyser::getPassEnergyList(DoubleVector *pPassEnergyList)
 {
 	const char * functionName = "getPassEnergyList(std::vector<double> *pPassEnergyList)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int max =0;
 	int err = ses->getProperty("pass_energy_count",0,&max);
@@ -1776,7 +1840,7 @@ asynStatus ElectronAnalyser::getPassEnergyList(DoubleVector *pPassEnergyList)
 		}
 		pPassEnergyList->push_back(passE);
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 
@@ -1797,10 +1861,10 @@ asynStatus ElectronAnalyser::getPassEnergyList(DoubleVector *pPassEnergyList)
 asynStatus ElectronAnalyser::getLibDescription(char *value, int &size)
 {
 	const char * functionName = "getLibDescription(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	ses->getProperty("lib_description", 0, value, size);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1818,10 +1882,10 @@ asynStatus ElectronAnalyser::getLibDescription(char *value, int &size)
 asynStatus ElectronAnalyser::getLibVersion(char *value, int &size)
 {
 	const char * functionName = "getLibVersion(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	ses->getProperty("lib_version", 0, value, size);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1841,10 +1905,10 @@ asynStatus ElectronAnalyser::getLibVersion(char *value, int &size)
 asynStatus ElectronAnalyser::getLibError(int index, char *value, int &size)
 {
 	const char * functionName = "getLibError(int index, char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	ses->getProperty("lib_error", index, value, size);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1861,13 +1925,13 @@ asynStatus ElectronAnalyser::getLibError(int index, char *value, int &size)
 asynStatus ElectronAnalyser::getLibWorkingDir(char *value, int &size)
 {
 	const char * functionName = "getLibWorkingDir(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("lib_working_dir", 0, value);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1882,12 +1946,12 @@ asynStatus ElectronAnalyser::getLibWorkingDir(char *value, int &size)
 asynStatus ElectronAnalyser::setLibWorkingDir(const char *value)
 {
 	const char * functionName = "setLibWorkingDir(const char *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("lib_working_dir", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1900,13 +1964,13 @@ asynStatus ElectronAnalyser::setLibWorkingDir(const char *value)
 asynStatus ElectronAnalyser::getInstrumentStatus(int *value)
 {
 	const char * functionName = "getInstrumentStatus(int *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("instrument_status", 0, value);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1922,13 +1986,13 @@ asynStatus ElectronAnalyser::getInstrumentStatus(int *value)
 asynStatus ElectronAnalyser::getAlwaysDelayRegion(bool *value)
 {
 	const char * functionName = "getAlwaysDelayRegion(bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("always_delay_region", 0, value);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1943,12 +2007,12 @@ asynStatus ElectronAnalyser::getAlwaysDelayRegion(bool *value)
 asynStatus ElectronAnalyser::setAlwaysDelayRegion(const bool *value)
 {
 	const char * functionName = "setAlwaysDelayRegion(const bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("always_delay_region", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1965,13 +2029,13 @@ asynStatus ElectronAnalyser::setAlwaysDelayRegion(const bool *value)
 asynStatus ElectronAnalyser::getAllowIOWithDetector(bool *value)
 {
 	const char * functionName = "getAllowIOWithDetector(bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("allow_io_with_detector", 0, value);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -1984,12 +2048,12 @@ asynStatus ElectronAnalyser::getAllowIOWithDetector(bool *value)
 asynStatus ElectronAnalyser::setAllowIOWithDetector(const bool *value)
 {
 	const char * functionName = "setAllowIOWithDetector(const bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("allow_io_with_detector", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2007,13 +2071,13 @@ asynStatus ElectronAnalyser::setAllowIOWithDetector(const bool *value)
 asynStatus ElectronAnalyser::getInstrumentModel(char *value, int &size)
 {
 	const char * functionName = "getInstrumentModel(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("instrument_model", 0, value, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2031,13 +2095,13 @@ asynStatus ElectronAnalyser::getInstrumentModel(char *value, int &size)
 asynStatus ElectronAnalyser::getInstrumentSerialNo(char *value, int &size)
 {
 	const char * functionName = "getInstrumentSerialNo(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("instrument_serial_no", 0, value, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2050,13 +2114,13 @@ asynStatus ElectronAnalyser::getInstrumentSerialNo(char *value, int &size)
 asynStatus ElectronAnalyser::getDetectorInfo(SESWrapperNS::DetectorInfo *value)
 {
 	const char * functionName = "getDetectorInfo(SESWrapperNS::DetectorInfo *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
 	int err = ses->getProperty("detector_info", 0, value);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2070,12 +2134,12 @@ asynStatus ElectronAnalyser::getDetectorInfo(SESWrapperNS::DetectorInfo *value)
 asynStatus ElectronAnalyser::getDetectorRegion(SESWrapperNS::DetectorRegion *value)
 {
 	const char * functionName = "getDetectorRegion(SESWrapperNS::DetectorRegion *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("detector_region", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2091,12 +2155,12 @@ asynStatus ElectronAnalyser::getDetectorRegion(SESWrapperNS::DetectorRegion *val
 asynStatus ElectronAnalyser::setDetectorRegion(const SESWrapperNS::DetectorRegion *value)
 {
 	const char * functionName = "setDetectorRegion(const SESWrapperNS::DetectorRegion *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("detector_region", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 
@@ -2114,12 +2178,12 @@ asynStatus ElectronAnalyser::setDetectorRegion(const SESWrapperNS::DetectorRegio
 asynStatus ElectronAnalyser::getElementSetCount(int & value)
 {
 	const char * functionName = "getElementSetCount(int & value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("element_set_count", 0, &value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2138,12 +2202,12 @@ asynStatus ElectronAnalyser::getElementSetCount(int & value)
 asynStatus ElectronAnalyser::getElementSet(int index, char * elementSet, int & size)
 {
 	const char * functionName = "getElementSet(int index, char * elementSet, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("element_set", index, elementSet);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2157,12 +2221,12 @@ asynStatus ElectronAnalyser::getElementSet(int index, char * elementSet, int & s
 asynStatus ElectronAnalyser::setElementSet(const char * elementSet)
 {
 	const char * functionName = "setElementSet(const char * elementSet)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("element_set", -1, elementSet);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2179,12 +2243,12 @@ asynStatus ElectronAnalyser::setElementSet(const char * elementSet)
 asynStatus ElectronAnalyser::getLensModeCount(int & value)
 {
 	const char * functionName = "getLensModeCount(int & value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("lens_mode_count", 0, &value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2203,12 +2267,12 @@ asynStatus ElectronAnalyser::getLensModeCount(int & value)
 asynStatus ElectronAnalyser::getLensMode(int index, char * lensMode, int & size)
 {
 	const char * functionName = "getLensMode(int index, char * lensMode, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("lens_mode", index, lensMode);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2225,12 +2289,12 @@ asynStatus ElectronAnalyser::getLensMode(int index, char * lensMode, int & size)
 asynStatus ElectronAnalyser::setLensMode(const char * lensMode)
 {
 	const char * functionName = "setLensMode(const char * lensMode)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("lens_mode", -1, lensMode);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /*!
@@ -2248,12 +2312,12 @@ asynStatus ElectronAnalyser::setLensMode(const char * lensMode)
 asynStatus ElectronAnalyser::getPassEnergyCount(int & value)
 {
 	const char * functionName = "getPassEnergyCount(int & value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("pass_energy_count", 0, &value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2268,12 +2332,12 @@ asynStatus ElectronAnalyser::getPassEnergyCount(int & value)
 asynStatus ElectronAnalyser::getPassEnergy(int index, double &passEnergy )
 {
 	const char * functionName = "getPassEnergy(int index, double &passEnergy )";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("pass_energy", index, &passEnergy);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2290,12 +2354,12 @@ asynStatus ElectronAnalyser::getPassEnergy(int index, double &passEnergy )
 asynStatus ElectronAnalyser::setPassEnergy(const double * passEnergy)
 {
 	const char * functionName = "setPassEnergy(const double * passEnergy)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("pass_energy", -1, passEnergy);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2308,12 +2372,12 @@ asynStatus ElectronAnalyser::setPassEnergy(const double * passEnergy)
 asynStatus ElectronAnalyser::getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *value)
 {
 	const char * functionName = "getUseExternalIO(bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("analyzer_region", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2334,12 +2398,12 @@ asynStatus ElectronAnalyser::getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *va
 asynStatus ElectronAnalyser::setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value)
 {
 	const char * functionName = "setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("analyzer_region", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2355,12 +2419,12 @@ asynStatus ElectronAnalyser::setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegi
 asynStatus ElectronAnalyser::getUseExternalIO(bool *value)
 {
 	const char * functionName = "getUseExternalIO(bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("use_external_io", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2377,12 +2441,12 @@ asynStatus ElectronAnalyser::getUseExternalIO(bool *value)
 asynStatus ElectronAnalyser::setUseExternalIO(const bool *value)
 {
 	const char * functionName = "setUseExternalIO(const bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("use_external_io", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2396,12 +2460,12 @@ asynStatus ElectronAnalyser::setUseExternalIO(const bool *value)
 asynStatus ElectronAnalyser::getUseDetector(bool *value)
 {
 	const char * functionName = "getUseDetector(bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("use_detector", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2416,12 +2480,12 @@ asynStatus ElectronAnalyser::getUseDetector(bool *value)
 asynStatus ElectronAnalyser::setUseDetector(const bool *value)
 {
 	const char * functionName = "setUseDetector(const bool *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("use_detector", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2436,12 +2500,12 @@ asynStatus ElectronAnalyser::setUseDetector(const bool *value)
 asynStatus ElectronAnalyser::getRegionName(char *value, int &size)
 {
 	const char * functionName = "getRegionName(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("region_name", 0, value, size);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2455,12 +2519,12 @@ asynStatus ElectronAnalyser::getRegionName(char *value, int &size)
 asynStatus ElectronAnalyser::setRegionName(const char *value)
 {
 	const char * functionName = "setRegionName(const char *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("region_name", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2476,12 +2540,12 @@ asynStatus ElectronAnalyser::setRegionName(const char *value)
 asynStatus ElectronAnalyser::getTempFileName(char *value, int &size)
 {
 	const char * functionName = "getTempFileName(char *value, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("temp_file_name", 0, value, size);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2494,12 +2558,12 @@ asynStatus ElectronAnalyser::getTempFileName(char *value, int &size)
 asynStatus ElectronAnalyser::setTempFileName(const char *value)
 {
 	const char * functionName = "setTempFileName(const char *value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("temp_file_name", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2515,12 +2579,12 @@ asynStatus ElectronAnalyser::setTempFileName(const char *value)
 asynStatus ElectronAnalyser::getResetDataBetweenIterations(bool * value)
 {
 	const char * functionName = "getResetDataBetweenIterations(bool * value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getProperty("reset_data_between_iterations", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2538,12 +2602,12 @@ asynStatus ElectronAnalyser::getResetDataBetweenIterations(bool * value)
 asynStatus ElectronAnalyser::setResetDataBetweenIterations(const bool * value)
 {
 	const char * functionName = "setResetDataBetweenIterations(const bool * value)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->setProperty("reset_data_between_iterations", 0, value);
 	if(isError(err, functionName)){
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 
@@ -2561,13 +2625,13 @@ asynStatus ElectronAnalyser::setResetDataBetweenIterations(const bool * value)
 asynStatus ElectronAnalyser::getAcqChannels(int & channels)
 {
 	const char * functionName = "getAcqChannels(int & channels)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int dummy = 0;
 	int err = ses->getAcquiredData("acq_channels", 0, &channels,dummy);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting...\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2581,13 +2645,13 @@ asynStatus ElectronAnalyser::getAcqChannels(int & channels)
 asynStatus ElectronAnalyser::getAcqSlices(int & slices)
 {
 	const char * functionName = "getAcqSlices(int & slices)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int dummy = 0;
 	int err = ses->getAcquiredData("acq_slices", 0, &slices, dummy);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2606,13 +2670,13 @@ asynStatus ElectronAnalyser::getAcqSlices(int & slices)
 asynStatus ElectronAnalyser::getAcqIterations(int & iterations)
 {
 	const char * functionName = "getAcqIterations(int & iterations)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int dummy = 0;
 	int err = ses->getAcquiredData("acq_iterations", 0, &iterations, dummy);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2630,12 +2694,12 @@ asynStatus ElectronAnalyser::getAcqIterations(int & iterations)
 asynStatus ElectronAnalyser::getAcqIntensityUnit(char * intensityUnit, int & size)
 {
 	const char * functionName = "getAcqIntensityUnit(char * intensityUnit, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_intensity_unit", 0, intensityUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2653,12 +2717,12 @@ asynStatus ElectronAnalyser::getAcqIntensityUnit(char * intensityUnit, int & siz
 asynStatus ElectronAnalyser::getAcqChannelUnit(char * channelUnit, int & size)
 {
 	const char * functionName = "getAcqChannelUnit(char * channelUnit, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_channel_unit", 0, channelUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2676,12 +2740,12 @@ asynStatus ElectronAnalyser::getAcqChannelUnit(char * channelUnit, int & size)
 asynStatus ElectronAnalyser::getAcqSliceUnit(char * sliceUnit, int & size)
 {
 	const char * functionName = "getAcqSliceUnit(char * sliceUnit, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_slice_unit", 0, sliceUnit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2698,12 +2762,12 @@ asynStatus ElectronAnalyser::getAcqSliceUnit(char * sliceUnit, int & size)
 asynStatus ElectronAnalyser::getAcqSpectrum(double * pSumData, int & size)
 {
 	const char * functionName = "getAcqSpectrum(double * pSumData, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_spectrum", 0, pSumData, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2720,12 +2784,12 @@ asynStatus ElectronAnalyser::getAcqSpectrum(double * pSumData, int & size)
 asynStatus ElectronAnalyser::getAcqImage(double * pData, int & size)
 {
 	const char * functionName = "getAcqImage(double * pData, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_image", 0, pData, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /*!
@@ -2743,12 +2807,12 @@ asynStatus ElectronAnalyser::getAcqImage(double * pData, int & size)
 asynStatus ElectronAnalyser::getAcqSlice(int index, double * pSliceData, int size)
 {
 	const char * functionName = "getAcqSlice(int index, double * pSliceData, int size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_slice", index, pSliceData, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2764,12 +2828,12 @@ asynStatus ElectronAnalyser::getAcqSlice(int index, double * pSliceData, int siz
 asynStatus ElectronAnalyser::getAcqChannelScale(double * pSpectrum, int & size)
 {
 	const char * functionName = "getAcqChannelScale(double * pSpectrum, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_channel_scale", 0, pSpectrum, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2784,12 +2848,12 @@ asynStatus ElectronAnalyser::getAcqChannelScale(double * pSpectrum, int & size)
 asynStatus ElectronAnalyser::getAcqSliceScale(double * pSpectrum, int & size)
 {
 	const char * functionName = "getAcqSliceScale(double * pSpectrum, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_slice_scale", 0, pSpectrum, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /*!
@@ -2809,12 +2873,12 @@ asynStatus ElectronAnalyser::getAcqSliceScale(double * pSpectrum, int & size)
 asynStatus ElectronAnalyser::getAcqRawImage(int * pImage, int &size)
 {
 	const char * functionName = "getAcqRawImage(int * pImage, int &size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_raw_image", 0, pImage, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2826,13 +2890,13 @@ asynStatus ElectronAnalyser::getAcqRawImage(int * pImage, int &size)
 asynStatus ElectronAnalyser::getAcqCurrentStep(int &currentStep)
 {
 	const char * functionName = "getAcqCurrentStep(int &currentStep)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int size = 0;
 	int err = ses->getAcquiredData("acq_current_step", 0, &currentStep, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2845,10 +2909,10 @@ asynStatus ElectronAnalyser::getAcqCurrentStep(int &currentStep)
 asynStatus ElectronAnalyser::getAcqElapsedTime(double &elapsedTime)
 {
 	const char * functionName = "getAcqElapsedTime(double &elapsedTime)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int size = 0;
 	ses->getAcquiredData("acq_elapsed_time", 0, &elapsedTime, size);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2860,13 +2924,13 @@ asynStatus ElectronAnalyser::getAcqElapsedTime(double &elapsedTime)
 asynStatus ElectronAnalyser::getAcqIOPorts(int &ports)
 {
 	const char * functionName = "getAcqIOPorts(int &ports)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int size = 0;
 	int err = ses->getAcquiredData("acq_io_ports", 0, &ports, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2880,13 +2944,13 @@ asynStatus ElectronAnalyser::getAcqIOPorts(int &ports)
 asynStatus ElectronAnalyser::getAcqIOSize(int &dataSize)
 {
 	const char * functionName = "getAcqIOSize(int &dataSize)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int size = 0;
 	int err = ses->getAcquiredData("acq_io_size", 0, &dataSize, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2900,13 +2964,13 @@ asynStatus ElectronAnalyser::getAcqIOSize(int &dataSize)
 asynStatus ElectronAnalyser::getAcqIOIterations(int &iterations)
 {
 	const char * functionName = "getAcqIOIterations(int &iterations)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int size = 0;
 	int err = ses->getAcquiredData("acq_io_iterations", 0, &iterations, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2923,12 +2987,12 @@ asynStatus ElectronAnalyser::getAcqIOIterations(int &iterations)
 asynStatus ElectronAnalyser::getAcqIOUnit(char * unit, int & size)
 {
 	const char * functionName = "getAcqIOUnit(char * unit, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_io_unit", 0, unit, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2944,12 +3008,12 @@ asynStatus ElectronAnalyser::getAcqIOUnit(char * unit, int & size)
 asynStatus ElectronAnalyser::getAcqIOScale(double * scale, int & size)
 {
 	const char * functionName = "getAcqIOScale(double * scale, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_io_scale", 0, scale, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2969,12 +3033,12 @@ asynStatus ElectronAnalyser::getAcqIOScale(double * scale, int & size)
 asynStatus ElectronAnalyser::getAcqIOSpectrum(int index, double * pSpectrum, int & size)
 {
 	const char * functionName = "getAcqIOSpectrum(int index, double * pSpectrum, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_io_spectrum", index, pSpectrum, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -2991,12 +3055,12 @@ asynStatus ElectronAnalyser::getAcqIOSpectrum(int index, double * pSpectrum, int
 asynStatus ElectronAnalyser::getAcqIOData(double * pData, int & size)
 {
 	const char * functionName = "getAcqIOData(double * pData, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_io_data", 0, pData, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 /**
@@ -3012,12 +3076,12 @@ asynStatus ElectronAnalyser::getAcqIOData(double * pData, int & size)
 asynStatus ElectronAnalyser::getAcqIOPortName(int index, char * pName, int & size)
 {
 	const char * functionName = "getAcqIOPortName(int index, char * name, int & size)";
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: entering...", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
 	int err = ses->getAcquiredData("acq_io_port_name", index, pName, size);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: exit.", driverName, functionName);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
 
