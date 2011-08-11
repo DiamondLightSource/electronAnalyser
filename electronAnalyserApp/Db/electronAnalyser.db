@@ -1,0 +1,333 @@
+
+record(stringin, "ELECTRON-ANALYSER-01:TEST:X_UNITS_RBV")
+{
+  field(DESC, "X Axis Units")
+  field(DTYP, "asynOctetRead")
+  field(INP,  "@asyn(electronAnalyser 0)ACQ_CHANNEL_UNIT")
+  field(SCAN, "I/O Intr")
+}
+
+record(stringin, "ELECTRON-ANALYSER-01:TEST:Y_UNITS_RBV")
+{
+  field(DESC, "Y Axis Units")
+  field(DTYP, "asynOctetRead")
+  field(INP,  "@asyn(electronAnalyser 0)ACQ_INTENSITY_UNIT")
+  field(SCAN, "I/O Intr")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:SLICES") 
+{
+  field(DESC, "Number of slices")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn(electronAnalyser 0)DETECTOR_SLICES")
+  field(PREC, "1")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:SLICES_RBV") 
+{
+  field(DESC, "Number of slices Readback")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn(electronAnalyser 0)DETECTOR_SLICES")
+  field(SCAN, "I/O Intr")
+  field(PREC, "1")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:ITERATIONS") 
+{
+  field(DESC, "Number of iterations")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn(electronAnalyser 0)ITERATIONS")
+  field(PREC, "1")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:ITERATIONS_RBV") 
+{
+  field(DESC, "Number of iterations Readback")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn(electronAnalyser 0)ITERATIONS")
+  field(SCAN, "I/O Intr")
+  field(PREC, "1")
+}
+
+######################## Modes ########################### 
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE")
+{
+  field(DESC, "Acquisition Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)ACQUISITION_MODE")
+  field(ZRST, "Swept")
+  field(ZRVL, "0")
+  field(ONST, "Fixed")
+  field(ONVL, "1")
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ACQ_MODE_RBV")
+{
+  field(DESC, "Acquisition Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ACQUISITION_MODE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Swept")
+  field(ZRVL, "0")
+  field(ONST, "Fixed")
+  field(ONVL, "1")
+}
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE")
+{
+  field(DESC, "Energy Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)ENERGY_MODE")
+  field(ZRST, "Binding")
+  field(ZRVL, "0")
+  field(ONST, "Kinetic")
+  field(ONVL, "1")
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ENERGY_MODE_RBV")
+{
+  field(DESC, "Energy Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ENERGY_MODE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Binding")
+  field(ZRVL, "0")
+  field(ONST, "Kinetic")
+  field(ONVL, "1")
+}
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:LENS_MODE") 
+{
+  field(DESC, "Lens Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)LENS_MODES")
+  field(ZRST, "Transmission")
+  field(ZRVL, "0")
+  field(ONST, "Angular14")
+  field(ONVL, "1")
+  field(TWST, "Angular7_fix")
+  field(TWVL, "2")
+  field(THST, "Angular30")
+  field(THVL, "3")
+  field(FRST, "Angular7")
+  field(FRVL, "4")
+  field(FVST, "A14small")
+  field(FVVL, "5")
+  field(SXST, "A30small")
+  field(SXVL, "6")  
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:LENS_MODE_RBV") 
+{
+  field(DESC, "Lens Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)LENS_MODES")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Transmission")
+  field(ZRVL, "0")
+  field(ONST, "Angular14")
+  field(ONVL, "1")
+  field(TWST, "Angular7_fix")
+  field(TWVL, "2")
+  field(THST, "Angular30")
+  field(THVL, "3")
+  field(FRST, "Angular7")
+  field(FRVL, "4")
+  field(FVST, "A14small")
+  field(FVVL, "5")
+  field(SXST, "A30small")
+  field(SXVL, "6")  
+}
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:DETECTOR_MODE")
+{
+  field(DESC, "Detector Mode")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)DETECTOR_MODE")
+  field(ZRST, "Pulse Counting")
+  field(ZRVL, "0")
+  field(ONST, "ADC")
+  field(ONVL, "1")
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:DETECTOR_MODE_RBV")
+{
+  field(DESC, "Dectector Mode Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)DETECTOR_MODE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Pulse Counting")
+  field(ZRVL, "0")
+  field(ONST, "ADC")
+  field(ONVL, "1")
+}
+
+###################### Energy (eV) ########################
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY") 
+{
+  field(DESC, "Pass Energy")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)PASS_ENERGY")
+  field(ZRST, "1")
+  field(ZRVL, "0")
+  field(ONST, "2")
+  field(ONVL, "1")
+  field(TWST, "5")
+  field(TWVL, "2")
+  field(THST, "10")
+  field(THVL, "3")
+  field(FRST, "20")
+  field(FRVL, "4")
+  field(FVST, "50")
+  field(FVVL, "5")
+  field(SXST, "100")
+  field(SXVL, "6")  
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY_RBV") 
+{
+  field(DESC, "Pass Energy Readback")
+  field(DTYP, "asynInt32")
+  field(SCAN, "I/O Intr")
+  field(INP,  "@asyn(electronAnalyser 0)PASS_ENERGY")
+  field(ZRST, "1")
+  field(ZRVL, "0")
+  field(ONST, "2")
+  field(ONVL, "1")
+  field(TWST, "5")
+  field(TWVL, "2")
+  field(THST, "10")
+  field(THVL, "3")
+  field(FRST, "20")
+  field(FRVL, "4")
+  field(FVST, "50")
+  field(FVVL, "5")
+  field(SXST, "100")
+  field(SXVL, "6")  
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY") 
+{
+  field(DESC, "Low Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY_RBV") 
+{
+  field(DESC, "Low Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)LOW_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY") 
+{
+  field(DESC, "Centre Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)CENTER_ENERGY")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY_RBV") 
+{
+  field(DESC, "Centre Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)CENTER_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY") 
+{
+  field(DESC, "High Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)HIGH_ENERGY")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY_RBV") 
+{
+  field(DESC, "High Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)HIGH_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+###################### Step ########################
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:STEP_SIZE") 
+{
+  field(DESC, "Energy Step Size")
+  field(DTYP, "asynFloat64")
+  field(OUT, "@asyn(electronAnalyser 0)ENERGY_STEP")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:STEP_SIZE_RBV") 
+{
+  field(DESC, "Energy Step Size Readback")
+  field(DTYP, "asynFloat64")
+  field(INP, "@asyn(electronAnalyser 0)ENERGY_STEP")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+record(ao, "ELECTRON-ANALYSER-01:TEST:STEP_TIME") 
+{
+  field(DESC, "Dwell Time")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn(electronAnalyser 0)DWELL_TIME")
+  field(PREC, "3")
+}
+
+record(ai, "ELECTRON-ANALYSER-01:TEST:STEP_TIME_RBV") 
+{
+  field(DESC, "Step Time Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)DWELL_TIME")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
+################## Element Sets ####################
+
+record(mbbo, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET")
+{
+  field(DESC, "Element Set")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
+  field(ZRST, "Laser")
+  field(ZRVL, "0")
+  field(ONST, "He I")
+  field(ONVL, "1")
+}
+
+record(mbbi, "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET_RBV")
+{
+  field(DESC, "Element Set Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)ELEMENT_SETS")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "Laser")
+  field(ZRVL, "0")
+  field(ONST, "He I")
+  field(ONVL, "1")
+}
+
+###################################################
+
+record(waveform, "ELECTRON-ANALYSER-01:TEST:INT_SPECTRUM")
+{
+  field(DESC, "Integrated Spectrum")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn(electronAnalyser 0)ACQ_SPECTRUM")
+  field(SCAN, "I/O Intr")
+  field(FTVL, "DOUBLE")
+  field(NELM, "1024")
+}
