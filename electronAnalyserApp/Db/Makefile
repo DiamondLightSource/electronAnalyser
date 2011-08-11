@@ -9,7 +9,7 @@ include $(TOP)/configure/CONFIG
 
 #----------------------------------------------------
 
-DB += electronAnalyser.db
+DB += electronAnalyser.template
 
 include $(TOP)/configure/RULES
 #----------------------------------------
