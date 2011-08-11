@@ -1,0 +1,111 @@
+4 0 1
+beginScreenProperties
+major 4
+minor 0
+release 1
+x 732
+y 226
+w 1100
+h 800
+font "helvetica-medium-r-14.0"
+ctlFont "courier-bold-r-14.0"
+btnFont "helvetica-medium-r-14.0"
+fgColor index 14
+bgColor index 3
+textColor index 14
+ctlFgColor1 index 25
+ctlFgColor2 index 30
+ctlBgColor1 index 5
+ctlBgColor2 index 5
+topShadowColor index 1
+botShadowColor index 11
+title "Integrated Spectrum"
+showGrid
+gridSize 5
+disableScroll
+endScreenProperties
+
+# (X-Y Graph)
+object xyGraphClass
+beginObjectProperties
+major 4
+minor 5
+release 0
+# Geometry
+x 94
+y 10
+w 981
+h 677
+# Appearance
+border
+fgColor index 14
+bgColor index 5
+gridColor index 14
+font "courier-bold-r-14.0"
+# Operating Modes
+nPts 2
+# X axis properties
+showXAxis
+xAxisSrc "AutoScale"
+xMax 1
+# Y axis properties
+showYAxis
+yAxisSrc "AutoScale"
+yMax 1
+# Y2 axis properties
+y2AxisSrc "AutoScale"
+y2Max 1
+# Trace Properties
+numTraces 1
+yPv {
+  0 "ELECTRON-ANALYSER-01:TEST:INT_SPECTRUM"
+}
+plotColor {
+  0 index 20
+}
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 4
+release 0
+x 31
+y 325
+w 46
+h 23
+controlPv "ELECTRON-ANALYSER-01:TEST:Y_UNITS_RBV"
+format "string"
+font "helvetica-medium-r-14.0"
+fgColor index 14
+bgColor index 5
+useDisplayBg
+autoHeight
+nullColor index 30
+newPos
+objType "monitors"
+endObjectProperties
+
+# (Text Monitor)
+object activeXTextDspClass:noedit
+beginObjectProperties
+major 4
+minor 4
+release 0
+x 465
+y 725
+w 213
+h 28
+controlPv "ELECTRON-ANALYSER-01:TEST:X_UNITS_RBV"
+format "string"
+font "helvetica-medium-r-14.0"
+fgColor index 14
+bgColor index 5
+useDisplayBg
+autoHeight
+nullColor index 30
+newPos
+objType "monitors"
+endObjectProperties
+
