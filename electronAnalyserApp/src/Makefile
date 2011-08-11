@@ -43,7 +43,6 @@ DBD += electronAnalyserSupport.dbd
 # electronAnalyser.dbd will be created from these files
 electronAnalyser_DBD += base.dbd
 electronAnalyser_DBD += asyn.dbd
-#electronAnalyser_DBD += ADSupport.dbd
 electronAnalyser_DBD += commonDriverSupport.dbd
 electronAnalyser_DBD += electronAnalyserSupport.dbd
 electronAnalyser_DBD += busySupport.dbd
