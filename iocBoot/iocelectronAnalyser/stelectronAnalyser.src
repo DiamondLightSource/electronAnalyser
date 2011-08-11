@@ -15,26 +15,26 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 #   total number of NDArray buffers needed; 10 + 1 = 11
 #   Max memory: 2048000 bytes x 11 = 22528000 bytes. Rounded up: ~25MB
 #
-# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, XSize, YSize, 30, Max Memory)
+# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, 30, Max Memory)
 
-electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 1024, 1000, 30, 25000000)
-#asynSetTraceMask("electronAnalyser", 0, 0x1)
+electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 30, 25000000)
+asynSetTraceMask("electronAnalyser", 0, 0x1)
 dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/ADBase.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1,gda_template='',gda_desc=''")
 #dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
 dbLoadRecords("C:\Projects\electronAnalyser\db\electronAnalyser.db")
 
 iocInit()
-#asynSetTraceMask("electronAnalyser", 0, 0x11)
+asynSetTraceMask("electronAnalyser", 0, 0x11)
 # Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
 
 #dbpf "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY", "1"
-#dbpf "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY", "82"
-#dbpf "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY", "86"
+#dbpf "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY", "86"
+#dbpf "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY", "88"
 #dbpf "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY", "90"
 
 
 #dbpf "ELECTRON-ANALYSER-01:TEST:STEP_SIZE", "0.2"
-#dbpf "ELECTRON-ANALYSER-01:TEST:STEP_TIME", "10"
+#dbpf "ELECTRON-ANALYSER-01:TEST:STEP_TIME", "1"
 #dbpf "ELECTRON-ANALYSER-01:TEST:ITERATIONS", "1"
 
 
@@ -42,5 +42,5 @@ iocInit()
 #dbpf "ELECTRON-ANALYSER-01:TEST:LENS_MODE", "Transmission"
 #dbpf "ELECTRON-ANALYSER-01:TEST:ACQ_MODE", "Swept"
 #dbpf "ELECTRON-ANALYSER-01:TEST:Acquire", "Acquire"
-#dbpf "ELECTRON-ANALYSER-01:TEST:REGION_NAME", "Test"
+
 #asynReport(10, "electronAnalyser")
