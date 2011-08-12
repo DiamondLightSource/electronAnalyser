@@ -34,7 +34,7 @@ class electronAnalyser(_ADBase):
     DbdFileList = []
     if Architecture() == "win32-x86":
         # Device attributes
-        LibFileList = ['electronAnalyserSupport']
+        LibFileList = ['electronAnalyserSupport', 'wses']
         DbdFileList = ['electronAnalyserSupport']
 
     def Initialise(self):

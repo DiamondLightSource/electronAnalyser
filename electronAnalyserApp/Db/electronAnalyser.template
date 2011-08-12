@@ -1,4 +1,13 @@
 
+#% macro, P, Device Prefix^M
+#% macro, R, Device Suffix^M
+#% macro, PORT, Asyn Port name^M
+#% macro, ADDR, Asyn Port address^M
+#% macro, TIMEOUT, Timeout^M
+
+# This associates the template with an edm screen
+# % gui, $(PORT), edmtab, electronAnalyser.edl, P=ELECTRON-ANALYSER-01,R=:TEST:
+
 record(stringin, "ELECTRON-ANALYSER-01:TEST:X_UNITS_RBV")
 {
   field(DESC, "X Axis Units")
