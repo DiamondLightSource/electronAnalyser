@@ -18,4 +18,4 @@ MCA      	= $(SUPPORT)/mca/6-12-4dls1
 SSCAN    	= $(SUPPORT)/sscan/2-6-6dls1
 
 #EPICS_BASE=$(EPICS_ROOT)/epics/$(EPICS_RELEASE)/base
-EPICS_BASE=W:/epics/$(EPICS_RELEASE)/base
+EPICS_BASE=W:/epics/R3.14.11/base
