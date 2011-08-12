@@ -15,6 +15,9 @@ include $(TOP)/configure/CONFIG
 # Build an Diamond Support Module
 # -------------------------------
 
+# This line is to pick up .hpp files from wsesSrc (because they can't be installed into the includes directory
+USR_INCLUDES += -I../../wsesSrc/
+
 #define the library name
 LIBRARY_IOC_WIN32 += electronAnalyserSupport
 
@@ -27,6 +30,7 @@ USR_LIBS_WIN32 +=
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
+electronAnalyserSupport_SRCS += electronAnalyser.cpp
 
 # ------------------------
 # Build an IOC Application
@@ -40,11 +44,9 @@ DBD += electronAnalyser.dbd
 DBD += electronAnalyserSupport.dbd
 
 # electronAnalyser.dbd will be created from these files
-electronAnalyser_DBD += base.dbd
-electronAnalyser_DBD += asyn.dbd
 electronAnalyser_DBD += commonDriverSupport.dbd
 electronAnalyser_DBD += electronAnalyserSupport.dbd
-electronAnalyser_DBD += busySupport.dbd
+electronAnalyser_DBD += ffmpegServer.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
 electronAnalyser_SRCS += electronAnalyser_registerRecordDeviceDriver.cpp
@@ -53,35 +55,13 @@ electronAnalyser_SRCS_DEFAULT += electronAnalyserMain.cpp
 electronAnalyser_SRCS_vxWorks += -nil-
 
 # Add locally compiled object code
-electronAnalyser_LIBS += electronAnalyserSupport
-electronAnalyser_LIBS += NDPlugin ADBase netCDF
-electronAnalyser_LIBS_Linux += PvAPI ImageLib
-electronAnalyser_LIBS_WIN32 += PvAPI ImageLib
-electronAnalyser_LIBS += calc busy sscan autosave mca
-electronAnalyser_LIBS += asyn
-electronAnalyser_LIBS += $(EPICS_BASE_IOC_LIBS)
+electronAnalyser_LIBS += electronAnalyserSupport 
+electronAnalyser_LIBS_WIN32 += wses
+electronAnalyser_LIBS += avdevice avformat avcodec avutil swscale ffmpegServer
 
 # A little linking hack to ensure that nafxcw is linked first (preventing a LNK2005 error)
 electronAnalyser_LDFLAGS_WIN32 +=/NOD:nafxcw.lib
 electronAnalyser_SYS_LIBS_WIN32 +=nafxcw
-
-# To use versions of these libraries supplied with areaDetector use this line
-electronAnalyser_SYS_LIBS_cygwin32 += rpc
-electronAnalyser_LIBS_WIN32        += libtiff jpeg libNeXus.dll
-electronAnalyser_LIBS_cygwin32     += libtiff jpeg libNeXus.dll
-
-# To use versions of these libraries supplied with areaDetector use this line
-electronAnalyser_LIBS_Linux        += NeXus mfhdf df hdf5 mxml
-# To use system versions of these libraries use this line
-#electronAnalyser_SYS_LIBS_Linux    += NeXus mfhdf df hdf5 mxml
-
-# To use versions of these libraries supplied with areaDetector use this line
-#electronAnalyser_LIBS_Linux        += tiff jpeg z
-# To use system versions of these libraries use this line
-electronAnalyser_SYS_LIBS_Linux    += tiff jpeg z
-
-electronAnalyser_LIBS_solaris        += NeXus hdf5 jpeg z
-electronAnalyser_SYS_LIBS_solaris    += tiff
 
 # Windows libraries for Electron Analyser - non available if needed need to generate from .dll
 #electronAnalyser_LIBS_WIN32 += SESInstrument
@@ -99,5 +79,9 @@ BIN_INSTALLS_WIN32 += $(wildcard $(AREA_DETECTOR)/bin/win32-x86/*.dll)
 # install caRepeater.exe in the bin dir so we dont depend on EPICS being preinstalled
 # on our Windows target machine
 BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe
+
+# Ensure all the common libraries used by areaDetector are included in the build
+# of both library and IOC executable.
+include $(AREA_DETECTOR)/ADApp/commonDriverMakefile
 
 include $(TOP)/configure/RULES

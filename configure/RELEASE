@@ -8,22 +8,40 @@
 # each time EPICS_BASE, SNCSEQ, or any other external
 # module defined in the RELEASE file is rebuilt.
 
-SUPPORT=   		/dls_sw/prod/R3.14.11/support
-WORK=	   		/dls_sw/work/R3.14.11/support
+SUPPORT=/dls_sw/prod/R3.14.11/support
+#WORK=commented out to prevent prod modules depending on work modules
+
+# If you don't want to install into $(TOP) then
+# define INSTALL_LOCATION_APP here
 
 #If using the sequencer, point SNCSEQ at its top directory:
-#SNCSEQ=$(SUPPORT)/seq/$(SNCSEQ_RELEASE)
+SNCSEQ=$(SUPPORT)/seq/2-0-12dls1
 
-AREA_DETECTOR=		$(SUPPORT)/areaDetector/1-7beta1-dls2
-ASYN=	   		$(SUPPORT)/asyn/4-14
-AUTOSAVE=  		$(SUPPORT)/autosave/4-6dls2
-BUSY=	   		$(SUPPORT)/busy/1-3dls3
-CALC=	   		$(SUPPORT)/calc/2-8dls2
-MCA=	   		$(SUPPORT)/mca/6-12-4dls1
-SSCAN=	   		$(SUPPORT)/sscan/2-6-6dls1
+# ASYN is needed for sockets and for smartControl
+ASYN=$(SUPPORT)/asyn/4-14
+
+# CALC is needed for scalcout record that SSCAN uses
+CALC=$(SUPPORT)/calc/2-8dls2
+
+# SSCAN is needed for scanning threshold on Pilatus
+SSCAN=$(SUPPORT)/sscan/2-6-6dls1
+
+# BUSY is needed for busy record
+BUSY=$(SUPPORT)/busy/1-3dls3
+
+# MCA is needed for fast accumulation of ROI counts
+MCA=$(SUPPORT)/mca/6-12-4dls1
+
+#AUTOSAVE is needed for save_restore
+AUTOSAVE=$(SUPPORT)/autosave/4-6dls2
+
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-3
+
+AREA_DETECTOR=$(SUPPORT)/areaDetector/1-7beta1-dls2
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=	/dls_sw/epics/R3.14.11/base
-TEMPLATE_TOP=	$(EPICS_BASE)/templates/makeBaseApp/top
+EPICS_BASE=/dls_sw/epics/R3.14.11/base
+TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 -include $(TOP)/configure/RELEASE.private
+
