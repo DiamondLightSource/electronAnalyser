@@ -817,11 +817,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		}
 	}
 
-	char *intensity_unit = new char[32];
+	//char *intensity_unit = new char[32];
+	char intensity_unit[32];
 	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, channels);
 	setStringParam(AcqIntensityUnit, intensity_unit);
 
-	char *channel_unit = new char[32];
+	//char *channel_unit = new char[32];
+	char channel_unit[32];
 	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, channels);
 	setStringParam(AcqChannelUnit, channel_unit);
 
