@@ -1,0 +1,4 @@
+<?xml version="1.0" ?>
+<components arch="linux-x86">
+	<electronAnalyser.electronAnalyser ADDR="0" INSTRUMENT_FILE="4es203WALInstrument.dat" P="ELECTRON-ANALYSER-01" PORT="electronAnalyser" R=":TEST:" TIMEOUT="1" WRAPPER_LOCATION="C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6" XSIZE="1024" YSIZE="1000"/>
+</components>
