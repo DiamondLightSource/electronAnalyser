@@ -1,14 +1,5 @@
-#Mon Feb 14 11:50:02 GMT 2011
+#Mon Aug 22 15:57:54 BST 2011
 eclipse.preferences.version=1
 environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552=
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_BASE/delimiter=;
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_BASE/operation=replace
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_BASE/value=C\:/epics
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_HOST_ARCH/delimiter=;
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_HOST_ARCH/operation=replace
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_HOST_ARCH/value=win32-x86
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_ROOT/delimiter=;
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_ROOT/operation=replace
-environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/EPICS_ROOT/value=C\:/epics
 environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/append=true
 environment/project/cdt.managedbuild.toolchain.gnu.mingw.base.1640747552/appendContributed=true

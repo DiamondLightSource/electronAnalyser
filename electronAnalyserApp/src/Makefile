@@ -75,6 +75,7 @@ electronAnalyser_SYS_LIBS_WIN32 +=nafxcw
 # install the areaDetector and dxp DLL libraries locally in our bin dir
 
 BIN_INSTALLS_WIN32 += $(wildcard $(AREA_DETECTOR)/bin/win32-x86/*.dll)
+BIN_INSTALLS_WIN32 += $(wildcard $(FFMPEGSERVER)/bin/win32-x86/*.dll)
 
 # install caRepeater.exe in the bin dir so we dont depend on EPICS being preinstalled
 # on our Windows target machine
