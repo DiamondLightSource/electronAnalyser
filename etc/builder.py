@@ -32,10 +32,15 @@ class electronAnalyser(_ADBase):
 
     LibFileList = []
     DbdFileList = []
+    SysLibFileList = []
+    MakefileStringList = []
     if Architecture() == "win32-x86":
         # Device attributes
-        LibFileList = ['electronAnalyserSupport', 'wses']
-        DbdFileList = ['electronAnalyserSupport']
+        LibFileList += ['electronAnalyserSupport', 'wses']
+        SysLibFileList += ['nafxcw']
+        DbdFileList += ['electronAnalyserSupport']
+        MakefileStringList += ['%(ioc_name)s_LDFLAGS_WIN32 += /NOD:nafxcwd.lib',
+                                 'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
 
     def Initialise(self):
         print '# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, XSize, YSize, ' \
