@@ -400,8 +400,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	const char *functionName = "ElectronAnalyser";
 	//int eaStatus = WError::ERR_OK;
 	char message[MAX_MESSAGE_SIZE];
-	int size;
-	char * value;
+	int size = 0;
+	char value[MAX_MESSAGE_SIZE];
+	
 	werror = WError::instance();
 	// Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts and stops
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
@@ -537,14 +538,14 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 
 	/* Set some default values for parameters (the setup panel parameters) */
 	status |= setStringParam(ADManufacturer, "VG Scienta");
-	getInstrumentModel(0, size);
-	value = new char[size];
-	getInstrumentModel(value, size);
+	size = MAX_MESSAGE_SIZE;
+	getInstrumentModel(value, &size);
 	status |= setStringParam(ADModel, value);
-	getLibDescription(0, size);
-	value=new char[size];
-	getLibDescription(value, size);
+
+	size = MAX_MESSAGE_SIZE;
+	getLibDescription(value, &size);
 	status |= setStringParam(LibDescription, value);
+
 	getLibVersion(0, size);
 	value = new char[size];
 	getLibVersion(value, size);
@@ -888,7 +889,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	int status = asynSuccess;
 	int function = pasynUser->reason;
 	const char *functionName = "writeInt32";
-	char * message = new char[MAX_MESSAGE_SIZE];
+	char message[MAX_MESSAGE_SIZE];
 	int size = 0;
 
 	// parameters for functions
