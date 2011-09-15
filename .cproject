@@ -28,11 +28,11 @@
 							<tool id="cdt.managedbuild.tool.gnu.archiver.mingw.base.1742711281" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.mingw.base"/>
 							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.mingw.base.2016671354" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.mingw.base">
 								<option id="gnu.cpp.compiler.option.include.paths.679590898" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
-									<listOptionValue builtIn="false" value="&quot;W:\prod\R3.14.11\support\areaDetector\1-7beta1-dls2\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;W:\prod\R3.14.11\support\asyn\4-14\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;W:\epics\R3.14.11\base\include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;W:\epics\R3.14.11\base\include\os\WIN32&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;C:\Program Files\Microsoft Visual Studio .NET 2003\Vc7\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\epics\prod\R3.14.11\support\areaDetector\1-7beta1-dls2\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\epics\prod\R3.14.11\support\asyn\4-14\include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\epics\epics\R3.14.11\base\include\os\WIN32&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;C:\epics\epics\R3.14.11\base\include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1204902479" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
