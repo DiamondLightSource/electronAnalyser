@@ -468,6 +468,7 @@ int WSESWrapperMain::initAcquisition(const bool blockPointReady, const bool bloc
 
   blockPointReady_ = blockPointReady;
   blockRegionReady_ = blockRegionReady;
+
   iteration_ = 0;
   sesSpectrum_ = 0;
   currentStep_ = 0;
@@ -534,7 +535,6 @@ int WSESWrapperMain::startAcquisition()
   else
   {
     result = lib_->GDS_Start(&sesRegion_, &sesSpectrum_, tempFileName_.c_str(), iteration_, WSESWrapperMain::pointReady, WSESWrapperMain::regionReady);
-
     if (lib_->GDS_GetCurrSignals != 0)
       lib_->GDS_GetCurrSignals(&sesSignals_);
   }
@@ -666,6 +666,8 @@ int WSESWrapperMain::waitForRegionReady(int timeout_ms)
  */
 int WSESWrapperMain::continueAcquisition()
 {
+  /* Line below added to correct pointReady 'always ready' error */
+  pointReadyEvent_.reset();
   continueAcquisitionEvent_.set();
   return WError::ERR_OK;
 }
@@ -724,10 +726,13 @@ void STDCALL WSESWrapperMain::pointReady(int index)
 
   this_->pointReadyEvent_.set();
   this_->currentStep_++;
+
   if (this_->blockPointReady_)
   {
     HANDLE handles[] = {this_->continueAcquisitionEvent_.handle(), this_->abortAcquisitionEvent_.handle()};
     WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+    /* Line below added to correct pointReady 'always ready' error */
+    this_->continueAcquisitionEvent_.reset();
   }
 }
 
