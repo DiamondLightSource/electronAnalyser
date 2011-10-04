@@ -41,23 +41,6 @@ record(ai, "$(P)$(R):SLICES_RBV")
   field(PREC, "1")
 }
 
-record(ao, "$(P)$(R):ITERATIONS") 
-{
-  field(DESC, "Number of iterations")
-  field(DTYP, "asynInt32")
-  field(OUT, "@asyn(electronAnalyser 0)ITERATIONS")
-  field(PREC, "1")
-}
-
-record(ai, "$(P)$(R):ITERATIONS_RBV") 
-{
-  field(DESC, "Number of iterations Readback")
-  field(DTYP, "asynInt32")
-  field(INP, "@asyn(electronAnalyser 0)ITERATIONS")
-  field(SCAN, "I/O Intr")
-  field(PREC, "1")
-}
-
 ######################## Modes ########################### 
 
 record(mbbo, "$(P)$(R):ACQ_MODE")
@@ -339,4 +322,29 @@ record(waveform, "$(P)$(R):INT_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
   field(NELM, "1024")
+}
+
+################# Data Choice #####################
+
+record(mbbo, "$(P)$(R):DATA_CHOICE")
+{
+  field(DESC, "Data Choice")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn(electronAnalyser 0)DATA_CHOICE")
+  field(ZRST, "1D Spectrum")
+  field(ZRVL, "1")
+  field(ONST, "2D Image")
+  field(ONVL, "2")
+}
+
+record(mbbi, "$(P)$(R):DATA_CHOICE_RBV")
+{
+  field(DESC, "Data Choice Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn(electronAnalyser 0)DATA_CHOICE")
+  field(SCAN, "I/O Intr")
+  field(ZRST, "1D Spectrum")
+  field(ZRVL, "1")
+  field(ONST, "2D Image")
+  field(ONVL, "2")
 }
