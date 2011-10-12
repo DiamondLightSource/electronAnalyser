@@ -8,7 +8,7 @@
 # This associates the template with an edm screen
 # % gui, $(PORT), edmtab, electronAnalyser.edl, P=$(P),R=$(R):
 
-record(stringin, "$(P)$(R):X_UNITS_RBV")
+record(stringin, "$(P)$(R)X_UNITS_RBV")
 {
   field(DESC, "X Axis Units")
   field(DTYP, "asynOctetRead")
@@ -16,7 +16,7 @@ record(stringin, "$(P)$(R):X_UNITS_RBV")
   field(SCAN, "I/O Intr")
 }
 
-record(stringin, "$(P)$(R):Y_UNITS_RBV")
+record(stringin, "$(P)$(R)Y_UNITS_RBV")
 {
   field(DESC, "Y Axis Units")
   field(DTYP, "asynOctetRead")
@@ -24,7 +24,7 @@ record(stringin, "$(P)$(R):Y_UNITS_RBV")
   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R):SLICES") 
+record(ao, "$(P)$(R)SLICES") 
 {
   field(DESC, "Number of slices")
   field(DTYP, "asynInt32")
@@ -32,7 +32,7 @@ record(ao, "$(P)$(R):SLICES")
   field(PREC, "1")
 }
 
-record(ai, "$(P)$(R):SLICES_RBV") 
+record(ai, "$(P)$(R)SLICES_RBV") 
 {
   field(DESC, "Number of slices Readback")
   field(DTYP, "asynInt32")
@@ -43,7 +43,7 @@ record(ai, "$(P)$(R):SLICES_RBV")
 
 ######################## Modes ########################### 
 
-record(mbbo, "$(P)$(R):ACQ_MODE")
+record(mbbo, "$(P)$(R)ACQ_MODE")
 {
   field(DESC, "Acquisition Mode")
   field(DTYP, "asynInt32")
@@ -54,7 +54,7 @@ record(mbbo, "$(P)$(R):ACQ_MODE")
   field(ONVL, "1")
 }
 
-record(mbbi, "$(P)$(R):ACQ_MODE_RBV")
+record(mbbi, "$(P)$(R)ACQ_MODE_RBV")
 {
   field(DESC, "Acquisition Mode Readback")
   field(DTYP, "asynInt32")
@@ -66,7 +66,7 @@ record(mbbi, "$(P)$(R):ACQ_MODE_RBV")
   field(ONVL, "1")
 }
 
-record(mbbo, "$(P)$(R):ENERGY_MODE")
+record(mbbo, "$(P)$(R)ENERGY_MODE")
 {
   field(DESC, "Energy Mode")
   field(DTYP, "asynInt32")
@@ -77,7 +77,7 @@ record(mbbo, "$(P)$(R):ENERGY_MODE")
   field(ONVL, "1")
 }
 
-record(mbbi, "$(P)$(R):ENERGY_MODE_RBV")
+record(mbbi, "$(P)$(R)ENERGY_MODE_RBV")
 {
   field(DESC, "Energy Mode Readback")
   field(DTYP, "asynInt32")
@@ -89,7 +89,7 @@ record(mbbi, "$(P)$(R):ENERGY_MODE_RBV")
   field(ONVL, "1")
 }
 
-record(mbbo, "$(P)$(R):LENS_MODE") 
+record(mbbo, "$(P)$(R)LENS_MODE") 
 {
   field(DESC, "Lens Mode")
   field(DTYP, "asynInt32")
@@ -110,7 +110,7 @@ record(mbbo, "$(P)$(R):LENS_MODE")
   field(SXVL, "6")  
 }
 
-record(mbbi, "$(P)$(R):LENS_MODE_RBV") 
+record(mbbi, "$(P)$(R)LENS_MODE_RBV") 
 {
   field(DESC, "Lens Mode Readback")
   field(DTYP, "asynInt32")
@@ -132,7 +132,7 @@ record(mbbi, "$(P)$(R):LENS_MODE_RBV")
   field(SXVL, "6")  
 }
 
-record(mbbo, "$(P)$(R):DETECTOR_MODE")
+record(mbbo, "$(P)$(R)DETECTOR_MODE")
 {
   field(DESC, "Detector Mode")
   field(DTYP, "asynInt32")
@@ -143,7 +143,7 @@ record(mbbo, "$(P)$(R):DETECTOR_MODE")
   field(ONVL, "1")
 }
 
-record(mbbi, "$(P)$(R):DETECTOR_MODE_RBV")
+record(mbbi, "$(P)$(R)DETECTOR_MODE_RBV")
 {
   field(DESC, "Dectector Mode Readback")
   field(DTYP, "asynInt32")
@@ -157,7 +157,7 @@ record(mbbi, "$(P)$(R):DETECTOR_MODE_RBV")
 
 ###################### Energy (eV) ########################
 
-record(mbbo, "$(P)$(R):PASS_ENERGY") 
+record(mbbo, "$(P)$(R)PASS_ENERGY") 
 {
   field(DESC, "Pass Energy")
   field(DTYP, "asynInt32")
@@ -178,7 +178,7 @@ record(mbbo, "$(P)$(R):PASS_ENERGY")
   field(SXVL, "6")  
 }
 
-record(mbbi, "$(P)$(R):PASS_ENERGY_RBV") 
+record(mbbi, "$(P)$(R)PASS_ENERGY_RBV") 
 {
   field(DESC, "Pass Energy Readback")
   field(DTYP, "asynInt32")
@@ -200,7 +200,7 @@ record(mbbi, "$(P)$(R):PASS_ENERGY_RBV")
   field(SXVL, "6")  
 }
 
-record(ao, "$(P)$(R):LOW_ENERGY") 
+record(ao, "$(P)$(R)LOW_ENERGY") 
 {
   field(DESC, "Low Energy")
   field(DTYP, "asynFloat64")
@@ -208,7 +208,7 @@ record(ao, "$(P)$(R):LOW_ENERGY")
   field(PREC, "3")
 }
 
-record(ai, "$(P)$(R):LOW_ENERGY_RBV") 
+record(ai, "$(P)$(R)LOW_ENERGY_RBV") 
 {
   field(DESC, "Low Energy Readback")
   field(DTYP, "asynFloat64")
@@ -217,7 +217,7 @@ record(ai, "$(P)$(R):LOW_ENERGY_RBV")
   field(PREC, "3")
 }
 
-record(ao, "$(P)$(R):CENTRE_ENERGY") 
+record(ao, "$(P)$(R)CENTRE_ENERGY") 
 {
   field(DESC, "Centre Energy")
   field(DTYP, "asynFloat64")
@@ -225,7 +225,7 @@ record(ao, "$(P)$(R):CENTRE_ENERGY")
   field(PREC, "3")
 }
 
-record(ai, "$(P)$(R):CENTRE_ENERGY_RBV") 
+record(ai, "$(P)$(R)CENTRE_ENERGY_RBV") 
 {
   field(DESC, "Centre Energy Readback")
   field(DTYP, "asynFloat64")
@@ -234,7 +234,7 @@ record(ai, "$(P)$(R):CENTRE_ENERGY_RBV")
   field(PREC, "3")
 }
 
-record(ao, "$(P)$(R):HIGH_ENERGY") 
+record(ao, "$(P)$(R)HIGH_ENERGY") 
 {
   field(DESC, "High Energy")
   field(DTYP, "asynFloat64")
@@ -242,7 +242,7 @@ record(ao, "$(P)$(R):HIGH_ENERGY")
   field(PREC, "3")
 }
 
-record(ai, "$(P)$(R):HIGH_ENERGY_RBV") 
+record(ai, "$(P)$(R)HIGH_ENERGY_RBV") 
 {
   field(DESC, "High Energy Readback")
   field(DTYP, "asynFloat64")
@@ -253,7 +253,7 @@ record(ai, "$(P)$(R):HIGH_ENERGY_RBV")
 
 ###################### Step ########################
 
-record(ao, "$(P)$(R):STEP_SIZE") 
+record(ao, "$(P)$(R)STEP_SIZE") 
 {
   field(DESC, "Energy Step Size")
   field(DTYP, "asynFloat64")
@@ -261,7 +261,7 @@ record(ao, "$(P)$(R):STEP_SIZE")
   field(PREC, "3")
 }
 
-record(ai, "$(P)$(R):STEP_SIZE_RBV") 
+record(ai, "$(P)$(R)STEP_SIZE_RBV") 
 {
   field(DESC, "Energy Step Size Readback")
   field(DTYP, "asynFloat64")
@@ -270,7 +270,7 @@ record(ai, "$(P)$(R):STEP_SIZE_RBV")
   field(PREC, "3")
 }
 
-record(ao, "$(P)$(R):STEP_TIME") 
+record(ao, "$(P)$(R)STEP_TIME") 
 {
   field(DESC, "Dwell Time")
   field(DTYP, "asynInt32")
@@ -278,7 +278,7 @@ record(ao, "$(P)$(R):STEP_TIME")
   field(PREC, "3")
 }
 
-record(ai, "$(P)$(R):STEP_TIME_RBV") 
+record(ai, "$(P)$(R)STEP_TIME_RBV") 
 {
   field(DESC, "Step Time Readback")
   field(DTYP, "asynInt32")
@@ -289,7 +289,7 @@ record(ai, "$(P)$(R):STEP_TIME_RBV")
 
 ################## Element Sets ####################
 
-record(mbbo, "$(P)$(R):ELEMENT_SET")
+record(mbbo, "$(P)$(R)ELEMENT_SET")
 {
   field(DESC, "Element Set")
   field(DTYP, "asynInt32")
@@ -300,7 +300,7 @@ record(mbbo, "$(P)$(R):ELEMENT_SET")
   field(ONVL, "1")
 }
 
-record(mbbi, "$(P)$(R):ELEMENT_SET_RBV")
+record(mbbi, "$(P)$(R)ELEMENT_SET_RBV")
 {
   field(DESC, "Element Set Readback")
   field(DTYP, "asynInt32")
@@ -314,7 +314,7 @@ record(mbbi, "$(P)$(R):ELEMENT_SET_RBV")
 
 ###################################################
 
-record(waveform, "$(P)$(R):INT_SPECTRUM")
+record(waveform, "$(P)$(R)INT_SPECTRUM")
 {
   field(DESC, "Integrated Spectrum")
   field(DTYP, "asynFloat64ArrayIn")
@@ -326,7 +326,7 @@ record(waveform, "$(P)$(R):INT_SPECTRUM")
 
 ################# Data Choice #####################
 
-record(mbbo, "$(P)$(R):DATA_CHOICE")
+record(mbbo, "$(P)$(R)DATA_CHOICE")
 {
   field(DESC, "Data Choice")
   field(DTYP, "asynInt32")
@@ -337,7 +337,7 @@ record(mbbo, "$(P)$(R):DATA_CHOICE")
   field(ONVL, "2")
 }
 
-record(mbbi, "$(P)$(R):DATA_CHOICE_RBV")
+record(mbbi, "$(P)$(R)DATA_CHOICE_RBV")
 {
   field(DESC, "Data Choice Readback")
   field(DTYP, "asynInt32")
