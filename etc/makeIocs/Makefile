@@ -6,7 +6,7 @@ XMLBUILDER := /dls_sw/work/common/python/iocbuilder/xmlbuilder/xmlbuilder.py
 #XMLBUILDER := dls-xml-iocbuilder.py
 
 # set to -d to get debugging
-DEBUG :=
+DEBUG := -d
 
 # Create an IOC from all .xml files and all .py files
 IOCS := $(patsubst %.xml, %, $(wildcard *.xml)) $(patsubst %.py, %, $(wildcard *.py))

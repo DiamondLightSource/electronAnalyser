@@ -1,6 +1,6 @@
 <?xml version="1.0" ?>
 <components arch="linux-x86">
-	<electronAnalyser.electronAnalyser ADDR="0" INSTRUMENT_FILE="4es203WALInstrument.dat" P="ELECTRON-ANALYSER-01" PORT="CCD.CAM" R=":TEST" TIMEOUT="1" WRAPPER_LOCATION="C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6" XSIZE="1024" YSIZE="1000"/>
+	<electronAnalyser.electronAnalyser ADDR="0" INSTRUMENT_FILE="4es203WALInstrument.dat" P="ELECTRON-ANALYSER-01" PORT="CCD.CAM" R=":TEST:" TIMEOUT="1" WRAPPER_LOCATION="C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6" XSIZE="1024" YSIZE="1000"/>
 	<areaDetector.NDStats ADDR="0" HIST_SIZE="256" NDARRAY_ADDR="0" NDARRAY_PORT="CCD.CAM" P="ELECTRON-ANALYSER-01" PORT="CCD.STAT" R=":STAT:" TIMEOUT="1" XSIZE="1024" YSIZE="768"/>
 	<areaDetector.NDFileHDF5 ADDR="0" NDARRAY_ADDR="0" NDARRAY_PORT="CCD.CAM" P="ELECTRON-ANALYSER-01" PORT="CCD.HDF" R=":HDF:" TIMEOUT="1"/>
 	<ffmpegServer.ffmpegStream ADDR="0" NDARRAY_ADDR="0" NDARRAY_PORT="CCD.CAM" P="ELECTRON-ANALYSER-01" PORT="CCD.MPG" R=":MPG:" TIMEOUT="1"/>
