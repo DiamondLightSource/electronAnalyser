@@ -1013,7 +1013,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	}
 	else if (function == NDDataType)
 	{
-		setIntegerParam(NDDataType, 6);
+		//setIntegerParam(NDDataType, 6);
+		setIntegerParam(NDDataType, value);
 	}
 	else if (function == DetectorDiscriminatorLevel) {
 		//TODO any constrains?
