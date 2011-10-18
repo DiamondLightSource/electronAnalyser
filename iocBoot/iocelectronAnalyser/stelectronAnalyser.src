@@ -19,29 +19,12 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 
 electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 30, 25000000)
 asynSetTraceMask("electronAnalyser", 0, 0x1)
-#dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/ADBase.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1,gda_template='',gda_desc=''")
-#dbLoadRecords("$(AREA_DETECTOR)/ADApp/Db/NDFile.template","P=ELECTRON-ANALYSER-01:,R=TEST:,PORT=electronAnalyser,ADDR=0,TIMEOUT=1")
-dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST")
+
+dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=electronAnalyser")
 dbLoadRecords("$(INSTALL)/db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
 
 iocInit()
 asynSetTraceMask("electronAnalyser", 0, 0x11)
 # Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
-
-#dbpf "ELECTRON-ANALYSER-01:TEST:PASS_ENERGY", "1"
-#dbpf "ELECTRON-ANALYSER-01:TEST:LOW_ENERGY", "86"
-#dbpf "ELECTRON-ANALYSER-01:TEST:CENTRE_ENERGY", "88"
-#dbpf "ELECTRON-ANALYSER-01:TEST:HIGH_ENERGY", "90"
-
-
-#dbpf "ELECTRON-ANALYSER-01:TEST:STEP_SIZE", "0.2"
-#dbpf "ELECTRON-ANALYSER-01:TEST:STEP_TIME", "1"
-#dbpf "ELECTRON-ANALYSER-01:TEST:ITERATIONS", "1"
-
-
-#dbpf "ELECTRON-ANALYSER-01:TEST:ELEMENT_SET", "Laser (L)"
-#dbpf "ELECTRON-ANALYSER-01:TEST:LENS_MODE", "Transmission"
-#dbpf "ELECTRON-ANALYSER-01:TEST:ACQ_MODE", "Swept"
-#dbpf "ELECTRON-ANALYSER-01:TEST:Acquire", "Acquire"
 
 #asynReport(10, "electronAnalyser")
