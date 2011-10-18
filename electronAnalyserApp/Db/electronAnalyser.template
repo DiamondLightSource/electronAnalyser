@@ -6,7 +6,7 @@
 #% macro, TIMEOUT, Timeout
 
 # This associates the template with an edm screen
-# % gui, $(PORT), edmtab, electronAnalyser.edl, P=$(P),R=$(R):
+# % gui, $(PORT), edmtab, electronAnalyser.edl, P=$(P),R=$(R)
 
 record(stringin, "$(P)$(R)X_UNITS_RBV")
 {
