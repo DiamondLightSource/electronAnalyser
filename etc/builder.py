@@ -11,7 +11,7 @@ class _electronAnalyser(AutoSubstitution):
 class electronAnalyser(_ADBase):
     '''Creates a electronAnalyser driver'''
     _SpecificTemplate = _electronAnalyser
-    def __init__(self, WRAPPER_LOCATION, INSTRUMENT_FILE, XSIZE, YSIZE, BUFFERS = 50, MEMORY = -1, **args):
+    def __init__(self, WRAPPER_LOCATION, INSTRUMENT_FILE, BUFFERS = 50, MEMORY = -1, **args):
         # Init the superclass
         self.__super.__init__(**args)
         # Store the args
@@ -23,8 +23,8 @@ class electronAnalyser(_ADBase):
     ArgInfo = _ADBase.ArgInfo + _electronAnalyser.ArgInfo + makeArgInfo(__init__,
         WRAPPER_LOCATION      = Simple('Location and version of SESWrapper', str),    
         INSTRUMENT_FILE   = Simple('Name of instrument file', str),
-        XSIZE = Simple('X Size of image', int),
-        YSIZE = Simple('Y Size of image', int),
+#        XSIZE = Simple('X Size of image', int),
+#        YSIZE = Simple('Y Size of image', int),
         BUFFERS = Simple('Maximum number of NDArray buffers to be created for '
             'plugin callbacks', int),
         MEMORY  = Simple('Max memory to allocate, should be maxw*maxh*nbuffer '
@@ -43,9 +43,9 @@ class electronAnalyser(_ADBase):
                                  'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
 
     def Initialise(self):
-        print '# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, XSize, YSize, ' \
+        print '# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, ' \
             'maxBuffers, maxMemory)'
-        print 'electronAnalyserConfig("%(PORT)s", "%(WRAPPER_LOCATION)s","%(INSTRUMENT_FILE)s", %(XSIZE)d, %(YSIZE)d, ' \
+        print 'electronAnalyserConfig("%(PORT)s", "%(WRAPPER_LOCATION)s","%(INSTRUMENT_FILE)s", ' \
             '%(BUFFERS)d, %(MEMORY)d)' % self.__dict__
 
 
