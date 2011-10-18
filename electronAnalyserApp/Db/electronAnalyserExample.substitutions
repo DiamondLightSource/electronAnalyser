@@ -2,6 +2,6 @@
 file $(AREA_DETECTOR)/db/ADBase.template
 {
 pattern { P, 			  R, 	   PORT, 	       TIMEOUT, ADDR }
-    	{ "ELECTRON-ANALYSER-01", ":TEST", "electronAnalyser", "1", 	"0"  }
+    	{ "ELECTRON-ANALYSER-01", ":TEST:", "electronAnalyser", "1", 	"0"  }
 }
 
