@@ -404,7 +404,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	int size = 0;
 	char value[MAX_MESSAGE_SIZE];
 	
-	spectrum = (double *)calloc(1024, sizeof(epicsFloat64));
+	//spectrum = (double *)calloc(1024, sizeof(epicsFloat64));
+	spectrum = (double *)calloc(50000, sizeof(epicsFloat64));
 	//old setup: spectrum = (double *)pData;
 
 	werror = WError::instance();
@@ -792,7 +793,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	int j;
 	int MaxIterations = 1;
 
-
 	ses->getAcquiredData("acq_channels", 0, &channels, size);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of channels = %d\n", driverName, functionName, channels);
@@ -805,6 +805,41 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 		for(j = 0; j < channels; j++)
 		{
+			if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
+			{
+				if(ses->waitForPointReady(10000) != WError::ERR_TIMEOUT)
+				{
+					/* No timeout */
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
+
+					ses->getAcquiredData("acq_spectrum", 0, this->spectrum, channels);
+
+					this->lock();
+					status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+					this->unlock();
+
+					ses->continueAcquisition();
+				}
+				else
+				{
+					/* Timeout */
+					ses->stopAcquisition();
+					status = asynError;
+					return status;
+				}
+			}
+			else
+			{
+				/* Timeout */
+				ses->stopAcquisition();
+				status = asynError;
+				return status;
+			}
+		}
+
+
+/*		for(j = 0; j < channels; j++)
+		{
 			ses->waitForPointReady(10000);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
 
@@ -815,9 +850,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 			this->unlock();
 
 			ses->continueAcquisition();
-		}
-
-
+		}*/
 
 		if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 		{
@@ -1013,8 +1046,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	}
 	else if (function == NDDataType)
 	{
-		//setIntegerParam(NDDataType, 6);
-		setIntegerParam(NDDataType, value);
+		/* Lock the data type to Float64 as
+		 * all data collected will be double
+		 * type (option 7 on drop down list) */
+		setIntegerParam(NDDataType, 7);
 	}
 	else if (function == DetectorDiscriminatorLevel) {
 		//TODO any constrains?
@@ -1221,7 +1256,7 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	int function = pasynUser->reason;
 	asynStatus status = asynSuccess;
 	const char *functionName = "writeFloat64";
-	char message[MAX_MESSAGE_SIZE];
+	//char message[MAX_MESSAGE_SIZE];
 	int adstatus;
 
 	/* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
@@ -1807,6 +1842,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 			return asynError;
 		}*/
 		lens =  new char[30];
+
 		err = ses->getProperty("lens_mode", i, lens, size);
 		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Lens #%d = %s\n", driverName, functionName, i, lens);
 		if (isError(err, functionName)) {
@@ -1845,7 +1881,9 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 			return asynError;
 		}*/
 		set =  new char[size];
+		//char set[size];
 		err = ses->getProperty("element_set",i,set, size);
+		//err = ses->getProperty("element_set",i,&set, size);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Element set #%d = %s\n", driverName, functionName, i, set);
 		if (isError(err, functionName)) {
 			delete [] set;
