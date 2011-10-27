@@ -46,6 +46,7 @@
 
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
+#define MAX_STRING_SIZE 32
 
 #include <io.h>   // For access().
 #include <sys/types.h>  // For stat().
@@ -633,7 +634,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	NDArray *pImage;
 	int dims[2];
 	NDDataType_t dataType;
-	int dataChoice;
+	int numDims;
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
 
@@ -649,8 +650,9 @@ void ElectronAnalyser::electronAnalyserTask()
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Waiting for the acquire command\n", driverName, functionName);
 			setStringParam(ADStatusMessage, "Waiting for the acquire command");
 			setIntegerParam(ADStatus, ADStatusIdle);
-			//getDetectorTemperature(&temperature);
-			//setDoubleParam(ADTemperature, temperature);
+			/* Reset the counters */
+			setIntegerParam(ADNumExposuresCounter, 0);
+			setIntegerParam(ADNumImagesCounter, 0);
 			callParamCallbacks();
 			/* Release the lock while we wait for an event that says acquire has started, then lock again */
 			this->unlock();
@@ -669,9 +671,6 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* Get the exposure parameters */
 		getDoubleParam(ADAcquireTime, &acquireTime);
 		getDoubleParam(ADAcquirePeriod, &acquirePeriod);
-		/* Reset the counters */
-		setIntegerParam(ADNumExposuresCounter, 0);
-		setIntegerParam(ADNumImagesCounter, 0);
 
 		/* Get the acquisition parameters */
 		//getIntegerParam(ADTriggerMode, &triggerMode);
@@ -686,11 +685,22 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
-		getIntegerParam(DataChoice, (int *) &dataChoice);
+		getIntegerParam(DataChoice, (int *) &numDims);
+
+		if((numDims < 1) || (numDims > 2))
+		{
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data dimensions can only be 1 or 2. %d is reported\n", driverName, functionName, numDims);
+			setStringParam(ADStatusMessage,	"Incorrect data dimensions specified");
+			setIntegerParam(ADStatus, ADStatusError);
+			/* Reset both acquire and ADAcquire back to zero */
+			acquire = 0;
+			setIntegerParam(ADAcquire, acquire);
+			continue;
+		}
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
-		/* Allocate memory suitable for either 1D or 2D data (from dataChoice */
-		pImage = this->pNDArrayPool->alloc(dataChoice, dims, dataType, 0, NULL);
+		/* Allocate memory suitable for either 1D or 2D data (from numDims */
+		pImage = this->pNDArrayPool->alloc(numDims, dims, dataType, 0, NULL);
 		/* We release the mutex when acquire image, because this may take a long time and
 		 * we need to allow abort operations to get through */
 		this->unlock();
@@ -710,20 +720,33 @@ void ElectronAnalyser::electronAnalyserTask()
 			continue;
 		}
 
-		nbytes = (dims[0] * dims[1]) * sizeof(dataType);
+		if(numDims == 1)
+		{
+			nbytes = (dims[0]) * sizeof(double);
+		}
+		else
+		{
+			nbytes = (dims[0] * dims[1]) * sizeof(double);
+		}
+
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of dimensions = %d\n", driverName, functionName, numDims);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, dims[0]);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[1] = %d\n", driverName, functionName, dims[1]);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of bytes of NDArray = %d\n", driverName, functionName, nbytes);
+
 		pImage->dims[0].size = dims[0];
 		pImage->dims[1].size = dims[1];
 
 		/* Set a bit of areadetector image/frame statistics... */
 		getIntegerParam(ADNumImages, &numImages);
-		getIntegerParam(NDArrayCounter, &imageCounter);
-		getIntegerParam(ADNumImagesCounter, &numImagesCounter);
 		getIntegerParam(ADImageMode, &imageMode);
 		getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
-		numImagesCounter++;
+		getIntegerParam(NDArrayCounter, &imageCounter);
+		getIntegerParam(ADNumImagesCounter, &numImagesCounter);
 		imageCounter++;
-		setIntegerParam(ADNumImagesCounter, numImagesCounter);
+		numImagesCounter++;
 		setIntegerParam(NDArrayCounter, imageCounter);
+		setIntegerParam(ADNumImagesCounter, numImagesCounter);
 		setIntegerParam(NDArraySize, nbytes);
 
 		pImage->uniqueId = imageCounter;
@@ -786,9 +809,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	asynStatus status = asynSuccess;
 	const char *functionName = "acquireData";
 
-	status = start();
+	if (start() != asynSuccess)
+	{
+		return asynError;
+	}
+
 	int channels = 0;
-	int size = 4;
+	int size = 0;
 	int i;
 	int j;
 	int MaxIterations = 1;
@@ -812,7 +839,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 					/* No timeout */
 					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
 
-					ses->getAcquiredData("acq_spectrum", 0, this->spectrum, channels);
+					ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
 
 					this->lock();
 					status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
@@ -854,7 +881,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 		if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 		{
-			if(ses->waitForRegionReady(100000) != WError::ERR_TIMEOUT)
+			if(ses->waitForRegionReady(10000) != WError::ERR_TIMEOUT)
 			{
 				/* No timeout */
 				//ses->continueAcquisition();
@@ -889,13 +916,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		}*/
 	}
 
-	char intensity_unit[32];
-	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, channels);
+	char intensity_unit[MAX_STRING_SIZE];
+	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, size);
 	setStringParam(AcqIntensityUnit, intensity_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
 
-	char channel_unit[32];
-	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, channels);
+	char channel_unit[MAX_STRING_SIZE];
+	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, size);
 	setStringParam(AcqChannelUnit, channel_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
@@ -928,7 +955,8 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 	for(i = 0; i < channels; i++)
 	{
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), *(this->spectrum+i));
+		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), *(this->spectrum+i));
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), this->spectrum[i]);
 		//printf("image %d = %f with slice = %f\n", i+1, *(image+i));
 	}
 
@@ -1046,10 +1074,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	}
 	else if (function == NDDataType)
 	{
-		/* Lock the data type to Float64 as
-		 * all data collected will be double
-		 * type (option 7 on drop down list) */
-		setIntegerParam(NDDataType, 7);
+		/* Lock the data type to Float64 as all
+		 * data collected will be of double type */
+		setIntegerParam(NDDataType, NDFloat64);
 	}
 	else if (function == DetectorDiscriminatorLevel) {
 		//TODO any constrains?
@@ -1726,7 +1753,7 @@ asynStatus ElectronAnalyser::start()
 		callParamCallbacks();
 	}
 	//TODO  should this be here?
-	err = ses->startAcquisition();
+	//err = ses->startAcquisition();
 	setIntegerParam(ADStatus, ADStatusAcquire);
 	if (isError(err, functionName)) {
 		setIntegerParam(ADStatus, ADStatusError);
@@ -1837,6 +1864,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 	{
 		char* lens = 0;
 		int size  = 30;
+		//char lens[30] = 0;
 		/*err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
 		/*if (isError(err, functionName)) {
 			return asynError;
@@ -1876,6 +1904,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 	{
 		char* set = 0;
 		int size  = 30;
+		//char set[30] = 0;
 		/*err = ses->getProperty("element_set", i, set, size); // there is no @c element_set_from_index defined in the wrapper
 		if (isError(err, functionName)) {
 			return asynError;
