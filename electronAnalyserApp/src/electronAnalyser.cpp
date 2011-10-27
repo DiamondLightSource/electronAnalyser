@@ -47,6 +47,7 @@
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
 #define MAX_STRING_SIZE 32
+#define MAX_MEMORY_SIZE 50000
 
 #include <io.h>   // For access().
 #include <sys/types.h>  // For stat().
@@ -405,8 +406,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	int size = 0;
 	char value[MAX_MESSAGE_SIZE];
 	
-	//spectrum = (double *)calloc(1024, sizeof(epicsFloat64));
-	spectrum = (double *)calloc(50000, sizeof(epicsFloat64));
+	spectrum = (double *)calloc(MAX_MEMORY_SIZE, sizeof(epicsFloat64));
 	//old setup: spectrum = (double *)pData;
 
 	werror = WError::instance();
