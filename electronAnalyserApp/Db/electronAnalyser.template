@@ -321,7 +321,7 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "50000")
+  field(NELM, "1024")
 }
 
 ################# Data Choice #####################
@@ -347,4 +347,42 @@ record(mbbi, "$(P)$(R)DATA_CHOICE_RBV")
   field(ZRVL, "1")
   field(ONST, "2D Image")
   field(ONVL, "2")
+}
+
+################## Progress ######################
+
+record(ai, "$(P)$(R)PROGRESS_RBV") 
+{
+  field(DESC, "Data Acq Progress")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn($(PORT) 0)PERCENT_COMPLETE")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)NUM_CHANNELS_RBV") 
+{
+  field(DESC, "Number of Channels")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn($(PORT) 0)NUM_CHANNELS")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+record(ai, "$(P)$(R)CURRENT_CHANNEL_RBV") 
+{
+  field(DESC, "Current Acq Channel")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn($(PORT) 0)CURRENT_CHANNEL")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+record(calc, "$(P)$(R)TOTAL_POINTS_RBV")
+{
+  field(DESC, "Total Acq Points")
+  field(SCAN, ".5 seconds")
+  field(CALC, "A*B")
+  field(INPA, "$(P)$(R)NUM_CHANNELS_RBV")
+  field(INPB, "$(P)$(R)NumExposures_RBV")
 }
