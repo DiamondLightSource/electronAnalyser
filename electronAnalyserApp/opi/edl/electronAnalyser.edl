@@ -947,3 +947,24 @@ value {
 }
 endObjectProperties
 
+# (Bar)
+object activeBarClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 785
+w 370
+h 25
+indicatorColor index 25
+fgColor index 14
+bgColor index 3
+indicatorPv "$(P)$(R)PROGRESS_RBV"
+font "arial-bold-r-12.0"
+border
+min "0"
+max "100"
+scaleFormat "FFloat"
+endObjectProperties
+
