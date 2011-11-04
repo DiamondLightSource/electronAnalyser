@@ -46,7 +46,7 @@
 
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
-#define MAX_STRING_SIZE 32
+//#define MAX_STRING_SIZE 32
 #define MAX_MEMORY_SIZE 50000
 
 #include <io.h>   // For access().
@@ -645,6 +645,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	int dims[2];
 	NDDataType_t dataType;
 	int numDims;
+	int NumChannelsVal;
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
 
@@ -690,11 +691,12 @@ void ElectronAnalyser::electronAnalyserTask()
 		callParamCallbacks();
 
 		/* get an image buffer from the pool */
-		getIntegerParam(NDArraySizeX, &dims[0]);
-		getIntegerParam(NDArraySizeY, &dims[1]);
-		setIntegerParam(NumChannels, (((double)(analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
-		/*	getIntegerParam(detector.slices_, &dims[0]);
-		getIntegerParam(analyzer., &dims[1]);*/
+		/*getIntegerParam(NDArraySizeX, &dims[0]);
+		getIntegerParam(NDArraySizeY, &dims[1]);*/
+		NumChannelsVal = (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1);
+		setIntegerParam(NumChannels, NumChannelsVal);
+		dims[0] = detector.slices_;
+		dims[1] = NumChannelsVal;
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
@@ -833,8 +835,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	int i;
 	int j;
 	int MaxIterations = 1;
-	float PercentCompleteVal = 0.0;
+	int PercentCompleteVal = 0;
 	int CurrentChannelVal = 0;
+
+	double *image;
+	image = (double *)pData;
 
 	ses->getAcquiredData("acq_channels", 0, &channels, size);
 	/* Energy point wait timeout is set to four times the dwell time */
@@ -860,7 +865,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 					/* No timeout */
 					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
 
-					PercentCompleteVal = (((double)((i * channels) + (j+1)) / (channels * MaxIterations)) * 100);
+					PercentCompleteVal = (int)(((double)((i * channels) + (j+1)) / (channels * MaxIterations)) * 100);
 					CurrentChannelVal = ((i * channels) + (j+1));
 					setIntegerParam(PercentComplete, PercentCompleteVal);
 					setIntegerParam(CurrentChannel, CurrentChannelVal);
@@ -899,7 +904,10 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 				/* No timeout */
 				//ses->continueAcquisition();
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
-				memcpy(pData, this->spectrum, channels*sizeof(double));
+				this->getAcqImage(image,size);
+				//memcpy(pData, this->spectrum, channels*sizeof(double));
+
+				memcpy(pData, image, detector.slices_*channels*sizeof(double));
 			}
 			else
 			{
@@ -932,9 +940,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	setStringParam(AcqChannelUnit, channel_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
-	double *image;
+	/*double *image;
 	image = (double *)pData;
-	this->getAcqImage(image,size);
+	this->getAcqImage(image,size);*/
 
 	//int num_slices;
 	//this->getAcqSlices(num_slices);
