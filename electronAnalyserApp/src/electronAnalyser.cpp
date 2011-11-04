@@ -982,7 +982,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		}
 	}
 
-	double *slice;
+	/*double *slice;
 	slice = (double *)pData;
 
 	for(i = 0; i < detector.slices_; i++)
@@ -994,6 +994,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 			printf("image #%d = %f\n", j, *(slice+j));
 		}
 	}
+
+	this->getAcqSlice(i,slice,channels);
+	printf("Slice #%d:\n\n", i);
+	for(j = 0; j < channels; j++)
+	{
+		printf("image #%d = %f\n", j, *(slice+j));
+	}*/
 
 	return status;
 }
