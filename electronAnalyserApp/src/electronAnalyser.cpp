@@ -264,6 +264,7 @@ private:
 
     //*** Use pData instead of spectrum ***//
     double *spectrum;
+    double *image;
 
     epicsEventId startEventId;
     epicsEventId stopEventId;
@@ -838,10 +839,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	int PercentCompleteVal = 0;
 	int CurrentChannelVal = 0;
 
-	double *image;
-	image = (double *)pData;
+	/*double *image;*/
+	/*image = (double *)pData;*/
 
 	ses->getAcquiredData("acq_channels", 0, &channels, size);
+	this->image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
 	/* Energy point wait timeout is set to four times the dwell time */
 	/* Setting up the initial data collection can be slow, hence why */
 	/* four times was chosen.  Otherwise two times is fine */
@@ -904,10 +906,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 				/* No timeout */
 				//ses->continueAcquisition();
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
-				this->getAcqImage(image,size);
+				size = channels*detector.slices_;
+				this->getAcqImage(this->image,size);
 				//memcpy(pData, this->spectrum, channels*sizeof(double));
 
-				memcpy(pData, image, detector.slices_*channels*sizeof(double));
+				memcpy(pData, this->image, detector.slices_*channels*sizeof(double));
 			}
 			else
 			{
@@ -974,7 +977,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		for(j = 0; j < detector.slices_; j++)
 		{
 			iterator = ((i*detector.slices_)+j);
-			printf("image = %d = %f\n", iterator, *(image+iterator));
+			printf("image = %d = %f\n", iterator, *(this->image+iterator));
 		}
 	}
 
