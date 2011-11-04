@@ -696,8 +696,9 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDArraySizeY, &dims[1]);*/
 		NumChannelsVal = (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1);
 		setIntegerParam(NumChannels, NumChannelsVal);
-		dims[0] = detector.slices_;
-		dims[1] = NumChannelsVal;
+		dims[0] = NumChannelsVal;
+		dims[1] = detector.slices_;
+
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
