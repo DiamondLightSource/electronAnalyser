@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 640
-y 145
+x 731
+y 85
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -543,7 +543,7 @@ fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Size (meV)"
+  "Size (eV)"
 }
 endObjectProperties
 
@@ -650,7 +650,7 @@ x 335
 y 635
 w 45
 h 20
-controlPv "$(P)$(R)ITERATIONS_RBV"
+controlPv "$(P)$(R)NumExposures_RBV"
 fgColor index 16
 fgAlarm
 bgColor index 10
@@ -669,7 +669,7 @@ x 285
 y 635
 w 45
 h 20
-controlPv "$(P)$(R)ITERATIONS"
+controlPv "$(P)$(R)NumExposures"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -908,45 +908,6 @@ indicatorPv "$(P)$(R)DETECTOR_MODE_RBV"
 font "arial-bold-r-12.0"
 endObjectProperties
 
-# (Menu Button)
-object activeMenuButtonClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 115
-y 760
-w 120
-h 20
-fgColor index 25
-bgColor index 3
-inconsistentColor index 0
-topShadowColor index 1
-botShadowColor index 11
-controlPv "$(P)$(R)DATA_CHOICE"
-indicatorPv "$(P)$(R)DATA_CHOICE_RBV"
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 10
-y 760
-w 100
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Data to Acquire"
-}
-endObjectProperties
-
 # (Bar)
 object activeBarClass
 beginObjectProperties
@@ -966,5 +927,113 @@ border
 min "0"
 max "100"
 scaleFormat "FFloat"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 785
+w 45
+h 25
+controlPv "$(P)$(R)PROGRESS_RBV"
+fgColor index 19
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 60
+y 785
+w 75
+h 25
+controlPv "$(P)$(R)CURRENT_CHANNEL_RBV"
+fgColor index 19
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 765
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Current Point"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 305
+y 765
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Total Points"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 165
+y 765
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Progress"
+}
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 305
+y 785
+w 70
+h 25
+controlPv "$(P)$(R)TOTAL_POINTS_RBV"
+fgColor index 19
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
 endObjectProperties
 
