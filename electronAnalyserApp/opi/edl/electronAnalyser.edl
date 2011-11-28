@@ -154,9 +154,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 115
+x 65
 y 590
-w 45
+w 95
 h 20
 controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
 fgColor index 16
@@ -234,24 +234,6 @@ y 565
 w 45
 h 20
 controlPv "$(P)$(R)HIGH_ENERGY"
-fgColor index 25
-fgAlarm
-bgColor index 3
-fill
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Textentry)
-object TextentryClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 65
-y 590
-w 45
-h 20
-controlPv "$(P)$(R)ENERGY_WIDTH"
 fgColor index 25
 fgAlarm
 bgColor index 3
