@@ -690,7 +690,6 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(ADNumImages, &numImages);
 
 		setIntegerParam(ADStatus, ADStatusAcquire);
-		callParamCallbacks();
 
 		/* get an image buffer from the pool */
 		/*getIntegerParam(NDArraySizeX, &dims[0]);
@@ -699,7 +698,9 @@ void ElectronAnalyser::electronAnalyserTask()
 		setIntegerParam(NumChannels, NumChannelsVal);
 		dims[0] = NumChannelsVal;
 		dims[1] = detector.slices_;
-
+		nbytes = (dims[0] * dims[1]) * sizeof(double);
+		setIntegerParam(NDArraySize, nbytes);
+		callParamCallbacks();
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
@@ -767,7 +768,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		numImagesCounter++;
 		setIntegerParam(NDArrayCounter, imageCounter);
 		setIntegerParam(ADNumImagesCounter, numImagesCounter);
-		setIntegerParam(NDArraySize, nbytes);
+		//setIntegerParam(NDArraySize, nbytes);
 
 		pImage->uniqueId = imageCounter;
 		pImage->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
