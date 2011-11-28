@@ -412,7 +412,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	int size = 0;
 	char value[MAX_MESSAGE_SIZE];
 	
-	spectrum = (double *)calloc(1024, sizeof(epicsFloat64));
+	spectrum = (double *)calloc(MAX_MEMORY_SIZE, sizeof(epicsFloat64));
 	//old setup: spectrum = (double *)pData;
 
 	werror = WError::instance();
@@ -646,7 +646,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	NDArray *pImage;
 	int dims[2];
 	NDDataType_t dataType;
-	int numDims;
+	//int numDims;
 	int NumChannelsVal;
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
@@ -1881,31 +1881,27 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 	const char * functionName = "getLensModeList(std::vector<string> *pLensModeList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
-	int max =0;
-	int err = ses->getProperty("lens_mode_count",0,&max);
+	int i;
+	int NumLens = 0;
+	int size  = 30;
+	int err = ses->getProperty("lens_mode_count", 0, &NumLens);
 	if (isError(err, functionName)) {
 		return asynError;
 	}
 
-	for(int i=0; i<max;i++)
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Available Lens:\n", driverName, functionName);
+	for(i = 0; i < NumLens; i++)
 	{
-		char* lens = 0;
-		int size  = 30;
-		//char lens[30] = 0;
-		/*err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
-		/*if (isError(err, functionName)) {
-			return asynError;
-		}*/
-		lens =  new char[30];
+		char lens[MAX_STRING_SIZE];
 
-		err = ses->getProperty("lens_mode", i, lens, size);
-		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Lens #%d = %s\n", driverName, functionName, i, lens);
-		if (isError(err, functionName)) {
-			delete [] lens;
+		err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
+		if (isError(err, functionName))
+		{
 			return asynError;
 		}
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Lens #%d = %s\n", driverName, functionName, i+1, lens);
+
 		pLensModeList->push_back(lens);
-		delete [] lens;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
@@ -1921,32 +1917,28 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 	const char * functionName = "getElementSetLlist(std::vector<string> *pElementSetList)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
-	int max =0;
-	int err = ses->getProperty("element_set_count",0,&max);
-	if (isError(err, functionName)) {
+	int i;
+	int NumElements = 0;
+	int size = 30;
+	int err = ses->getProperty("element_set_count", 0, &NumElements);
+	if (isError(err, functionName))
+	{
 		return asynError;
 	}
 
-	for(int i=0; i<max;i++)
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Available Elements:\n", driverName, functionName);
+	for(i = 0; i < NumElements; i++)
 	{
-		char* set = 0;
-		int size  = 30;
-		//char set[30] = 0;
-		/*err = ses->getProperty("element_set", i, set, size); // there is no @c element_set_from_index defined in the wrapper
-		if (isError(err, functionName)) {
-			return asynError;
-		}*/
-		set =  new char[size];
-		//char set[size];
-		err = ses->getProperty("element_set",i,set, size);
-		//err = ses->getProperty("element_set",i,&set, size);
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Element set #%d = %s\n", driverName, functionName, i, set);
-		if (isError(err, functionName)) {
-			delete [] set;
+		char set[MAX_STRING_SIZE];
+
+		err = ses->getProperty("element_set",i , set, size);
+		if (isError(err, functionName))
+		{
 			return asynError;
 		}
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Element set #%d = %s\n", driverName, functionName, i, set);
+
 		pElementSetList->push_back(set);
-		delete [] set;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
