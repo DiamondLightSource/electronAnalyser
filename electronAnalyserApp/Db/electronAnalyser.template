@@ -333,7 +333,7 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "1024")
+  field(NELM, "50000")
 }
 
 ################# Data Choice #####################
