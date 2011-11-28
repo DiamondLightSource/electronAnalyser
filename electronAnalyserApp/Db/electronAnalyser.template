@@ -215,6 +215,7 @@ record(ai, "$(P)$(R)LOW_ENERGY_RBV")
   field(INP, "@asyn($(PORT) 0)LOW_ENERGY")
   field(SCAN, "I/O Intr")
   field(PREC, "3")
+  field(FLNK, "$(P)$(R)ENERGY_WIDTH_RBV")
 }
 
 record(ao, "$(P)$(R)CENTRE_ENERGY") 
@@ -248,6 +249,17 @@ record(ai, "$(P)$(R)HIGH_ENERGY_RBV")
   field(DTYP, "asynFloat64")
   field(INP, "@asyn($(PORT) 0)HIGH_ENERGY")
   field(SCAN, "I/O Intr")
+  field(PREC, "3")
+  field(FLNK, "$(P)$(R)ENERGY_WIDTH_RBV")
+}
+
+record(calc, "$(P)$(R)ENERGY_WIDTH_RBV")
+{
+  field(DESC, "Calculated energy width")
+  field(SCAN, "Passive")
+  field(CALC, "B-A")
+  field(INPA, "$(P)$(R)LOW_ENERGY_RBV")
+  field(INPB, "$(P)$(R)HIGH_ENERGY_RBV")
   field(PREC, "3")
 }
 
