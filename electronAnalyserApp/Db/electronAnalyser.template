@@ -326,28 +326,28 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
 
 ################# Data Choice #####################
 
-record(mbbo, "$(P)$(R)DATA_CHOICE")
-{
-  field(DESC, "Data Choice")
-  field(DTYP, "asynInt32")
-  field(OUT,  "@asyn($(PORT) 0)DATA_CHOICE")
-  field(ZRST, "1D Spectrum")
-  field(ZRVL, "1")
-  field(ONST, "2D Image")
-  field(ONVL, "2")
-}
+#record(mbbo, "$(P)$(R)DATA_CHOICE")
+#{
+#  field(DESC, "Data Choice")
+#  field(DTYP, "asynInt32")
+#  field(OUT,  "@asyn($(PORT) 0)DATA_CHOICE")
+#  field(ZRST, "1D Spectrum")
+#  field(ZRVL, "1")
+#  field(ONST, "2D Image")
+#  field(ONVL, "2")
+#}
 
-record(mbbi, "$(P)$(R)DATA_CHOICE_RBV")
-{
-  field(DESC, "Data Choice Readback")
-  field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT) 0)DATA_CHOICE")
-  field(SCAN, "I/O Intr")
-  field(ZRST, "1D Spectrum")
-  field(ZRVL, "1")
-  field(ONST, "2D Image")
-  field(ONVL, "2")
-}
+#record(mbbi, "$(P)$(R)DATA_CHOICE_RBV")
+#{
+#  field(DESC, "Data Choice Readback")
+#  field(DTYP, "asynInt32")
+#  field(INP,  "@asyn($(PORT) 0)DATA_CHOICE")
+#  field(SCAN, "I/O Intr")
+#  field(ZRST, "1D Spectrum")
+#  field(ZRVL, "1")
+#  field(ONST, "2D Image")
+#  field(ONVL, "2")
+#}
 
 ################## Progress ######################
 
@@ -358,6 +358,7 @@ record(ai, "$(P)$(R)PROGRESS_RBV")
   field(INP, "@asyn($(PORT) 0)PERCENT_COMPLETE")
   field(SCAN, "I/O Intr")
   field(PREC, "0")
+  field(EGU, "%")
 }
 
 record(ai, "$(P)$(R)NUM_CHANNELS_RBV") 
@@ -381,7 +382,7 @@ record(ai, "$(P)$(R)CURRENT_CHANNEL_RBV")
 record(calc, "$(P)$(R)TOTAL_POINTS_RBV")
 {
   field(DESC, "Total Acq Points")
-  field(SCAN, ".5 seconds")
+  field(SCAN, ".5 second")
   field(CALC, "A*B")
   field(INPA, "$(P)$(R)NUM_CHANNELS_RBV")
   field(INPB, "$(P)$(R)NumExposures_RBV")
