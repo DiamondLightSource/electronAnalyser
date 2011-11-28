@@ -148,7 +148,7 @@ static const char *driverName = "electronAnalyser";
 #define AcqIOPortIndexString 		"ACQ_IO_PORT_INDEX"
 #define AcqIODataString 			"ACQ_IO_DATA"
 #define AcqIOPortNameString 		"ACQ_IO_PORT_NAME"
-#define DataChoiceString			"DATA_CHOICE"
+/*#define DataChoiceString			"DATA_CHOICE"*/
 #define PercentCompleteString		"PERCENT_COMPLETE"
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
@@ -245,7 +245,7 @@ protected:
 	int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
 	int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
 	int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
-	int DataChoice;				/**< (asynInt32,    	r/w) select a 1D or 2D data acquisition mode*/
+	/*int DataChoice;				/**< (asynInt32,    	r/w) select a 1D or 2D data acquisition mode*/
 	int PercentComplete;		/**< (asynInt32,    	r/w) progress of data acquisition in percent*/
 	int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
 	int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
@@ -504,7 +504,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AcqIOPortIndexString, asynParamInt32, &AcqIOPortIndex);
 	createParam(AcqIODataString, asynParamFloat64Array, &AcqIOData);
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
-	createParam(DataChoiceString, asynParamInt32, &DataChoice);
+	/*createParam(DataChoiceString, asynParamInt32, &DataChoice);*/
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
@@ -607,6 +607,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
+	status |= setIntegerParam(DetectorSlices, 10);
 
 	if (status)
 	{
@@ -702,7 +703,7 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
-		getIntegerParam(DataChoice, (int *) &numDims);
+		/*getIntegerParam(DataChoice, (int *) &numDims);
 
 		if((numDims < 1) || (numDims > 2))
 		{
@@ -710,14 +711,15 @@ void ElectronAnalyser::electronAnalyserTask()
 			setStringParam(ADStatusMessage,	"Incorrect data dimensions specified");
 			setIntegerParam(ADStatus, ADStatusError);
 			/* Reset both acquire and ADAcquire back to zero */
-			acquire = 0;
+		/*	acquire = 0;
 			setIntegerParam(ADAcquire, acquire);
 			continue;
-		}
+		}*/
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 		/* Allocate memory suitable for either 1D or 2D data (from numDims */
-		pImage = this->pNDArrayPool->alloc(numDims, dims, dataType, 0, NULL);
+		/*pImage = this->pNDArrayPool->alloc(numDims, dims, dataType, 0, NULL);*/
+		pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
 		/* We release the mutex when acquire image, because this may take a long time and
 		 * we need to allow abort operations to get through */
 		this->unlock();
@@ -738,16 +740,16 @@ void ElectronAnalyser::electronAnalyserTask()
 			continue;
 		}
 
-		if(numDims == 1)
+		/*if(numDims == 1)
 		{
 			nbytes = (dims[0]) * sizeof(double);
 		}
 		else
-		{
+		{*/
 			nbytes = (dims[0] * dims[1]) * sizeof(double);
-		}
+		//}
 
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of dimensions = %d\n", driverName, functionName, numDims);
+		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of dimensions = %d\n", driverName, functionName, numDims);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, dims[0]);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[1] = %d\n", driverName, functionName, dims[1]);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of bytes of NDArray = %d\n", driverName, functionName, nbytes);
@@ -840,9 +842,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	int PercentCompleteVal = 0;
 	int CurrentChannelVal = 0;
 
-	/*double *image;*/
-	/*image = (double *)pData;*/
-
 	ses->getAcquiredData("acq_channels", 0, &channels, size);
 	this->image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
 	/* Energy point wait timeout is set to four times the dwell time */
@@ -905,7 +904,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 			if(ses->waitForRegionReady(waitTimeout) != WError::ERR_TIMEOUT)
 			{
 				/* No timeout */
-				//ses->continueAcquisition();
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
 				size = channels*detector.slices_;
 				this->getAcqImage(this->image,size);
@@ -944,16 +942,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	setStringParam(AcqChannelUnit, channel_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
-	/*double *image;
-	image = (double *)pData;
-	this->getAcqImage(image,size);*/
-
-	//int num_slices;
-	//this->getAcqSlices(num_slices);
-	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of slices = %d\n", driverName, functionName, num_slices);
-
-
-
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Low Energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Centre Energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
@@ -972,7 +960,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), this->spectrum[i]);
 	}
 
-	int iterator;
+/*	int iterator;
 	for(i = 0; i < channels; i++)
 	{
 		for(j = 0; j < detector.slices_; j++)
@@ -980,26 +968,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 			iterator = ((i*detector.slices_)+j);
 			printf("image = %d = %f\n", iterator, *(this->image+iterator));
 		}
-	}
-
-	/*double *slice;
-	slice = (double *)pData;
-
-	for(i = 0; i < detector.slices_; i++)
-	{
-		this->getAcqSlice(i,slice,channels);
-		printf("Slice #%d:\n\n", i);
-		for(j = 0; j < channels; j++)
-		{
-			printf("image #%d = %f\n", j, *(slice+j));
-		}
-	}
-
-	this->getAcqSlice(i,slice,channels);
-	printf("Slice #%d:\n\n", i);
-	for(j = 0; j < channels; j++)
-	{
-		printf("image #%d = %f\n", j, *(slice+j));
 	}*/
 
 	return status;
@@ -1119,6 +1087,12 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		/* Lock the data type to Float64 as all
 		 * data collected will be of double type */
 		setIntegerParam(NDDataType, NDFloat64);
+	}
+	else if (function == NDColorMode)
+	{
+		/* Lock the color mode to mono as all
+		 * data collected will be monochrome */
+		setIntegerParam(NDColorMode, NDColorModeMono);
 	}
 	else if (function == DetectorDiscriminatorLevel) {
 		//TODO any constrains?
@@ -1243,6 +1217,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			detector.firstXChannel_=value;
 			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
+			setIntegerParam(NDArraySizeX, detector.lastXChannel_ - detector.firstXChannel_);
 		}
 	} else if (function == ADMinY){
 		if (value < 0 || value > detectorInfo.yChannels_) {
@@ -1253,6 +1228,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			detector.firstYChannel_=value;
 			setIntegerParam(DetectorFirstYChannel,detector.firstYChannel_);
+			setIntegerParam(NDArraySizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
 	} else if (function == ADSizeX){
 		if (value > detectorInfo.xChannels_ - detector.firstXChannel_ ) {
@@ -1263,6 +1239,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			detector.lastXChannel_=value - detector.firstXChannel_;
 			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
+			setIntegerParam(NDArraySizeX, detector.lastXChannel_ - detector.firstXChannel_);
 		}
 	} else if (function == ADSizeY){
 		if (value > detectorInfo.yChannels_ - detector.firstYChannel_ ) {
@@ -1273,6 +1250,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			detector.lastYChannel_=value - detector.firstYChannel_;
 			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
+			setIntegerParam(NDArraySizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
 	} else if (function == ADNumExposures) {
 		if (value < 1 || value > 100)
@@ -1287,10 +1265,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(ADNumExposures, value);
 		}
 	}
-	else if (function == DataChoice)
+	/*else if (function == DataChoice)
 	{
 		setIntegerParam(DataChoice, value);
-	}
+	}*/
 	else {
 		/* If this is not a parameter we have handled call the base class */
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
@@ -1763,6 +1741,11 @@ asynStatus ElectronAnalyser::start()
 	}
 
 	err = ses->setProperty("analyzer_region", 0, &analyzer);
+
+	printf("\n\nFirst X Channel = %d\n", detector.firstXChannel_);
+	printf("Last X Channel = %d\n", detector.lastXChannel_);
+	printf("First Y Channel = %d\n", detector.firstYChannel_);
+	printf("Last Y Channel = %d\n\n\n", detector.lastYChannel_);
 
 	if (isError(err, functionName)) {
 		return asynError;
