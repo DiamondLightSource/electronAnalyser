@@ -392,7 +392,7 @@ static void electronAnalyserTaskC(void *drvPvt)
 }
 
 
-/** Number of asyn parameters (asyn commands) this driver supports*/
+/* Number of asyn parameters (asyn commands) this driver supports*/
 #define NUM_ELECTRONANALYZER_PARAMS (&LAST_ELECTRONANALYZER_PARAM - &FIRST_ELECTRONANALYZER_PARAM + 1)
 
 ElectronAnalyser::~ElectronAnalyser()
