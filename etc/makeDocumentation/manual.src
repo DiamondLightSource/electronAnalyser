@@ -1,11 +1,10 @@
 /**
 \mainpage electronAnalyser EPICS Support Module
 \section intro_sec Introduction
-I'm going to describe the module here, possibly with a <a href="http://www.google.co.uk">web link to the manufacturers webpage</a>. \n
-You can also link to \ref electronAnalyserApp/Db/electronAnalyser.db "internally generated documentation" with alternate text, or by just by mentioning its name, e.g. electronAnalyserApp/Db/electronAnalyser.db
+This is the documentation for the areaDetector software for the VGScienta EW4000 Electron Analyser (<a href="http://www.vgscienta.com/productlist.aspx?MID=383">Product Website</a>). \n
 
 \section bugs_sec Known Bugs
-- I'm going to describe any known bugs here
+- No known bugs
 
 \section user_sec User Manual
 The \subpage user_manual page contains instructions for the end user
