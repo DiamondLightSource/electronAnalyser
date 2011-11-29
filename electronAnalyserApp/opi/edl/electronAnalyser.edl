@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 731
-y 85
+x 415
+y 187
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -48,7 +48,7 @@ release 0
 x 5
 y 485
 w 165
-h 130
+h 135
 lineColor index 14
 fill
 fillColor index 3
@@ -87,7 +87,7 @@ release 0
 x 180
 y 485
 w 205
-h 80
+h 115
 lineColor index 14
 fill
 fillColor index 3
@@ -101,13 +101,13 @@ minor 1
 release 0
 x 180
 y 475
-w 50
+w 53
 h 14
 font "arial-medium-r-12.0"
 fgColor index 14
 bgColor index 5
 value {
-  "  Modes  "
+  "  Modes   "
 }
 autoSize
 border
@@ -120,7 +120,7 @@ major 4
 minor 0
 release 0
 x 180
-y 580
+y 615
 w 205
 h 80
 lineColor index 14
@@ -135,14 +135,14 @@ major 4
 minor 1
 release 0
 x 180
-y 570
-w 38
+y 605
+w 41
 h 14
 font "arial-medium-r-12.0"
 fgColor index 14
 bgColor index 5
 value {
-  "  Step  "
+  "  Step   "
 }
 autoSize
 border
@@ -155,7 +155,7 @@ major 10
 minor 0
 release 0
 x 65
-y 590
+y 595
 w 95
 h 20
 controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
@@ -174,7 +174,7 @@ major 10
 minor 0
 release 0
 x 115
-y 565
+y 570
 w 45
 h 20
 controlPv "$(P)$(R)HIGH_ENERGY_RBV"
@@ -193,7 +193,7 @@ major 10
 minor 0
 release 0
 x 115
-y 540
+y 545
 w 45
 h 20
 controlPv "$(P)$(R)CENTRE_ENERGY_RBV"
@@ -212,7 +212,7 @@ major 10
 minor 0
 release 0
 x 65
-y 540
+y 545
 w 45
 h 20
 controlPv "$(P)$(R)CENTRE_ENERGY"
@@ -230,7 +230,7 @@ major 10
 minor 0
 release 0
 x 65
-y 565
+y 570
 w 45
 h 20
 controlPv "$(P)$(R)HIGH_ENERGY"
@@ -248,7 +248,7 @@ major 4
 minor 1
 release 0
 x 10
-y 590
+y 595
 w 75
 h 20
 font "arial-bold-r-12.0"
@@ -267,7 +267,7 @@ major 4
 minor 1
 release 0
 x 10
-y 565
+y 570
 w 75
 h 20
 font "arial-bold-r-12.0"
@@ -286,7 +286,7 @@ major 4
 minor 1
 release 0
 x 10
-y 540
+y 545
 w 75
 h 20
 font "arial-bold-r-12.0"
@@ -305,7 +305,7 @@ major 4
 minor 1
 release 0
 x 10
-y 515
+y 520
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -324,7 +324,7 @@ major 10
 minor 0
 release 0
 x 65
-y 515
+y 520
 w 45
 h 20
 controlPv "$(P)$(R)LOW_ENERGY"
@@ -342,7 +342,7 @@ major 10
 minor 0
 release 0
 x 115
-y 515
+y 520
 w 45
 h 20
 controlPv "$(P)$(R)LOW_ENERGY_RBV"
@@ -361,7 +361,7 @@ major 4
 minor 0
 release 0
 x 65
-y 490
+y 495
 w 95
 h 20
 fgColor index 25
@@ -381,7 +381,7 @@ major 4
 minor 1
 release 0
 x 10
-y 490
+y 495
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -400,7 +400,7 @@ major 4
 minor 0
 release 0
 x 260
-y 540
+y 545
 w 120
 h 20
 fgColor index 25
@@ -420,7 +420,7 @@ major 4
 minor 1
 release 0
 x 185
-y 540
+y 545
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -439,7 +439,7 @@ major 4
 minor 1
 release 0
 x 185
-y 515
+y 520
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -458,7 +458,7 @@ major 4
 minor 0
 release 0
 x 260
-y 515
+y 520
 w 120
 h 20
 fgColor index 25
@@ -478,7 +478,7 @@ major 4
 minor 0
 release 0
 x 260
-y 490
+y 495
 w 120
 h 20
 fgColor index 25
@@ -498,7 +498,7 @@ major 4
 minor 1
 release 0
 x 185
-y 490
+y 495
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -517,7 +517,7 @@ major 4
 minor 1
 release 0
 x 185
-y 610
+y 645
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -536,7 +536,7 @@ major 10
 minor 0
 release 0
 x 285
-y 610
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)STEP_SIZE"
@@ -554,7 +554,7 @@ major 10
 minor 0
 release 0
 x 335
-y 610
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)STEP_SIZE_RBV"
@@ -573,7 +573,7 @@ major 10
 minor 0
 release 0
 x 335
-y 585
+y 620
 w 45
 h 20
 controlPv "$(P)$(R)STEP_TIME_RBV"
@@ -592,7 +592,7 @@ major 10
 minor 0
 release 0
 x 285
-y 585
+y 620
 w 45
 h 20
 controlPv "$(P)$(R)STEP_TIME"
@@ -610,7 +610,7 @@ major 4
 minor 1
 release 0
 x 185
-y 585
+y 620
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -629,7 +629,7 @@ major 10
 minor 0
 release 0
 x 335
-y 635
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)NumExposures_RBV"
@@ -648,7 +648,7 @@ major 10
 minor 0
 release 0
 x 285
-y 635
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)NumExposures"
@@ -666,7 +666,7 @@ major 4
 minor 1
 release 0
 x 185
-y 635
+y 670
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -678,26 +678,6 @@ value {
 }
 endObjectProperties
 
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 5
-y 475
-w 78
-h 14
-font "arial-medium-r-12.0"
-fgColor index 14
-bgColor index 5
-value {
-  "  Energy (eV)  "
-}
-autoSize
-border
-endObjectProperties
-
 # (Rectangle)
 object activeRectangleClass
 beginObjectProperties
@@ -705,9 +685,9 @@ major 4
 minor 0
 release 0
 x 5
-y 625
+y 630
 w 165
-h 35
+h 65
 lineColor index 14
 fill
 fillColor index 3
@@ -720,14 +700,14 @@ major 4
 minor 1
 release 0
 x 5
-y 620
-w 64
+y 625
+w 62
 h 14
 font "arial-medium-r-12.0"
 fgColor index 14
 bgColor index 5
 value {
-  "  Elements  "
+  "  Detector   "
 }
 autoSize
 border
@@ -739,8 +719,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 70
-y 635
+x 65
+y 645
 w 95
 h 20
 fgColor index 25
@@ -760,9 +740,9 @@ major 4
 minor 1
 release 0
 x 10
-y 635
-w 80
-h 20
+y 650
+w 19
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -770,29 +750,7 @@ useDisplayBg
 value {
   "Set"
 }
-endObjectProperties
-
-# (Related Display)
-object relatedDisplayClass
-beginObjectProperties
-major 4
-minor 2
-release 0
-x 5
-y 665
-w 380
-h 30
-fgColor index 43
-bgColor index 3
-topShadowColor index 1
-botShadowColor index 11
-font "arial-medium-r-14.0"
-buttonLabel "Integrated Spectrum..."
-numPvs 4
-numDsps 1
-displayFileName {
-  0 "electronAnalyser-spectrum"
-}
+autoSize
 endObjectProperties
 
 # (Static Text)
@@ -802,9 +760,9 @@ major 4
 minor 1
 release 0
 x 10
-y 705
-w 80
-h 20
+y 675
+w 37
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -812,6 +770,7 @@ useDisplayBg
 value {
   "Slices"
 }
+autoSize
 endObjectProperties
 
 # (Textentry)
@@ -820,8 +779,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 120
-y 705
+x 65
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)SLICES"
@@ -838,8 +797,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 170
-y 705
+x 115
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)SLICES_RBV"
@@ -857,10 +816,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 735
-w 80
-h 20
+x 185
+y 575
+w 48
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -868,6 +827,7 @@ useDisplayBg
 value {
   "Detector"
 }
+autoSize
 endObjectProperties
 
 # (Menu Button)
@@ -876,8 +836,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 115
-y 735
+x 260
+y 570
 w 120
 h 20
 fgColor index 25
@@ -890,6 +850,118 @@ indicatorPv "$(P)$(R)DETECTOR_MODE_RBV"
 font "arial-bold-r-12.0"
 endObjectProperties
 
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 5
+y 475
+w 81
+h 14
+font "arial-medium-r-12.0"
+fgColor index 14
+bgColor index 5
+value {
+  "  Energy (eV)   "
+}
+autoSize
+border
+endObjectProperties
+
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 5
+y 705
+w 380
+h 95
+lineColor index 14
+fill
+fillColor index 3
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 5
+y 700
+w 51
+h 14
+font "arial-medium-r-12.0"
+fgColor index 14
+bgColor index 5
+value {
+  "  Status   "
+}
+autoSize
+border
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 720
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Current Point"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 165
+y 720
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Progress"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 305
+y 720
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Total Points"
+}
+endObjectProperties
+
 # (Bar)
 object activeBarClass
 beginObjectProperties
@@ -897,7 +969,7 @@ major 4
 minor 1
 release 0
 x 10
-y 785
+y 757
 w 370
 h 25
 indicatorColor index 25
@@ -917,89 +989,15 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 175
-y 785
-w 45
-h 25
-controlPv "$(P)$(R)PROGRESS_RBV"
-fgColor index 19
-fgAlarm
-bgColor index 3
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 60
-y 785
+x 55
+y 733
 w 75
 h 25
 controlPv "$(P)$(R)CURRENT_CHANNEL_RBV"
 fgColor index 19
 fgAlarm
 bgColor index 3
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 10
-y 765
-w 80
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Current Point"
-}
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 305
-y 765
-w 80
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Total Points"
-}
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 165
-y 765
-w 80
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Progress"
-}
+font "arial-bold-r-14.0"
 endObjectProperties
 
 # (Textupdate)
@@ -1008,14 +1006,31 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 305
-y 785
+x 175
+y 733
+w 45
+h 25
+controlPv "$(P)$(R)PROGRESS_RBV"
+fgColor index 19
+fgAlarm
+bgColor index 3
+font "arial-bold-r-14.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 310
+y 733
 w 70
 h 25
 controlPv "$(P)$(R)TOTAL_POINTS_RBV"
 fgColor index 19
 fgAlarm
 bgColor index 3
-font "arial-bold-r-12.0"
+font "arial-bold-r-14.0"
 endObjectProperties
 
