@@ -961,15 +961,29 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), this->spectrum[i]);
 	}
 
-/*	int iterator;
-	for(i = 0; i < channels; i++)
+	int iterator;
+	/*for(i = 0; i < channels; i++)
 	{
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slice #%d\n", driverName, functionName, i);
 		for(j = 0; j < detector.slices_; j++)
 		{
 			iterator = ((i*detector.slices_)+j);
-			printf("image = %d = %f\n", iterator, *(this->image+iterator));
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \tImage #%d = %f\n", driverName, functionName, iterator, *(this->image+iterator));
+			//printf("image = %d = %f\n", iterator, *(this->image+iterator));
 		}
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\n", driverName, functionName);
 	}*/
+	for(i = 0; i < detector.slices_; i++)
+	{
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slice #%d\n", driverName, functionName, i);
+		for(j = 0; j < channels; j++)
+		{
+			iterator = ((i*channels)+j);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \tImage #%d = %f\n", driverName, functionName, iterator, *(this->image+iterator));
+			//printf("image = %d = %f\n", iterator, *(this->image+iterator));
+		}
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\n", driverName, functionName);
+	}
 
 	return status;
 }
@@ -1743,10 +1757,10 @@ asynStatus ElectronAnalyser::start()
 
 	err = ses->setProperty("analyzer_region", 0, &analyzer);
 
-	printf("\n\nFirst X Channel = %d\n", detector.firstXChannel_);
-	printf("Last X Channel = %d\n", detector.lastXChannel_);
-	printf("First Y Channel = %d\n", detector.firstYChannel_);
-	printf("Last Y Channel = %d\n\n\n", detector.lastYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
 
 	if (isError(err, functionName)) {
 		return asynError;
