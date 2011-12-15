@@ -87,7 +87,7 @@ release 0
 x 180
 y 485
 w 205
-h 115
+h 135
 lineColor index 14
 fill
 fillColor index 3
@@ -119,10 +119,10 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 180
-y 615
-w 205
-h 80
+x 5
+y 630
+w 380
+h 70
 lineColor index 14
 fill
 fillColor index 3
@@ -134,8 +134,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 180
-y 605
+x 5
+y 625
 w 41
 h 14
 font "arial-medium-r-12.0"
@@ -247,10 +247,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 595
-w 75
-h 20
+x 15
+y 600
+w 37
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -258,6 +258,7 @@ useDisplayBg
 value {
   "Width"
 }
+autoSize
 endObjectProperties
 
 # (Static Text)
@@ -266,10 +267,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 570
-w 75
-h 20
+x 15
+y 575
+w 29
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -277,6 +278,7 @@ useDisplayBg
 value {
   "High"
 }
+autoSize
 endObjectProperties
 
 # (Static Text)
@@ -285,10 +287,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 545
-w 75
-h 20
+x 15
+y 550
+w 38
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -296,6 +298,7 @@ useDisplayBg
 value {
   "Centre"
 }
+autoSize
 endObjectProperties
 
 # (Static Text)
@@ -304,10 +307,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 520
-w 80
-h 20
+x 15
+y 525
+w 25
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -315,6 +318,7 @@ useDisplayBg
 value {
   "Low"
 }
+autoSize
 endObjectProperties
 
 # (Textentry)
@@ -380,10 +384,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 495
-w 80
-h 20
+x 15
+y 500
+w 29
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -391,6 +395,7 @@ useDisplayBg
 value {
   "Pass"
 }
+autoSize
 endObjectProperties
 
 # (Menu Button)
@@ -516,8 +521,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
-y 645
+x 15
+y 670
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -535,8 +540,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 285
-y 645
+x 95
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)STEP_SIZE"
@@ -553,8 +558,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 335
-y 645
+x 145
+y 670
 w 45
 h 20
 controlPv "$(P)$(R)STEP_SIZE_RBV"
@@ -572,8 +577,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 335
-y 620
+x 145
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)STEP_TIME_RBV"
@@ -591,8 +596,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 285
-y 620
+x 95
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)STEP_TIME"
@@ -609,8 +614,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
-y 620
+x 15
+y 645
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -628,7 +633,7 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 335
+x 330
 y 670
 w 45
 h 20
@@ -647,7 +652,7 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 285
+x 280
 y 670
 w 45
 h 20
@@ -665,10 +670,10 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
-y 670
-w 80
-h 20
+x 215
+y 673
+w 56
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
@@ -676,41 +681,7 @@ useDisplayBg
 value {
   "Iterations"
 }
-endObjectProperties
-
-# (Rectangle)
-object activeRectangleClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 5
-y 630
-w 165
-h 65
-lineColor index 14
-fill
-fillColor index 3
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 5
-y 625
-w 62
-h 14
-font "arial-medium-r-12.0"
-fgColor index 14
-bgColor index 5
-value {
-  "  Detector   "
-}
 autoSize
-border
 endObjectProperties
 
 # (Menu Button)
@@ -719,9 +690,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 65
-y 645
-w 95
+x 260
+y 595
+w 120
 h 20
 fgColor index 25
 bgColor index 3
@@ -739,16 +710,16 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 650
-w 19
+x 185
+y 600
+w 48
 h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Set"
+  "Element"
 }
 autoSize
 endObjectProperties
@@ -759,8 +730,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 675
+x 215
+y 650
 w 37
 h 14
 font "arial-bold-r-12.0"
@@ -779,8 +750,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 65
-y 670
+x 280
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)SLICES"
@@ -797,8 +768,8 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 115
-y 670
+x 330
+y 645
 w 45
 h 20
 controlPv "$(P)$(R)SLICES_RBV"
@@ -877,7 +848,7 @@ major 4
 minor 0
 release 0
 x 5
-y 705
+y 710
 w 380
 h 95
 lineColor index 14
@@ -892,7 +863,7 @@ major 4
 minor 1
 release 0
 x 5
-y 700
+y 705
 w 51
 h 14
 font "arial-medium-r-12.0"
@@ -912,7 +883,7 @@ major 4
 minor 1
 release 0
 x 10
-y 720
+y 725
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -931,7 +902,7 @@ major 4
 minor 1
 release 0
 x 165
-y 720
+y 725
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -950,7 +921,7 @@ major 4
 minor 1
 release 0
 x 305
-y 720
+y 725
 w 80
 h 20
 font "arial-bold-r-12.0"
@@ -969,7 +940,7 @@ major 4
 minor 1
 release 0
 x 10
-y 757
+y 765
 w 370
 h 25
 indicatorColor index 25
@@ -990,7 +961,7 @@ major 10
 minor 0
 release 0
 x 55
-y 733
+y 740
 w 75
 h 25
 controlPv "$(P)$(R)CURRENT_CHANNEL_RBV"
@@ -1007,7 +978,7 @@ major 10
 minor 0
 release 0
 x 175
-y 733
+y 740
 w 45
 h 25
 controlPv "$(P)$(R)PROGRESS_RBV"
@@ -1024,7 +995,7 @@ major 10
 minor 0
 release 0
 x 310
-y 733
+y 740
 w 70
 h 25
 controlPv "$(P)$(R)TOTAL_POINTS_RBV"
