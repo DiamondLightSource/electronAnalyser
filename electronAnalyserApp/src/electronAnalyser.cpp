@@ -863,32 +863,34 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		{
 			if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 			{
-				if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
+				if (analyzer.fixed_ != true)
 				{
-					/* No timeout */
-					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
+					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
+					{
+						/* No timeout */
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
 
-					PercentCompleteVal = (int)(((double)((i * channels) + (j+1)) / (channels * MaxIterations)) * 100);
-					CurrentChannelVal = ((i * channels) + (j+1));
-					setIntegerParam(PercentComplete, PercentCompleteVal);
-					setIntegerParam(CurrentChannel, CurrentChannelVal);
-					//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Data Acq Progress = %0.f%%\n", driverName, functionName, PercentCompleteVal);
+						PercentCompleteVal = (int)(((double)((i * channels) + (j+1)) / (channels * MaxIterations)) * 100);
+						CurrentChannelVal = ((i * channels) + (j+1));
+						setIntegerParam(PercentComplete, PercentCompleteVal);
+						setIntegerParam(CurrentChannel, CurrentChannelVal);
 
-					ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
+						ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
 
-					this->lock();
-					status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
-					callParamCallbacks();
-					this->unlock();
+						this->lock();
+						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+						callParamCallbacks();
+						this->unlock();
 
-					ses->continueAcquisition();
-				}
-				else
-				{
-					/* Timeout */
-					ses->stopAcquisition();
-					status = asynError;
-					return status;
+						ses->continueAcquisition();
+					}
+					else
+					{
+						/* Timeout */
+						ses->stopAcquisition();
+						status = asynError;
+						return status;
+					}
 				}
 			}
 			else
@@ -907,9 +909,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 				/* No timeout */
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
 				size = channels*detector.slices_;
+
 				this->getAcqImage(this->image,size);
 				//memcpy(pData, this->spectrum, channels*sizeof(double));
-
 				memcpy(pData, this->image, detector.slices_*channels*sizeof(double));
 			}
 			else
@@ -944,6 +946,10 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Energy Mode = %d\n", driverName, functionName, analyzer.kinetic_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Mode = %d\n", driverName, functionName, detector.adcMode_);
+	getPassEnergy(-1,m_dCurrentPassEnergy);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Pass Energy = %f\n", driverName, functionName, m_dCurrentPassEnergy);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Low Energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Centre Energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: High Energy = %f\n", driverName, functionName, analyzer.highEnergy_);
@@ -973,6 +979,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		}
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\n", driverName, functionName);
 	}*/
+
 	for(i = 0; i < detector.slices_; i++)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slice #%d\n", driverName, functionName, i);
@@ -1765,7 +1772,8 @@ asynStatus ElectronAnalyser::start()
 	if (isError(err, functionName)) {
 		return asynError;
 	}
-	err = ses->initAcquisition(true, false);
+
+	err = ses->initAcquisition(!analyzer.fixed_, !analyzer.fixed_);
 
 	if (isError(err, functionName)) {
 		return asynError;
