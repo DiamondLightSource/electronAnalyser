@@ -694,9 +694,18 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* get an image buffer from the pool */
 		/*getIntegerParam(NDArraySizeX, &dims[0]);
 		getIntegerParam(NDArraySizeY, &dims[1]);*/
-		NumChannelsVal = (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1);
-		setIntegerParam(NumChannels, NumChannelsVal);
-		dims[0] = NumChannelsVal;
+		if (analyzer.fixed_)
+		{
+			getIntegerParam(NDArraySizeX, &dims[0]);
+		}
+		else
+		{
+			//NumChannelsVal = (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1);
+			//setIntegerParam(NumChannels, NumChannelsVal);
+			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
+			getIntegerParam(NumChannels, &dims[0]);
+			//dims[0] = NumChannelsVal;
+		}
 		dims[1] = detector.slices_;
 		nbytes = (dims[0] * dims[1]) * sizeof(double);
 		setIntegerParam(NDArraySize, nbytes);
@@ -704,18 +713,6 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		/* Get data type and whether user wants 1D or 2D data */
 		getIntegerParam(NDDataType, (int *) &dataType);
-		/*getIntegerParam(DataChoice, (int *) &numDims);
-
-		if((numDims < 1) || (numDims > 2))
-		{
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Data dimensions can only be 1 or 2. %d is reported\n", driverName, functionName, numDims);
-			setStringParam(ADStatusMessage,	"Incorrect data dimensions specified");
-			setIntegerParam(ADStatus, ADStatusError);
-			/* Reset both acquire and ADAcquire back to zero */
-		/*	acquire = 0;
-			setIntegerParam(ADAcquire, acquire);
-			continue;
-		}*/
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 		/* Allocate memory suitable for either 1D or 2D data (from numDims */
@@ -863,6 +860,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		{
 			if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 			{
+				/* If operating in swept energy mode.... */
 				if (analyzer.fixed_ != true)
 				{
 					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
@@ -1773,7 +1771,8 @@ asynStatus ElectronAnalyser::start()
 		return asynError;
 	}
 
-	err = ses->initAcquisition(!analyzer.fixed_, !analyzer.fixed_);
+	//err = ses->initAcquisition(!analyzer.fixed_, !analyzer.fixed_);
+	err = ses->initAcquisition(!analyzer.fixed_, false);
 
 	if (isError(err, functionName)) {
 		return asynError;
