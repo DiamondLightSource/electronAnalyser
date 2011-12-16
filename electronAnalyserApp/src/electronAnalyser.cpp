@@ -696,17 +696,20 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDArraySizeY, &dims[1]);*/
 		if (analyzer.fixed_)
 		{
-			getIntegerParam(NDArraySizeX, &dims[0]);
+			getIntegerParam(NDArraySizeX, &dims[1]);
+			//getIntegerParam(NDArraySizeX, &dims[0]);
 		}
 		else
 		{
 			//NumChannelsVal = (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1);
 			//setIntegerParam(NumChannels, NumChannelsVal);
 			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
-			getIntegerParam(NumChannels, &dims[0]);
+			getIntegerParam(NumChannels, &dims[1]);
+			//getIntegerParam(NumChannels, &dims[0]);
 			//dims[0] = NumChannelsVal;
 		}
-		dims[1] = detector.slices_;
+		//dims[1] = detector.slices_;
+		dims[0] = detector.slices_;
 		nbytes = (dims[0] * dims[1]) * sizeof(double);
 		setIntegerParam(NDArraySize, nbytes);
 		callParamCallbacks();
