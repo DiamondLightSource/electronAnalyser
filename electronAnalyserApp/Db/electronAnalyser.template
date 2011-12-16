@@ -22,21 +22,19 @@ record(stringin, "$(P)$(R)Y_UNITS_RBV")
   field(SCAN, "I/O Intr")
 }
 
-record(ao, "$(P)$(R)SLICES") 
+record(longout, "$(P)$(R)SLICES") 
 {
   field(DESC, "Number of slices")
   field(DTYP, "asynInt32")
   field(OUT, "@asyn($(PORT) 0)DETECTOR_SLICES")
-  field(PREC, "1")
 }
 
-record(ai, "$(P)$(R)SLICES_RBV") 
+record(longin, "$(P)$(R)SLICES_RBV") 
 {
   field(DESC, "Number of slices Readback")
   field(DTYP, "asynInt32")
   field(INP, "@asyn($(PORT) 0)DETECTOR_SLICES")
   field(SCAN, "I/O Intr")
-  field(PREC, "1")
 }
 
 ######################## Modes ########################### 
