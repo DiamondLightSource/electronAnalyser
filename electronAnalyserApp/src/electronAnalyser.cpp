@@ -910,6 +910,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 				this->getAcqImage(this->image,size);
 				//memcpy(pData, this->spectrum, channels*sizeof(double));
 				memcpy(pData, this->image, detector.slices_*channels*sizeof(double));
+				ses->continueAcquisition();
 			}
 			else
 			{
@@ -1770,8 +1771,7 @@ asynStatus ElectronAnalyser::start()
 		return asynError;
 	}
 
-	//err = ses->initAcquisition(!analyzer.fixed_, !analyzer.fixed_);
-	err = ses->initAcquisition(!analyzer.fixed_, false);
+	err = ses->initAcquisition(!analyzer.fixed_, true);
 
 	if (isError(err, functionName)) {
 		return asynError;
