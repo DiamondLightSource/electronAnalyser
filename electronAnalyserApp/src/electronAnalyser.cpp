@@ -1,5 +1,5 @@
-//================================================================================================
-/* file:		electronAnalyser.cpp
+/*================================================================================================
+ * file:		electronAnalyser.cpp
  *
  * description:	Implementation of EPICS areaDetector driver for data acquisition using
  * 				VG Scienta Electron Analyser EW4000. It uses SESWrapper software to communicate
@@ -18,47 +18,31 @@
  * initial creation of the project
  */
 
-// Standard includes
-#include <stddef.h>
-#include <stdlib.h>
-#include <stdio.h>
+/* Standard includes */
 #include "stdafx.h"
-#include <atlstr.h>
 #include <vector>
-#include <list>
-#include <algorithm>
-#include <math.h>
+#include <sys/stat.h>   // For stat().
+#include <iostream>
+#include <string>
 
-// EPICS includes
-#include <epicsString.h>
-#include <epicsTime.h>
+/* EPICS includes */
 #include <epicsThread.h>
 #include <epicsEvent.h>
-#include <epicsMutex.h>
-#include <epicsTimer.h>
 
-// areaDetector includes
+/* areaDetector includes */
 #include <ADDriver.h>
 
-// include device-specific API
+/* Device Specific API */
 #include "wseswrappermain.h"
 #include "werror.h"
 
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
-//#define MAX_STRING_SIZE 32
+/* MAX_STRING_SIZE is defined in epicsTypes.h (as 32) */
 #define MAX_MEMORY_SIZE 50000
-
-#include <io.h>   // For access().
-#include <sys/types.h>  // For stat().
-#include <sys/stat.h>   // For stat().
-#include <iostream>
-#include <string>
-using namespace std;
-
-using std::string;
-
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
+
+using namespace std;
 
 /** Enumeration for Electron analyser Run Mode */
 typedef enum
@@ -75,16 +59,15 @@ static const char *driverName = "electronAnalyser";
 /** Strings defining parameters that affect the behaviour of the electron analyser detector.
   * These are the values passed to drvUserCreate.
   * The driver will place in pasynUser->reason an integer to be used when the standard asyn interface methods are called. */
- /*         						String                 			  asyn interface access   Description  */
 
-#define LibDescriptionString 		"LIB_DESCRIPTION"			/**< (asynOctet,      r/o) the library description*/
+#define LibDescriptionString 		"LIB_DESCRIPTION"
 #define LibVersionString 			"LIB_VERSION"
 #define LibWorkingDirString 		"LIB_WORKING_DIR"
 #define InstrumentStatusString 		"INSTRUMENT_STATUS"
 #define AlwaysDelayRegionString 	"ALWAYS_DELAY_REGION"
 #define AllowIOWithDetectorString 	"ALLOW_IO_WITH_DETECTOR"
 #define InstrumentSerialNoString 	"INSTRUMENT_SERIAL_NUMBER"
-//Detector Info
+/* Detector Info */
 #define TimerControlledString 		"TIMER_CONTROLLED"
 #define XChannelsString 			"X_CHANNELS"
 #define YChannelsString 			"Y_CHANNELS"
@@ -93,7 +76,7 @@ static const char *driverName = "electronAnalyser";
 #define FrameRateString 			"FRAME_RATE"
 #define ADCPresentString 			"ADC_PRESENT"
 #define DiscPresentString 			"DISC_PRESENT"
-// Detector Region
+/* Detector Region */
 #define DetectorFirstXChannelString "FIRST_X_CHANNEL"
 #define DetectorLastXChannelString  "LAST_X_CHANNEL"
 #define DetectorFirstYChannelString "FIRST_Y_CHANNELS"
@@ -102,14 +85,14 @@ static const char *driverName = "electronAnalyser";
 #define DetectorModeString 			"DETECTOR_MODE"
 #define DetectorDiscriminatorLevelString "DETECTOR_DISC_LEVEL"
 #define DetectorADCMaskString		"DETECTOR_ADC_MASK"
-// Analyzer Region
+/* Analyser Region */
 #define AnalyzerAcquisitionModeString "ACQUISITION_MODE"
 #define AnalyzerHighEnergyString 	"HIGH_ENERGY"
 #define AnalyzerLowEnergyString  	"LOW_ENERGY"
 #define AnalyzerCenterEnergyString 	"CENTER_ENERGY"
 #define AnalyzerEnergyStepString 	"ENERGY_STEP"
 #define AnalyzerDwellTimeString 	"DWELL_TIME"
-// Energy Scale
+/* Energy Scale */
 #define EnergyModeString 			"ENERGY_MODE"
 #define RunModeString 				"RUN_MODE"
 #define ElementSetCountString 		"ELEMENT_SET_COUNT"
@@ -123,7 +106,7 @@ static const char *driverName = "electronAnalyser";
 #define RegionNameString  			"REGION_NAME"
 #define TempFileNameString 			"TEMP_FILE_NAME"
 #define ResetDataBetweenIterationsString  "RESET_DATA_BETWEEN_ITERATIONS"
-// Data Parameters
+/* Data Parameters */
 #define AcqChannelsString 			"ACQ_CHANNELS"
 #define AcqSlicesString  			"ACQ_SLICES"
 #define AcqIterationsString  		"ACQ_ITERATIONS"
@@ -148,7 +131,6 @@ static const char *driverName = "electronAnalyser";
 #define AcqIOPortIndexString 		"ACQ_IO_PORT_INDEX"
 #define AcqIODataString 			"ACQ_IO_DATA"
 #define AcqIOPortNameString 		"ACQ_IO_PORT_NAME"
-/*#define DataChoiceString			"DATA_CHOICE"*/
 #define PercentCompleteString		"PERCENT_COMPLETE"
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
@@ -161,218 +143,219 @@ static const char *driverName = "electronAnalyser";
  */
 class ElectronAnalyser: public ADDriver
 {
-public:
-    ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-    		int maxBuffers, size_t maxMemory, int priority, int stackSize);
-    virtual ~ElectronAnalyser();
-    virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
-    virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
-    virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t nChars, size_t *nActual);
-    void report(FILE *fp, int details);
-    void electronAnalyserTask();
-protected:
-	//Properties
-    int LibDescription; 		/**< (asynOctet,    	r/o) the library description*/
-	#define FIRST_ELECTRONANALYZER_PARAM LibDescription
-	int LibVersion;				/**< (asynOctet,    	r/o) the library version*/
-	int LibWorkingDir;			/**< (asynOctet,    	r/w) the woring directory of the current application*/
-	int InstrumentStatus;		/**< (asynInt32,    	r/o) the status of instrument specified at SesNS::InstrumentStatus.*/
-	int AlwaysDelayRegion;		/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
-	int AllowIOWithDetector;	/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
-	int InstrumentSerialNo;		/**< (asynOctet,    	r/o) the instrument serial number*/
-	//Detector Info
-	int TimerControlled;		/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
-	int XChannels;				/**< (asynInt32,    	r/o) Specifies the number of X channels currently shown on the detector.*/
-	int YChannels;				/**< (asynInt32,    	r/o) Specifies the number of Y channels (slices) currently shown on the detector.*/
-	int MaxSlices;				/**< (asynInt32,    	r/o) Specifies the maximum number of Y channels (slices).*/
-	int MaxChannels;			/**< (asynInt32,    	r/o) Specifies the maximum number of X channels.*/
-	int FrameRate;				/**< (asynInt32,    	r/o) Specifies the frame rate (frames/s).*/
-	int ADCPresent;				/**< (asynInt32,    	r/o) Specifies whether the detector contains an ADC (0=No, 1=YES).*/
-	int DiscPresent;			/**< (asynInt32,    	r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES).*/
-	// Detector Region
-	int DetectorFirstXChannel;	/**< (asynInt32,    	r/w) Specifies the first X channel to be used on the detector. */
-	int DetectorLastXChannel;	/**< (asynInt32,    	r/w) Specifies the last X channel to be used on the detector. */
-	int DetectorFirstYChannel;	/**< (asynInt32,    	r/w) Specifies the first Y channel to be used on the detector. */
-	int DetectorLastYChannel;	/**< (asynInt32,    	r/w) Specifies the last Y channel to be used on the detector. */
-	int DetectorSlices;			/**< (asynInt32,    	r/w) Specifies the current number of Y channels (slices). */
-	int DetectorMode;			/**< (asynInt32,    	r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No).*/
-	int DetectorDiscriminatorLevel;/**< (asynInt32,    	r/w) Specifies the detector discriminator level.*/
-	int DetectorADCMask;		/**< (asynInt32,    	r/w) Specifies the detector ADC mask. */
-	// Analyzer Region
-	int AnalyzerAcquisitionMode;/**< (asynInt32,    	r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. */
-	int AnalyzerHighEnergy;		/**< (asynFloat64,  	r/w) Specifies the high-end kinetic energy (eV) for swept mode acquisition. */
-	int AnalyzerLowEnergy;		/**< (asynFloat64,  	r/w) Specifies the low-end kinetic energy (eV) for swept mode acquisition. */
-	int AnalyzerCenterEnergy;	/**< (asynFloat64,  	r/w) Specifies the center energy (eV) for fixed mode acquisition (the low and high end energies is calculated from this value and the current pass energy). */
-	int AnalyzerEnergyStep;		/**< (asynFloat64,  	r/w) Specifies the energy step size (eV) for swept mode acquisition. */
-	int AnalyzerDwellTime;		/**< (asynInt32,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
-	// Energy Scale
-	int EnergyMode;				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
-	int RunMode;				/**< (asynInt32, 		r/w) selects how software should perform the acquisition and save data.*/
+	public:
+		ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
+				int maxBuffers, size_t maxMemory, int priority, int stackSize);
+		virtual ~ElectronAnalyser();
+		virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
+		virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
+		virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t nChars, size_t *nActual);
+		void report(FILE *fp, int details);
+		void electronAnalyserTask();
 
-	int ElementSetCount;		/**< (asynInt32,    	r/o) the number of installed element sets.*/
-	int ElementSet;				/**< (asynInt32,    	r/w) select an element set from the list of the installed element sets*/
-	int LensModeCount;			/**< (asynInt32,		r/o) the number of available lens modes.*/
-	int LensMode;				/**< (asynInt32,    	r/w) select an lens mode from the list of available lens modes*/
-	int PassEnergyCount;		/**< (asynInt32,		r/o) the number of available pass energies for the current lens mode.*/
-	int PassEnergy;				/**< (asynInt32, 	 	r/w) select a pass energy from the list of available pass energies for the current lens mode.*/
-	int UseExternalIO;			/**< (asynInt32,    	r/w) enable or disable the external IO interface (0=No, 1=YES).*/
-	int UseDetector; 			/**< (asynInt32,    	r/w) enable or disable the detector (0=No, 1=YES).*/
-	int RegionName; 			/**< (asynOctet,    	r/w) the name of the current region (max 32 characters)*/
-	int TempFileName;			/**< (asynOctet,    	r/w) the name of the temporary file created when performing acquisition*/
-	int ResetDataBetweenIterations; /**< (asynInt32,    r/w) allow reset of spectrum and external IO data between each iteration. (0=No, 1=YES).*/
-	// Data Parameters
-	int AcqChannels;			/**< (asynInt32,		r/o) the number of channels in acquired data*/
-	int AcqSlices; 				/**< (asynInt32,		r/o) the number of slices in acquired data*/
-	int AcqIterations; 			/**< (asynInt32,		r/o) the number of iterations since last call to initAcqisition()*/
-	int AcqIntensityUnit; 		/**< (asynOctet,		r/o) the unit of intensity scale (e.g. "counts/s")*/
-	int AcqChannelUnit; 		/**< (asynOctet,		r/o) the unit of channel scale (e.g. "eV")*/
-	int AcqSliceUnit; 			/**< (asynOctet,		r/o) the unit of slice scale (e.g. "mm")*/
-	int AcqSpectrum; 			/**< (asynFloat64Array,	r/o) the integrated spectrum*/
-	int AcqImage; 				/**< (asynFloat64Array,	r/o) the 2D matrix of acquired data*/
-	int AcqSlice; 				/**< (asynFloat64Array,	r/o) access one slice from acquired data. The AcqSliceNumber defines which slice to access.*/
-	int AcqSliceNumber; 		/**< (asynInt32,		r/w) the index parameters that specifies which slice to access by AcqSlice*/
-	int AcqChannelScale; 		/**< (asynFloat64Array,	r/o) the channel scale*/
-	int AcqSliceScale; 			/**< (asynFloat64Array,	r/o) the slice scale*/
-	int AcqRawImage;			/**< (asynInt32Array,	r/o) the last image taken by the detector*/
-	int AcqCurrentStep;			/**< (asynInt32,    	r/o) the current step in a swept mode acquisition.*/
-	int AcqElapsedTime; 		/**< (asynFloat64,  	r/o) the elapsed time (ms) since last call to StartAcquisition()*/
-	int AcqIOPorts;				/**< (asynInt32, 		r/o) the number of ports available from external IO interface measurements*/
-	int AcqIOSize;				/**< (asynInt32, 		r/o) the size of each vector from external IO data*/
-	int AcqIOIterations;		/**< (asynInt32, 		r/o) the number of times the external IO data has been acquired*/
-	int AcqIOUnit;				/**< (asynOctet, 		r/o) the unit of the external IO data vectors*/
-	int AcqIOScale;				/**< (asynFloat64Array, r/o) the scale of the external IO data*/
-	int AcqIOSpectrum;			/**< (asynFloat64Array, r/o) data from one of the available ports in the external IO interface. AcqIOPortIndex parameter specifies which port to access. The size of the data is AcqIOSize*/
-	int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
-	int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
-	int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
-	/*int DataChoice;				/**< (asynInt32,    	r/w) select a 1D or 2D data acquisition mode*/
-	int PercentComplete;		/**< (asynInt32,    	r/w) progress of data acquisition in percent*/
-	int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
-	int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
-	#define LAST_ELECTRONANALYZER_PARAM NumChannels
+	protected:
+		/* Properties */
+		int LibDescription; 		/**< (asynOctet,    	r/o) the library description*/
+		#define FIRST_ELECTRONANALYZER_PARAM LibDescription
+		int LibVersion;				/**< (asynOctet,    	r/o) the library version*/
+		int LibWorkingDir;			/**< (asynOctet,    	r/w) the woring directory of the current application*/
+		int InstrumentStatus;		/**< (asynInt32,    	r/o) the status of instrument specified at SesNS::InstrumentStatus.*/
+		int AlwaysDelayRegion;		/**< (asynInt32,    	r/w) apply region delay even when HV supplies are not changed (0=No, 1=YES).*/
+		int AllowIOWithDetector;	/**< (asynInt32,    	r/w) allow simultanouse acquisition of both external IO and detector (0=No, 1=YES).*/
+		int InstrumentSerialNo;		/**< (asynOctet,    	r/o) the instrument serial number*/
+		/* Detector Info */
+		int TimerControlled;		/**< (asynInt32,    	r/o) Specifies whether the detector is controlled by a timer (@c true) or frame rate (@c false)(0=No, 1=YES).*/
+		int XChannels;				/**< (asynInt32,    	r/o) Specifies the number of X channels currently shown on the detector.*/
+		int YChannels;				/**< (asynInt32,    	r/o) Specifies the number of Y channels (slices) currently shown on the detector.*/
+		int MaxSlices;				/**< (asynInt32,    	r/o) Specifies the maximum number of Y channels (slices).*/
+		int MaxChannels;			/**< (asynInt32,    	r/o) Specifies the maximum number of X channels.*/
+		int FrameRate;				/**< (asynInt32,    	r/o) Specifies the frame rate (frames/s).*/
+		int ADCPresent;				/**< (asynInt32,    	r/o) Specifies whether the detector contains an ADC (0=No, 1=YES).*/
+		int DiscPresent;			/**< (asynInt32,    	r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES).*/
+		/* Detector Region */
+		int DetectorFirstXChannel;	/**< (asynInt32,    	r/w) Specifies the first X channel to be used on the detector. */
+		int DetectorLastXChannel;	/**< (asynInt32,    	r/w) Specifies the last X channel to be used on the detector. */
+		int DetectorFirstYChannel;	/**< (asynInt32,    	r/w) Specifies the first Y channel to be used on the detector. */
+		int DetectorLastYChannel;	/**< (asynInt32,    	r/w) Specifies the last Y channel to be used on the detector. */
+		int DetectorSlices;			/**< (asynInt32,    	r/w) Specifies the current number of Y channels (slices). */
+		int DetectorMode;			/**< (asynInt32,    	r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No).*/
+		int DetectorDiscriminatorLevel;/**< (asynInt32,    	r/w) Specifies the detector discriminator level.*/
+		int DetectorADCMask;		/**< (asynInt32,    	r/w) Specifies the detector ADC mask. */
+		/* Analyser Region */
+		int AnalyzerAcquisitionMode;/**< (asynInt32,    	r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. */
+		int AnalyzerHighEnergy;		/**< (asynFloat64,  	r/w) Specifies the high-end kinetic energy (eV) for swept mode acquisition. */
+		int AnalyzerLowEnergy;		/**< (asynFloat64,  	r/w) Specifies the low-end kinetic energy (eV) for swept mode acquisition. */
+		int AnalyzerCenterEnergy;	/**< (asynFloat64,  	r/w) Specifies the center energy (eV) for fixed mode acquisition (the low and high end energies is calculated from this value and the current pass energy). */
+		int AnalyzerEnergyStep;		/**< (asynFloat64,  	r/w) Specifies the energy step size (eV) for swept mode acquisition. */
+		int AnalyzerDwellTime;		/**< (asynInt32,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
+		/* Energy Scale */
+		int EnergyMode;				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
+		int RunMode;				/**< (asynInt32, 		r/w) selects how software should perform the acquisition and save data.*/
+		/* Setup */
+		int ElementSetCount;		/**< (asynInt32,    	r/o) the number of installed element sets.*/
+		int ElementSet;				/**< (asynInt32,    	r/w) select an element set from the list of the installed element sets*/
+		int LensModeCount;			/**< (asynInt32,		r/o) the number of available lens modes.*/
+		int LensMode;				/**< (asynInt32,    	r/w) select an lens mode from the list of available lens modes*/
+		int PassEnergyCount;		/**< (asynInt32,		r/o) the number of available pass energies for the current lens mode.*/
+		int PassEnergy;				/**< (asynInt32, 	 	r/w) select a pass energy from the list of available pass energies for the current lens mode.*/
+		int UseExternalIO;			/**< (asynInt32,    	r/w) enable or disable the external IO interface (0=No, 1=YES).*/
+		int UseDetector; 			/**< (asynInt32,    	r/w) enable or disable the detector (0=No, 1=YES).*/
+		int RegionName; 			/**< (asynOctet,    	r/w) the name of the current region (max 32 characters)*/
+		int TempFileName;			/**< (asynOctet,    	r/w) the name of the temporary file created when performing acquisition*/
+		int ResetDataBetweenIterations; /**< (asynInt32,    r/w) allow reset of spectrum and external IO data between each iteration. (0=No, 1=YES).*/
+		/* Data Parameters */
+		int AcqChannels;			/**< (asynInt32,		r/o) the number of channels in acquired data*/
+		int AcqSlices; 				/**< (asynInt32,		r/o) the number of slices in acquired data*/
+		int AcqIterations; 			/**< (asynInt32,		r/o) the number of iterations since last call to initAcqisition()*/
+		int AcqIntensityUnit; 		/**< (asynOctet,		r/o) the unit of intensity scale (e.g. "counts/s")*/
+		int AcqChannelUnit; 		/**< (asynOctet,		r/o) the unit of channel scale (e.g. "eV")*/
+		int AcqSliceUnit; 			/**< (asynOctet,		r/o) the unit of slice scale (e.g. "mm")*/
+		int AcqSpectrum; 			/**< (asynFloat64Array,	r/o) the integrated spectrum*/
+		int AcqImage; 				/**< (asynFloat64Array,	r/o) the 2D matrix of acquired data*/
+		int AcqSlice; 				/**< (asynFloat64Array,	r/o) access one slice from acquired data. The AcqSliceNumber defines which slice to access.*/
+		int AcqSliceNumber; 		/**< (asynInt32,		r/w) the index parameters that specifies which slice to access by AcqSlice*/
+		int AcqChannelScale; 		/**< (asynFloat64Array,	r/o) the channel scale*/
+		int AcqSliceScale; 			/**< (asynFloat64Array,	r/o) the slice scale*/
+		int AcqRawImage;			/**< (asynInt32Array,	r/o) the last image taken by the detector*/
+		int AcqCurrentStep;			/**< (asynInt32,    	r/o) the current step in a swept mode acquisition.*/
+		int AcqElapsedTime; 		/**< (asynFloat64,  	r/o) the elapsed time (ms) since last call to StartAcquisition()*/
+		int AcqIOPorts;				/**< (asynInt32, 		r/o) the number of ports available from external IO interface measurements*/
+		int AcqIOSize;				/**< (asynInt32, 		r/o) the size of each vector from external IO data*/
+		int AcqIOIterations;		/**< (asynInt32, 		r/o) the number of times the external IO data has been acquired*/
+		int AcqIOUnit;				/**< (asynOctet, 		r/o) the unit of the external IO data vectors*/
+		int AcqIOScale;				/**< (asynFloat64Array, r/o) the scale of the external IO data*/
+		int AcqIOSpectrum;			/**< (asynFloat64Array, r/o) data from one of the available ports in the external IO interface. AcqIOPortIndex parameter specifies which port to access. The size of the data is AcqIOSize*/
+		int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
+		int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
+		int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
+		int PercentComplete;		/**< (asynInt32,    	r/w) progress of data acquisition in percent*/
+		int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
+		int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
+		#define LAST_ELECTRONANALYZER_PARAM NumChannels
 
-private:
-    WSESWrapperMain *ses;
-    SESWrapperNS::WAnalyzerRegion analyzer;
-    SESWrapperNS::WDetectorRegion detector;
-    SESWrapperNS::WDetectorInfo detectorInfo;
-    asynStatus acquireData(void *pData);
-    //asynStatus getDetectorTemperature(float *temperature);
-    virtual void init_device(const char *workingDir, const char *instrumentFile);
-    void delete_device();
-    virtual void updateStatus();
+	private:
+		WSESWrapperMain *ses;
+		SESWrapperNS::WAnalyzerRegion analyzer;
+		SESWrapperNS::WDetectorRegion detector;
+		SESWrapperNS::WDetectorInfo detectorInfo;
+		asynStatus acquireData(void *pData);
+		//asynStatus getDetectorTemperature(float *temperature);
+		virtual void init_device(const char *workingDir, const char *instrumentFile);
+		void delete_device();
+		virtual void updateStatus();
 
-    //*** Use pData instead of spectrum ***//
-    double *spectrum;
-    double *image;
+		//*** Use pData instead of spectrum ***//
+		double *spectrum;
+		double *image;
+		double *acq_image;
 
-    epicsEventId startEventId;
-    epicsEventId stopEventId;
+		epicsEventId startEventId;
+		epicsEventId stopEventId;
 
-    // Anaylzer specific parameters
-    virtual asynStatus getKineticEnergy(double *kineticEnergy);
-    virtual asynStatus setKineticEnergy(const double kineticEnergy);
-    virtual asynStatus getElementVoltage(const char *elementName, double *voltage);
-    virtual asynStatus setElementVoltage(const char *elementName, const double voltage);
-    virtual asynStatus zeroSupplies();
+		/* Analyser specific parameters */
+		virtual asynStatus getKineticEnergy(double *kineticEnergy);
+		virtual asynStatus setKineticEnergy(const double kineticEnergy);
+		virtual asynStatus getElementVoltage(const char *elementName, double *voltage);
+		virtual asynStatus setElementVoltage(const char *elementName, const double voltage);
+		virtual asynStatus zeroSupplies();
 
-    virtual asynStatus setAcquisitionMode(const bool b);
-    virtual asynStatus getAcquisitionMode(bool *b);
-    virtual asynStatus setEnergyMode(const bool b);
-    virtual asynStatus getEnergyMode(bool *b);
+		virtual asynStatus setAcquisitionMode(const bool b);
+		virtual asynStatus getAcquisitionMode(bool *b);
+		virtual asynStatus setEnergyMode(const bool b);
+		virtual asynStatus getEnergyMode(bool *b);
 
-    virtual asynStatus start();
-    virtual asynStatus stop();
+		virtual asynStatus start();
+		virtual asynStatus stop();
 
-    //HW specific methods
-    virtual asynStatus resetInstrument();
-    virtual asynStatus testCommunication();
+		/* Hardware specific methods */
+		virtual asynStatus resetInstrument();
+		virtual asynStatus testCommunication();
 
-    virtual asynStatus getLensModeList(NameVector * pLensModeList);
-    virtual asynStatus getPassEnergyList(DoubleVector * pPassEnergyList);
-    virtual asynStatus getElementSetLlist(NameVector * pElementSetList);
+		virtual asynStatus getLensModeList(NameVector * pLensModeList);
+		virtual asynStatus getPassEnergyList(DoubleVector * pPassEnergyList);
+		virtual asynStatus getElementSetLlist(NameVector * pElementSetList);
 
-    bool isError(int & err, const char * functionName);
+		bool isError(int & err, const char * functionName);
 
-    // access methods to properties - defined in WSESWrapperBase class
-    virtual asynStatus getLibDescription(char *value, int &size);
-    virtual asynStatus getLibVersion(char *value, int &size);
-    virtual asynStatus getLibError(int index, char *value, int &size);
-    virtual asynStatus getLibWorkingDir(char *value, int &size);
-    virtual asynStatus setLibWorkingDir(const char *value);
-    virtual asynStatus getInstrumentStatus(int *value);
-    virtual asynStatus getAlwaysDelayRegion(bool *value);
-    virtual asynStatus setAlwaysDelayRegion(const bool *value);
-    virtual asynStatus getAllowIOWithDetector(bool *value);
-    virtual asynStatus setAllowIOWithDetector(const bool *value);
-    virtual asynStatus getInstrumentModel(char *value, int &size);
-    virtual asynStatus getInstrumentSerialNo(char *value, int &size);
-    virtual asynStatus getDetectorInfo(SESWrapperNS::DetectorInfo *value);
-    virtual asynStatus getDetectorRegion(SESWrapperNS::DetectorRegion *value);
-    virtual asynStatus setDetectorRegion(const SESWrapperNS::DetectorRegion *value);
-    virtual asynStatus getElementSetCount(int & value);
-    virtual asynStatus getElementSet(int index, char * elementSet, int & size);
-    virtual asynStatus setElementSet(const char * elementSet);
-    virtual asynStatus getLensModeCount(int & value);
-    virtual asynStatus getLensMode(int index, char * lensMode, int & size);
-    virtual asynStatus setLensMode(const char * lensMode);
-    virtual asynStatus getPassEnergyCount(int & value);
-    virtual asynStatus getPassEnergy(int index, double &passEnergy );
-    virtual asynStatus setPassEnergy(const double * passEnergy);
-    virtual asynStatus getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *value);
-    virtual asynStatus setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value);
-    virtual asynStatus getUseExternalIO(bool *value);
-    virtual asynStatus setUseExternalIO(const bool *value);
-    virtual asynStatus getUseDetector(bool *value);
-    virtual asynStatus setUseDetector(const bool *value);
-    virtual asynStatus getRegionName(char *value, int &size);
-    virtual asynStatus setRegionName(const char *value);
-    virtual asynStatus getTempFileName(char *value, int &size);
-    virtual asynStatus setTempFileName(const char *value);
-    virtual asynStatus getResetDataBetweenIterations(bool * value);
-    virtual asynStatus setResetDataBetweenIterations(const bool * value);
+		/* Access methods to properties - defined in WSESWrapperBase class */
+		virtual asynStatus getLibDescription(char *value, int &size);
+		virtual asynStatus getLibVersion(char *value, int &size);
+		virtual asynStatus getLibError(int index, char *value, int &size);
+		virtual asynStatus getLibWorkingDir(char *value, int &size);
+		virtual asynStatus setLibWorkingDir(const char *value);
+		virtual asynStatus getInstrumentStatus(int *value);
+		virtual asynStatus getAlwaysDelayRegion(bool *value);
+		virtual asynStatus setAlwaysDelayRegion(const bool *value);
+		virtual asynStatus getAllowIOWithDetector(bool *value);
+		virtual asynStatus setAllowIOWithDetector(const bool *value);
+		virtual asynStatus getInstrumentModel(char *value, int &size);
+		virtual asynStatus getInstrumentSerialNo(char *value, int &size);
+		virtual asynStatus getDetectorInfo(SESWrapperNS::DetectorInfo *value);
+		virtual asynStatus getDetectorRegion(SESWrapperNS::DetectorRegion *value);
+		virtual asynStatus setDetectorRegion(const SESWrapperNS::DetectorRegion *value);
+		virtual asynStatus getElementSetCount(int & value);
+		virtual asynStatus getElementSet(int index, char * elementSet, int & size);
+		virtual asynStatus setElementSet(const char * elementSet);
+		virtual asynStatus getLensModeCount(int & value);
+		virtual asynStatus getLensMode(int index, char * lensMode, int & size);
+		virtual asynStatus setLensMode(const char * lensMode);
+		virtual asynStatus getPassEnergyCount(int & value);
+		virtual asynStatus getPassEnergy(int index, double &passEnergy );
+		virtual asynStatus setPassEnergy(const double * passEnergy);
+		virtual asynStatus getAnalyzerRegion(SESWrapperNS::WAnalyzerRegion *value);
+		virtual asynStatus setAnalyzerRegion(const SESWrapperNS::WAnalyzerRegion *value);
+		virtual asynStatus getUseExternalIO(bool *value);
+		virtual asynStatus setUseExternalIO(const bool *value);
+		virtual asynStatus getUseDetector(bool *value);
+		virtual asynStatus setUseDetector(const bool *value);
+		virtual asynStatus getRegionName(char *value, int &size);
+		virtual asynStatus setRegionName(const char *value);
+		virtual asynStatus getTempFileName(char *value, int &size);
+		virtual asynStatus setTempFileName(const char *value);
+		virtual asynStatus getResetDataBetweenIterations(bool * value);
+		virtual asynStatus setResetDataBetweenIterations(const bool * value);
 
-    // access methods to Data Parameters
-    virtual asynStatus getAcqChannels(int & channels);
-    virtual asynStatus getAcqSlices(int & slices);
-    virtual asynStatus getAcqIterations(int & iterations);
-    virtual asynStatus getAcqIntensityUnit(char * intensityUnit, int & size);
-    virtual asynStatus getAcqChannelUnit(char * channelUnit, int & size);
-    virtual asynStatus getAcqSliceUnit(char * sliceUnit, int & size);
-    virtual asynStatus getAcqChannelScale(double * pSpectrum, int & size);
-    virtual asynStatus getAcqSliceScale(double * pSpectrum, int & size);
-    virtual asynStatus getAcqSpectrum(double * pSumData, int & size);
-    virtual asynStatus getAcqImage(double * pData, int & size);
-    virtual asynStatus getAcqSlice(int index, double * pSliceData, int size);
-    virtual asynStatus getAcqRawImage(int * pImage, int &size);
-    virtual asynStatus getAcqCurrentStep(int &currentStep);
-    virtual asynStatus getAcqElapsedTime(double &elapsedTime);
-    virtual asynStatus getAcqIOPorts(int &ports);
-    virtual asynStatus getAcqIOSize(int &dataSize);
-    virtual asynStatus getAcqIOIterations(int &iterations);
-    virtual asynStatus getAcqIOUnit(char * unit, int & size);
-    virtual asynStatus getAcqIOScale(double * scale, int & size);
-    virtual asynStatus getAcqIOSpectrum(int index, double * pSpectrum, int & size);
-    virtual asynStatus getAcqIOData(double * pData, int & size);
-    virtual asynStatus getAcqIOPortName(int index, char * pName, int & size);
+		/* Access methods to Data Parameters */
+		virtual asynStatus getAcqChannels(int & channels);
+		virtual asynStatus getAcqSlices(int & slices);
+		virtual asynStatus getAcqIterations(int & iterations);
+		virtual asynStatus getAcqIntensityUnit(char * intensityUnit, int & size);
+		virtual asynStatus getAcqChannelUnit(char * channelUnit, int & size);
+		virtual asynStatus getAcqSliceUnit(char * sliceUnit, int & size);
+		virtual asynStatus getAcqChannelScale(double * pSpectrum, int & size);
+		virtual asynStatus getAcqSliceScale(double * pSpectrum, int & size);
+		virtual asynStatus getAcqSpectrum(double * pSumData, int & size);
+		virtual asynStatus getAcqImage(double * pData, int & size);
+		virtual asynStatus getAcqSlice(int index, double * pSliceData, int size);
+		virtual asynStatus getAcqRawImage(int * pImage, int &size);
+		virtual asynStatus getAcqCurrentStep(int &currentStep);
+		virtual asynStatus getAcqElapsedTime(double &elapsedTime);
+		virtual asynStatus getAcqIOPorts(int &ports);
+		virtual asynStatus getAcqIOSize(int &dataSize);
+		virtual asynStatus getAcqIOIterations(int &iterations);
+		virtual asynStatus getAcqIOUnit(char * unit, int & size);
+		virtual asynStatus getAcqIOScale(double * scale, int & size);
+		virtual asynStatus getAcqIOSpectrum(int index, double * pSpectrum, int & size);
+		virtual asynStatus getAcqIOData(double * pData, int & size);
+		virtual asynStatus getAcqIOPortName(int index, char * pName, int & size);
 
-    WError *werror;
-    string sesWorkingDirectory;
-    string instrumentFilePath;
+		WError *werror;
+		string sesWorkingDirectory;
+		string instrumentFilePath;
 
-	float m_dTemperature;
-	bool m_bAllowIOWithDetector;
-	bool m_bAlwaysDelayRegion;
-	runMode_t m_RunMode;
-	NameVector m_Elementsets;
-	NameVector m_LensModes;
-	DoubleVector m_PassEnergies;
-	char * m_sCurrentElementSet;
-	char * m_sCurrentLensMode;
-	double m_dCurrentPassEnergy;
-	bool m_bUseExternalIO;
-	bool m_bUseDetector;
-	bool m_bResetDataBetweenIterations;
+		float m_dTemperature;
+		bool m_bAllowIOWithDetector;
+		bool m_bAlwaysDelayRegion;
+		runMode_t m_RunMode;
+		NameVector m_Elementsets;
+		NameVector m_LensModes;
+		DoubleVector m_PassEnergies;
+		char * m_sCurrentElementSet;
+		char * m_sCurrentLensMode;
+		double m_dCurrentPassEnergy;
+		bool m_bUseExternalIO;
+		bool m_bUseDetector;
+		bool m_bResetDataBetweenIterations;
 };
 /* end of Electron Analyser class description */
 
@@ -395,10 +378,15 @@ static void electronAnalyserTaskC(void *drvPvt)
 /* Number of asyn parameters (asyn commands) this driver supports*/
 #define NUM_ELECTRONANALYZER_PARAMS (&LAST_ELECTRONANALYZER_PARAM - &FIRST_ELECTRONANALYZER_PARAM + 1)
 
+/* ElectronAnalyser destructor */
 ElectronAnalyser::~ElectronAnalyser()
 {
 	free(spectrum);
+	free(image);
+	free(acq_image);
 }
+
+/* ElectronAnalyser constructor */
 ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
 		int maxBuffers, size_t maxMemory, int priority,	int stackSize) :
 	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
@@ -407,28 +395,32 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 {
 	int status = asynSuccess;
 	const char *functionName = "ElectronAnalyser";
-	//int eaStatus = WError::ERR_OK;
 	char message[MAX_MESSAGE_SIZE];
-	int size = 0;
 	char value[MAX_MESSAGE_SIZE];
-	
+	int size = 0;
+
 	spectrum = (double *)calloc(MAX_MEMORY_SIZE, sizeof(epicsFloat64));
 	//old setup: spectrum = (double *)pData;
 
 	werror = WError::instance();
-	// Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts and stops
+
+	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts */
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s epicsEventCreate failure for start event\n", driverName, functionName);
 		return;
 	}
+
+	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition stops */
 	this->stopEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->stopEventId)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: epicsEventCreate failure for stop event\n", driverName, functionName);
 		return;
 	}
+
+	/* Initialise the SES library - load from instrument file */
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Initialising the SES library....\n", driverName, functionName);
 	this->init_device(workingDir, instrumentFile);
 
@@ -439,7 +431,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AlwaysDelayRegionString, asynParamInt32, &AlwaysDelayRegion);
 	createParam(AllowIOWithDetectorString, asynParamInt32, &AllowIOWithDetector);
 	createParam(InstrumentSerialNoString, asynParamOctet, &InstrumentSerialNo);
-	//Detector Info
+	/* Detector Info */
 	createParam(TimerControlledString, asynParamInt32, &TimerControlled);
 	createParam(XChannelsString, asynParamInt32, &XChannels);
 	createParam(YChannelsString, asynParamInt32, &YChannels);
@@ -448,7 +440,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(FrameRateString, asynParamInt32, &FrameRate);
 	createParam(ADCPresentString, asynParamInt32, &ADCPresent);
 	createParam(DiscPresentString, asynParamInt32, &DiscPresent);
-	// Detector Region
+	/* Detector Region */
 	createParam(DetectorFirstXChannelString, asynParamInt32, &DetectorFirstXChannel);
 	createParam(DetectorLastXChannelString, asynParamInt32, &DetectorLastXChannel);
 	createParam(DetectorFirstYChannelString, asynParamInt32, &DetectorFirstYChannel);
@@ -457,17 +449,17 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(DetectorModeString, asynParamInt32, &DetectorMode);
 	createParam(DetectorDiscriminatorLevelString, asynParamInt32, &DetectorDiscriminatorLevel);
 	createParam(DetectorADCMaskString, asynParamInt32, &DetectorADCMask);
-	// Analyzer Region
+	/* Analyser Region */
 	createParam(AnalyzerAcquisitionModeString, asynParamInt32, &AnalyzerAcquisitionMode);
 	createParam(AnalyzerHighEnergyString, asynParamFloat64, &AnalyzerHighEnergy);
 	createParam(AnalyzerLowEnergyString, asynParamFloat64, &AnalyzerLowEnergy);
 	createParam(AnalyzerCenterEnergyString, asynParamFloat64, &AnalyzerCenterEnergy);
 	createParam(AnalyzerEnergyStepString, asynParamFloat64, &AnalyzerEnergyStep);
 	createParam(AnalyzerDwellTimeString, asynParamInt32, &AnalyzerDwellTime);
-	// Energy Scale
+	/* Energy Scale */
 	createParam(EnergyModeString, asynParamInt32, &EnergyMode);
 	createParam(RunModeString, asynParamInt32, &RunMode);
-
+	/* Setup */
 	createParam(ElementSetCountString, asynParamInt32, &ElementSetCount);
 	createParam(ElementSetString, asynParamInt32, &ElementSet);
 	createParam(LensModeCountString, asynParamInt32, &LensModeCount);
@@ -479,7 +471,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(RegionNameString, asynParamOctet, &RegionName);
 	createParam(TempFileNameString, asynParamOctet, &TempFileName);
 	createParam(ResetDataBetweenIterationsString, asynParamInt32, &ResetDataBetweenIterations);
-	// Data Parameters
+	/* Data Parameters */
 	createParam(AcqChannelsString, asynParamInt32, &AcqChannels);
 	createParam(AcqSlicesString, asynParamInt32, &AcqSlices);
 	createParam(AcqIterationsString, asynParamInt32, &AcqIterations);
@@ -504,12 +496,11 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	createParam(AcqIOPortIndexString, asynParamInt32, &AcqIOPortIndex);
 	createParam(AcqIODataString, asynParamFloat64Array, &AcqIOData);
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
-	/*createParam(DataChoiceString, asynParamInt32, &DataChoice);*/
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
 
-	// initialise state variables from SES library
+	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
 	getAlwaysDelayRegion(&m_bAlwaysDelayRegion);
 	getDetectorInfo(&detectorInfo);
@@ -532,26 +523,23 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: ADC Present = %d\n", driverName, functionName, detectorInfo.adcPresent_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Discriminator Present = %d\n", driverName, functionName, detectorInfo.discPresent_);
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s X Channels = %d\nY Channels = %d\nMax Channels = %d\nMax Slices = %d\nFrame Rate = %d\n\n\n\n", driverName, functionName, detectorInfo.xChannels_, detectorInfo.yChannels_, detectorInfo.maxChannels_, detectorInfo.maxSlices_, detectorInfo.frameRate_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\nLast X Channel = %d\nFirst Y Channel = %d\nLast Y Channel = %d\nSlices = %d\n\n\n\n", driverName, functionName, detector.firstXChannel_, detector.lastXChannel_, detector.firstYChannel_, detector.lastYChannel_, detector.slices_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s X Channels = %d\n", driverName, functionName, detectorInfo.xChannels_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Y Channels = %d\n", driverName, functionName, detectorInfo.yChannels_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Max Channels = %d\n", driverName, functionName, detectorInfo.maxChannels_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Max Slices = %d\n", driverName, functionName, detectorInfo.maxSlices_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Frame Rate = %d\n\n", driverName, functionName, detectorInfo.frameRate_);
 
-	//detector.firstXChannel_ = 0;
-	//detector.lastXChannel_ = detectorInfo.xChannels_ - 1;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X channel = %d\n", driverName, functionName, detector.firstXChannel_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X channel = %d\n", driverName, functionName, detector.lastXChannel_);
-	//detector.firstYChannel_ = 0;
-	//detector.lastYChannel_ = detectorInfo.yChannels_ - 1;
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y channel = %d\n", driverName, functionName, detector.firstYChannel_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y channel = %d\n", driverName, functionName, detector.lastYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slices = %d\n\n", driverName, functionName, detector.slices_);
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: detector mode = %d\n\n\n", driverName, functionName, detector.adcMode_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Mode = %d\n\n", driverName, functionName, detector.adcMode_);
 	detector.adcMode_ = true;
 
 	setDetectorRegion(&detector);
 	//ses->setProperty("detector_region", 0, &detector);
-
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: X Channels = %d\nY Channels = %d\nMax Channels = %d\nMax Slices = %d\nFrame Rate = %d\n\n\n\n", driverName, functionName, detectorInfo.xChannels_, detectorInfo.yChannels_, detectorInfo.maxChannels_, detectorInfo.maxSlices_, detectorInfo.frameRate_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\nLast X Channel = %d\nFirst Y Channel = %d\nLast Y Channel = %d\nSlices = %d\n\n\n\n", driverName, functionName, detector.firstXChannel_, detector.lastXChannel_, detector.firstYChannel_, detector.lastYChannel_, detector.slices_);
 
 	/* Set some default values for parameters (the setup panel parameters) */
 	status |= setStringParam(ADManufacturer, "VG Scienta");
@@ -577,7 +565,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setStringParam(InstrumentSerialNo, value);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument serial number = %s\n", driverName, functionName, value);
 
-	// the Readout panel parameters
+	/* Readout panel parameters */
 	status |= setIntegerParam(ADMaxSizeX, detectorInfo.xChannels_);
 	status |= setIntegerParam(ADMaxSizeY, detectorInfo.yChannels_);
 	status |= setIntegerParam(ADMinX, detector.firstXChannel_ - 1);
@@ -585,29 +573,30 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	status |= setIntegerParam(ADSizeX, detector.lastXChannel_ - 1);
 	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - 1);
 
-	// Set NDArray parameters
+	/* Set NDArray parameters */
 	status |= setIntegerParam(NDArraySizeX, detectorInfo.xChannels_);
 	status |= setIntegerParam(NDArraySizeY, detectorInfo.yChannels_);
 	status |= setIntegerParam(NDDataType, NDFloat64);
 
-	// the Collect panel
+	/* The Collect panel */
 	status |= setDoubleParam(ADAcquireTime, analyzer.dwellTime_/1000.0);
 	status |= setDoubleParam(ADAcquirePeriod, 0.0);
 	status |= setIntegerParam(ADNumImages, 1);
 	status |= setIntegerParam(ADNumExposures, 1); // number of frames per image
 	status |= setIntegerParam(ADImageMode, ADImageSingle);
 	status |= setIntegerParam(ADTriggerMode, ADTriggerInternal);
-	updateStatus();
 	status |= setStringParam(ADStatusMessage, message);
 	status |= setIntegerParam(NDAutoIncrement, 1);
 	status |= setDoubleParam(ADTemperature, m_dTemperature);
 
-	// Electron analyzer specific parameters
+	/* Electron analySer specific parameters */
 	status |= setIntegerParam(AlwaysDelayRegion, m_bAlwaysDelayRegion?1:0);
 	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
 	status |= setIntegerParam(DetectorSlices, 10);
+
+	updateStatus();
 
 	if (status)
 	{
@@ -646,12 +635,11 @@ void ElectronAnalyser::electronAnalyserTask()
 	NDArray *pImage;
 	int dims[2];
 	NDDataType_t dataType;
-	//int NumChannelsVal;
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Polling thread started\n", driverName, functionName);
-	detectorInfo.frameRate_ = 60;
+
 	this->lock();
 	while (1)
 	{
@@ -685,7 +673,6 @@ void ElectronAnalyser::electronAnalyserTask()
 		getDoubleParam(ADAcquirePeriod, &acquirePeriod);
 
 		/* Get the acquisition parameters */
-		//getIntegerParam(ADTriggerMode, &triggerMode);
 		getIntegerParam(ADNumImages, &numImages);
 
 		setIntegerParam(ADStatus, ADStatusAcquire);
@@ -703,8 +690,8 @@ void ElectronAnalyser::electronAnalyserTask()
 			//setIntegerParam(NumChannels, NumChannelsVal);
 			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
 			getIntegerParam(NumChannels, &dims[0]);
-			//dims[0] = NumChannelsVal;
 		}
+		//dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]);
 		dims[1] = detector.slices_;
 		nbytes = (dims[0] * dims[1]) * sizeof(double);
 		setIntegerParam(NDArraySize, nbytes);
@@ -743,7 +730,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		}
 		else
 		{*/
-			nbytes = (dims[0] * dims[1]) * sizeof(double);
+			/* redundant as done above nbytes = (dims[0] * dims[1]) * sizeof(double); */
 		//}
 
 		//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of dimensions = %d\n", driverName, functionName, numDims);
@@ -833,18 +820,24 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 	int channels = 0;
 	int size = 0;
+	int image_size = 0;
 	int i;
 	int j;
 	int MaxIterations = 1;
+	int CurrentStep;
 	int PercentCompleteVal = 0;
 	int CurrentChannelVal = 0;
+	int waitTimeout;
 
-	ses->getAcquiredData("acq_channels", 0, &channels, size);
+	/* Find out how many channels to work with */
+	this->getAcqChannels(channels);
+	//ses->getAcquiredData("acq_channels", 0, &channels, size);
 	this->image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
+	this->acq_image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
 	/* Energy point wait timeout is set to four times the dwell time */
 	/* Setting up the initial data collection can be slow, hence why */
 	/* four times was chosen.  Otherwise two times is fine */
-	int waitTimeout = (analyzer.dwellTime_ * 4);
+	waitTimeout = (analyzer.dwellTime_ * 4);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of channels = %d\n", driverName, functionName, channels);
 
@@ -865,17 +858,21 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
 					{
 						/* No timeout */
-						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, j+1, channels);
+						getAcqCurrentStep(CurrentStep);
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, channels);
 
-						PercentCompleteVal = (int)(((double)((i * channels) + (j+1)) / (channels * MaxIterations)) * 100);
-						CurrentChannelVal = ((i * channels) + (j+1));
+						PercentCompleteVal = (int)(((double)((i * channels) + CurrentStep) / (channels * MaxIterations)) * 100);
+						CurrentChannelVal = ((i * channels) + CurrentStep);
 						setIntegerParam(PercentComplete, PercentCompleteVal);
 						setIntegerParam(CurrentChannel, CurrentChannelVal);
 
-						ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
+						this->getAcqSpectrum(this->spectrum, size);
+						//ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
+						this->getAcqImage(this->acq_image, image_size);
 
 						this->lock();
 						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+						status = doCallbacksFloat64Array(this->acq_image, (detector.slices_*channels), AcqImage, 0);
 						callParamCallbacks();
 						this->unlock();
 
@@ -934,12 +931,14 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	this->unlock();
 
 	char intensity_unit[MAX_STRING_SIZE];
-	ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, size);
+	getAcqIntensityUnit(intensity_unit, size);
+	//ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, size);
 	setStringParam(AcqIntensityUnit, intensity_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
 
 	char channel_unit[MAX_STRING_SIZE];
-	ses->getAcquiredData("acq_channel_unit", 0, channel_unit, size);
+	getAcqChannelUnit(channel_unit, size);
+	//ses->getAcquiredData("acq_channel_unit", 0, channel_unit, size);
 	setStringParam(AcqChannelUnit, channel_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
@@ -992,6 +991,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 	return status;
 }
+
 
 /** Called when asyn clients call pasynInt32->write().
  * Write integer value to the drivers parameter table.
@@ -1753,25 +1753,31 @@ asynStatus ElectronAnalyser::start()
 {
 	const char * functionName = "start()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
-	// set acquisition parameters on the wrapper
-	int err=ses->setProperty("detector_region", 0, &detector);
+	int err;
 
-	if (isError(err, functionName)) {
+	/* Set acquisition parameters on the wrapper */
+	this->setDetectorRegion(&detector);
+	//int err=ses->setProperty("detector_region", 0, &detector);
+
+	/*if (isError(err, functionName)) {
 		return asynError;
-	}
+	}*/
 
-	err = ses->setProperty("analyzer_region", 0, &analyzer);
+	this->setAnalyzerRegion(&analyzer);
+	//err = ses->setProperty("analyzer_region", 0, &analyzer);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
 
-	if (isError(err, functionName)) {
+	/*if (isError(err, functionName)) {
 		return asynError;
-	}
+	}*/
 
-	err = ses->initAcquisition(!analyzer.fixed_, true);
+	/***** Line below can cause aquisitions to hang (maybe not actually - keep an eye on it) *****/
+	//err = ses->initAcquisition(!analyzer.fixed_, true);
+	err = ses->initAcquisition(true, false);
 
 	if (isError(err, functionName)) {
 		return asynError;
