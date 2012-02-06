@@ -527,7 +527,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Y Channels = %d\n", driverName, functionName, detectorInfo.yChannels_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Max Channels = %d\n", driverName, functionName, detectorInfo.maxChannels_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Max Slices = %d\n", driverName, functionName, detectorInfo.maxSlices_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Frame Rate = %d\n\n", driverName, functionName, detectorInfo.frameRate_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s Maximum Frame Rate = %d\n\n", driverName, functionName, detectorInfo.frameRate_);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
@@ -564,6 +564,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	getInstrumentSerialNo(value, size);
 	status |= setStringParam(InstrumentSerialNo, value);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument serial number = %s\n", driverName, functionName, value);
+
+	/* Find the maximum frame rate available */
+	status |= setIntegerParam(FrameRate, detectorInfo.frameRate_);
 
 	/* Readout panel parameters */
 	status |= setIntegerParam(ADMaxSizeX, detectorInfo.xChannels_);
@@ -953,7 +956,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Energy Step = %f\n", driverName, functionName, analyzer.energyStep_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Dwell Time = %d\n", driverName, functionName, analyzer.dwellTime_);
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Frame Rate = %d\n", driverName, functionName, detectorInfo.frameRate_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Maximum Frame Rate = %d\n", driverName, functionName, detectorInfo.frameRate_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info X Channels = %d\n", driverName, functionName, detectorInfo.xChannels_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info Y Channels = %d\n", driverName, functionName, detectorInfo.yChannels_);
 
@@ -1614,7 +1617,8 @@ void ElectronAnalyser::updateStatus()
 
 	int step = 0;
 	int dummy = 0;
-	this->getAcqCurrentStep(step);
+	/* Creates error when run at startup */
+	/*this->getAcqCurrentStep(step);*/
 
 	int channels = 0;
 	this->getAcqChannels(channels);
