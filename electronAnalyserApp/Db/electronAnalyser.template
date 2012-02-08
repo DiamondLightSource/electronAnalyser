@@ -28,7 +28,9 @@ record(longout, "$(P)$(R)SLICES")
   field(DTYP, "asynInt32")
   field(OUT, "@asyn($(PORT) 0)DETECTOR_SLICES")
   field(PINI, "YES")
-  field(VAL, "10")
+  field(VAL,  "10")
+  field(DRVL, "1")
+  field(DRVH, "1000")
 }
 
 record(longin, "$(P)$(R)SLICES_RBV") 
@@ -142,10 +144,10 @@ record(mbbo, "$(P)$(R)DETECTOR_MODE")
   field(DESC, "Detector Mode")
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn($(PORT) 0)DETECTOR_MODE")
-  field(ZRST, "ADC")
-  field(ZRVL, "1")
-  field(ONST, "Pulse Counting")
-  field(ONVL, "0")
+  field(ZRST, "Pulse Counting")
+  field(ZRVL, "0")
+  field(ONST, "ADC")
+  field(ONVL, "1")
   field(PINI, "YES")
   field(VAL, "1")
 }
@@ -156,12 +158,10 @@ record(mbbi, "$(P)$(R)DETECTOR_MODE_RBV")
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT) 0)DETECTOR_MODE")
   field(SCAN, "I/O Intr")
-  field(ZRST, "ADC")
-  field(ZRVL, "1")
-  field(ONST, "Pulse Counting")
-  field(ONVL, "0")
-  field(PINI, "YES")
-  field(VAL,  "1")
+  field(ZRST, "Pulse Counting")
+  field(ZRVL, "0")
+  field(ONST, "ADC")
+  field(ONVL, "1")
 }
 
 ###################### Energy (eV) ########################
@@ -304,19 +304,55 @@ record(ao, "$(P)$(R)STEP_SIZE")
 {
   field(DESC, "Energy Step Size")
   field(DTYP, "asynFloat64")
-  field(OUT, "@asyn($(PORT) 0)ENERGY_STEP")
+  field(OUT,  "@asyn($(PORT) 0)ENERGY_STEP")
   field(PREC, "3")
   field(PINI, "YES")
-  field(VAL, "0.2")
+  field(VAL,  "0.2")
 }
 
 record(ai, "$(P)$(R)STEP_SIZE_RBV") 
 {
   field(DESC, "Energy Step Size Readback")
   field(DTYP, "asynFloat64")
-  field(INP, "@asyn($(PORT) 0)ENERGY_STEP")
+  field(INP,  "@asyn($(PORT) 0)ENERGY_STEP")
   field(SCAN, "I/O Intr")
   field(PREC, "3")
+}
+
+record(longout, "$(P)$(R)FRAMES") 
+{
+  field(DESC, "Number of Frames")
+  field(DTYP, "Soft Channel")
+  field(OUT,  "$(P)$(R)FRAMES_CALC")
+  field(PINI, "YES")
+  field(VAL,  "30")
+  field(FLNK, "$(P)$(R)FRAMES_RBV")
+}
+
+record(longin, "$(P)$(R)FRAMES_RBV") 
+{
+  field(DESC, "Number of Frames Readback")
+  field(DTYP, "Soft Channel")
+  field(INP,  "$(P)$(R)FRAMES")
+  field(SCAN, "Passive")
+  field(FLNK, "$(P)$(R)FRAMES_CALC")
+}
+
+record(longin, "$(P)$(R)MAX_FRAMES_RBV") 
+{
+  field(DESC, "Max Frames Readback")
+  field(DTYP, "asynInt32")
+  field(INP, "@asyn($(PORT) 0)FRAME_RATE")
+  field(SCAN, "I/O Intr")
+}
+
+record(calcout, "$(P)$(R)FRAMES_CALC")
+{
+  field(DESC, "Calculate time from frames")
+  field(CALC, "A/B")
+  field(INPA, "$(P)$(R)FRAMES")
+  field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
+  field(OUT,  "$(P)$(R)AcquireTime PP")
 }
 
 #record(ao, "$(P)$(R)STEP_TIME") 
