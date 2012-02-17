@@ -297,7 +297,6 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
   int errorCode = WError::ERR_OK;
   if (lib_->GDS_LoadInstrument(fileName) == 0)
   {
-	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument configuration file loaded successfully\n", driverName, functionName);
     lib_->GDS_GetInstrumentInfo(&sesInstrumentInfo_);
     int length = *sesInstrumentInfo_.Model;
     memmove(sesInstrumentInfo_.Model, sesInstrumentInfo_.Model + 1, length);
@@ -505,7 +504,7 @@ int WSESWrapperMain::startAcquisition()
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-  //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition running....\n", driverName, functionName);
+
   int sesStatus = SesNS::NonOperational;
   lib_->GDS_GetStatus(&sesStatus);
   if (sesStatus == SesNS::Running)
@@ -538,14 +537,7 @@ int WSESWrapperMain::startAcquisition()
     if (lib_->GDS_GetCurrSignals != 0)
       lib_->GDS_GetCurrSignals(&sesSignals_);
   }
-  if(result == 0)
-  {
-	  //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition completed successfully\n", driverName, functionName);
-  }
-  else
-  {
-	  ////asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition failed\n", driverName, functionName);
-  }
+
   return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 
