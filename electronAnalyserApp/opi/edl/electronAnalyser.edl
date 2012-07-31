@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 747
-y 73
+x 324
+y 120
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -146,63 +146,6 @@ value {
 }
 autoSize
 border
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 115
-y 545
-w 45
-h 20
-controlPv "$(P)$(R)CENTRE_ENERGY_RBV"
-fgColor index 16
-fgAlarm
-bgColor index 10
-fill
-font "arial-bold-r-12.0"
-fontAlign "center"
-endObjectProperties
-
-# (Textentry)
-object TextentryClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 65
-y 545
-w 45
-h 20
-controlPv "$(P)$(R)CENTRE_ENERGY"
-fgColor index 25
-fgAlarm
-bgColor index 3
-fill
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 15
-y 550
-w 38
-h 14
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Centre"
-}
-autoSize
 endObjectProperties
 
 # (Menu Button)
@@ -866,23 +809,23 @@ h 195
 
 beginGroup
 
-# (Textupdate)
-object TextupdateClass
+# (Static Text)
+object activeXTextClass
 beginObjectProperties
-major 10
-minor 0
+major 4
+minor 1
 release 0
-x 145
+x 15
 y 695
-w 45
+w 80
 h 20
-controlPv "$(P)$(R)STEP_SIZE_RBV"
-fgColor index 16
-fgAlarm
-bgColor index 10
-fill
 font "arial-bold-r-12.0"
-fontAlign "center"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Size (eV)"
+}
 endObjectProperties
 
 # (Textentry)
@@ -903,23 +846,42 @@ fill
 font "arial-bold-r-12.0"
 endObjectProperties
 
-# (Static Text)
-object activeXTextClass
+# (Textupdate)
+object TextupdateClass
 beginObjectProperties
-major 4
-minor 1
+major 10
+minor 0
 release 0
-x 15
+x 145
 y 695
-w 80
+w 45
 h 20
+controlPv "$(P)$(R)STEP_SIZE_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
 font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Size (eV)"
-}
+fontAlign "center"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 65
+y 570
+w 95
+h 20
+controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
 endObjectProperties
 
 # (Static Text)
@@ -930,44 +892,6 @@ minor 1
 release 0
 x 15
 y 575
-w 29
-h 14
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "High"
-}
-autoSize
-endObjectProperties
-
-# (Textentry)
-object TextentryClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 65
-y 570
-w 45
-h 20
-controlPv "$(P)$(R)HIGH_ENERGY"
-fgColor index 25
-fgAlarm
-bgColor index 3
-fill
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 15
-y 600
 w 37
 h 14
 font "arial-bold-r-12.0"
@@ -980,23 +904,22 @@ value {
 autoSize
 endObjectProperties
 
-# (Textupdate)
-object TextupdateClass
+# (Textentry)
+object TextentryClass
 beginObjectProperties
 major 10
 minor 0
 release 0
 x 65
-y 595
-w 95
+y 545
+w 45
 h 20
-controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
-fgColor index 16
+controlPv "$(P)$(R)HIGH_ENERGY"
+fgColor index 25
 fgAlarm
-bgColor index 10
+bgColor index 3
 fill
 font "arial-bold-r-12.0"
-fontAlign "center"
 endObjectProperties
 
 # (Textupdate)
@@ -1006,7 +929,7 @@ major 10
 minor 0
 release 0
 x 115
-y 570
+y 545
 w 45
 h 20
 controlPv "$(P)$(R)HIGH_ENERGY_RBV"
@@ -1016,6 +939,26 @@ bgColor index 10
 fill
 font "arial-bold-r-12.0"
 fontAlign "center"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 15
+y 550
+w 29
+h 14
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "High"
+}
+autoSize
 endObjectProperties
 
 # (Textupdate)
@@ -1063,14 +1006,14 @@ minor 1
 release 0
 x 15
 y 525
-w 25
+w 28
 h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Low"
+  "Low "
 }
 autoSize
 endObjectProperties
@@ -1078,6 +1021,84 @@ endObjectProperties
 endGroup
 
 visPv "$(P)$(R)ACQ_MODE_RBV"
+visMin "0"
+visMax "1"
+endObjectProperties
+
+# (Group)
+object activeGroupClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 15
+y 545
+w 145
+h 20
+
+beginGroup
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 115
+y 545
+w 45
+h 20
+controlPv "$(P)$(R)CENTRE_ENERGY_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
+endObjectProperties
+
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 65
+y 545
+w 45
+h 20
+controlPv "$(P)$(R)CENTRE_ENERGY"
+fgColor index 25
+fgAlarm
+bgColor index 3
+fill
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 15
+y 550
+w 41
+h 14
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Centre "
+}
+autoSize
+endObjectProperties
+
+endGroup
+
+visPv "$(P)$(R)ACQ_MODE_RBV"
+visInvert
 visMin "0"
 visMax "1"
 endObjectProperties
