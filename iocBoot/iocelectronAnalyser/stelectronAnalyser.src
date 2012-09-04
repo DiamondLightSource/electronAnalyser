@@ -17,7 +17,13 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 #
 # electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, 30, Max Memory)
 
-electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 30, 25000000)
+# Desktop
+#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 30, 25000000)
+electronAnalyserConfig("electronAnalyser", 30, 25000000)
+# I06
+#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.5r2", "6ES024Instrument.dat", 30, 25000000)
+# I06 2
+#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "6ES024Instrument.dat", 30, 25000000)
 asynSetTraceMask("electronAnalyser", 0, 0x1)
 
 dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=electronAnalyser")
