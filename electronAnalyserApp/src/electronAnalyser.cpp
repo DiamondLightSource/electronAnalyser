@@ -140,8 +140,9 @@ static const char *driverName = "electronAnalyser";
 class ElectronAnalyser: public ADDriver
 {
 	public:
-		ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-				int maxBuffers, size_t maxMemory, int priority, int stackSize);
+		/*ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
+				int maxBuffers, size_t maxMemory, int priority, int stackSize);*/
+		ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize);
 		virtual ~ElectronAnalyser();
 		virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
 		virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
@@ -356,11 +357,13 @@ class ElectronAnalyser: public ADDriver
 /* end of Electron Analyser class description */
 
 /** A bit of C glue to make the config function available in the startup script (ioc shell) */
-extern "C" int electronAnalyserConfig(const char *portName, const char *workingDir, const char *instrumentFile,
-		int maxBuffers, size_t maxMemory, int priority,	int stackSize)
+/*extern "C" int electronAnalyserConfig(const char *portName, const char *workingDir, const char *instrumentFile,
+		int maxBuffers, size_t maxMemory, int priority,	int stackSize)*/
+extern "C" int electronAnalyserConfig(const char *portName, int maxBuffers, size_t maxMemory, int priority,	int stackSize)
 {
-	new ElectronAnalyser(portName, workingDir, instrumentFile, maxBuffers, maxMemory,
-			priority, stackSize);
+	/*new ElectronAnalyser(portName, workingDir, instrumentFile, maxBuffers, maxMemory,
+			priority, stackSize);*/
+	new ElectronAnalyser(portName, maxBuffers, maxMemory, priority, stackSize);
 	return asynSuccess;
 }
 
@@ -383,8 +386,13 @@ ElectronAnalyser::~ElectronAnalyser()
 }
 
 /* ElectronAnalyser constructor */
-ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
+/*ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
 		int maxBuffers, size_t maxMemory, int priority,	int stackSize) :
+	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
+	/*ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
+			priority, stackSize) // thread priority and stack size (0=default)*/
+
+ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize) :
 	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
 	ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
 			priority, stackSize) // thread priority and stack size (0=default)
@@ -394,6 +402,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 	char message[MAX_MESSAGE_SIZE];
 	char value[MAX_MESSAGE_SIZE];
 	int size = 0;
+	char *pWorkingDirEnvVar;
+	char *pInstrumentFileEnvVar;
 
 	spectrum = (double *)calloc(MAX_MEMORY_SIZE, sizeof(epicsFloat64));
 	//old setup: spectrum = (double *)pData;
@@ -418,9 +428,19 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir,
 
 	/* Initialise the SES library - load from instrument file */
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Initialising the SES library....\n", driverName, functionName);
-	this->init_device(workingDir, instrumentFile);
 
-    createParam(LibDescriptionString, asynParamOctet, &LibDescription);
+	/* Find out the location and name of the instrument file from environment variables */
+	/* This used to be passed in as a parameter to the electronAnalyzer config call */
+	pWorkingDirEnvVar = getenv("SES_WORKING_DIR");
+	pInstrumentFileEnvVar = getenv("SES_INSTRUMENT_FILE");
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory = %s\n", driverName, functionName, pWorkingDirEnvVar);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Instrument file = %s\n", driverName, functionName, pInstrumentFileEnvVar);
+
+	//this->init_device(workingDir, instrumentFile);
+	this->init_device(pWorkingDirEnvVar, pInstrumentFileEnvVar);
+
+	createParam(LibDescriptionString, asynParamOctet, &LibDescription);
 	createParam(LibVersionString, asynParamOctet, &LibVersion);
 	createParam(LibWorkingDirString, asynParamOctet, &LibWorkingDir);
 	createParam(InstrumentStatusString, asynParamInt32, &InstrumentStatus);
@@ -643,12 +663,16 @@ void ElectronAnalyser::electronAnalyserTask()
 	while (1)
 	{
 		getIntegerParam(ADAcquire, &acquire);
-		/* If we are not acquiring then wait for a semaphore that is given when acquisition is started */
+		/* If we are not acquiring or encountered a problem then wait for a semaphore that is given when acquisition is started */
 		if (!acquire)
 		{
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Waiting for the acquire command\n", driverName, functionName);
-			setStringParam(ADStatusMessage, "Waiting for the acquire command");
-			setIntegerParam(ADStatus, ADStatusIdle);
+			/* Only set the status message if we didn't encounter a problem last time, so we don't overwrite the error mesage */
+			if(!status)
+			{
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Waiting for the acquire command\n", driverName, functionName);
+				setStringParam(ADStatusMessage, "Waiting for the acquire command");
+				setIntegerParam(ADStatus, ADStatusIdle);
+			}
 			/* Reset the counters */
 			setIntegerParam(ADNumExposuresCounter, 0);
 			setIntegerParam(ADNumImagesCounter, 0);
@@ -843,6 +867,16 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of channels = %d\n", driverName, functionName, channels);
 
+	/* Reset progress bar before new acquisition begins */
+
+	/* The variable percentage complete is set to 0 when initialised */
+	setIntegerParam(PercentComplete, PercentCompleteVal);
+	setIntegerParam(CurrentChannel, 0);
+	/* NumChannels is set to ((Energy Width / Energy Step) + 1) when initialised - could be reset to zero although maybe confusing to user? */
+	this->lock();
+	callParamCallbacks();
+	this->unlock();
+
 	getIntegerParam(ADNumExposures, &MaxIterations);
 	for(i = 0; i < MaxIterations; i++)
 	{
@@ -903,6 +937,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 
 		if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 		{
+			/* The following if condition needs to be commnted out (ie no waitForRegionReady) to work with the I06 analyzer system */
 			if(ses->waitForRegionReady(waitTimeout) != WError::ERR_TIMEOUT)
 			{
 				/* No timeout */
@@ -1027,7 +1062,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	getIntegerParam(ADStatus, &adstatus);
 
 	if (function == ADAcquire){
-		if (value && (adstatus == ADStatusIdle))
+		if (value && (adstatus == ADStatusIdle || adstatus == ADStatusError))
 		{
 			/* Send an event to wake up the electronAnalyser task.  */
 			epicsEventSignal(this->startEventId);
