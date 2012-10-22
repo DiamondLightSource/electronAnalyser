@@ -72,7 +72,6 @@ record(mbbi, "$(P)$(R)ACQ_MODE_RBV")
   field(ZRVL, "0")
   field(ONST, "Fixed")
   field(ONVL, "1")
-  field(FLNK, "$(P)$(R)MODE_LOCK")
 }
 
 # Select energy mode
