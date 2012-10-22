@@ -1,10 +1,10 @@
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-#SUPPORT=C:/epics/prod/R3.14.11/support
-#WORK=C:/epics/work/R3.14.11/support
+SUPPORT=C:/epics/prod/R3.14.11/support
+WORK=C:/epics/work/R3.14.11/support
 
-SUPPORT=W:/prod/R3.14.11/support
-WORK=W:/work/R3.14.11/support
+#SUPPORT=W:/prod/R3.14.11/support
+#WORK=W:/work/R3.14.11/support
 
 #SNCSEQ        = $(SUPPORT)/seq/2-0-12dls1
 #ASYN          = $(SUPPORT)/asyn/4-14
