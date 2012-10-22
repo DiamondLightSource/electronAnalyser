@@ -130,6 +130,7 @@ static const char *driverName = "electronAnalyser";
 #define PercentCompleteString		"PERCENT_COMPLETE"
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
+#define TotalPointsString			"TOTAL_POINTS"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -228,14 +229,15 @@ class ElectronAnalyser: public ADDriver
 		int PercentComplete;		/**< (asynInt32,    	r/w) progress of data acquisition in percent*/
 		int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
 		int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
-		#define LAST_ELECTRONANALYZER_PARAM NumChannels
+		int TotalPoints;			/**< (asynInt32,    	r/w) total number of points to collect*/
+		#define LAST_ELECTRONANALYZER_PARAM TotalPoints
 
 	private:
 		WSESWrapperMain *ses;
 		SESWrapperNS::WAnalyzerRegion analyzer;
 		SESWrapperNS::WDetectorRegion detector;
 		SESWrapperNS::WDetectorInfo detectorInfo;
-		asynStatus acquireData(void *pData);
+		asynStatus acquireData(void *pData, int NumSteps);
 		//asynStatus getDetectorTemperature(float *temperature);
 		virtual void init_device(const char *workingDir, const char *instrumentFile);
 		void delete_device();
@@ -515,6 +517,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
+	createParam(TotalPointsString, asynParamInt32, &TotalPoints);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -700,6 +703,14 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		setIntegerParam(ADStatus, ADStatusAcquire);
 
+		this->setDetectorRegion(&detector);
+		this->setAnalyzerRegion(&analyzer);
+		int steps=0;
+		double dtime=0;
+		double minEnergyStep=0;
+
+		ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+
 		/* get an image buffer from the pool */
 		/*getIntegerParam(NDArraySizeX, &dims[0]);
 		getIntegerParam(NDArraySizeY, &dims[1]);*/
@@ -709,7 +720,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		}
 		else
 		{
-			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
+			setIntegerParam(NumChannels, steps);
+			//setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
 			getIntegerParam(NumChannels, &dims[0]);
 		}
 		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
@@ -728,7 +740,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		 * we need to allow abort operations to get through */
 		this->unlock();
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Collecting data from electron analyser....\n", driverName, functionName);
-		status = this->acquireData(pImage->pData);
+		status = this->acquireData(pImage->pData, steps);
 
 		this->lock();
 		/* If there was an error jump to bottom of the loop */
@@ -743,15 +755,6 @@ void ElectronAnalyser::electronAnalyserTask()
 			pImage->release();
 			continue;
 		}
-
-		/*if(numDims == 1)
-		{
-			nbytes = (dims[0]) * sizeof(double);
-		}
-		else
-		{*/
-			/* redundant as done above nbytes = (dims[0] * dims[1]) * sizeof(double); */
-		//}
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, dims[0]);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[1] = %d\n", driverName, functionName, dims[1]);
@@ -833,42 +836,54 @@ void ElectronAnalyser::electronAnalyserTask()
  * This function expects that the driver to locked already by the caller.
  *
  */
-asynStatus ElectronAnalyser::acquireData(void *pData)
+asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 {
 	asynStatus status = asynSuccess;
 	const char *functionName = "acquireData";
+	int ImageSize = 0;
+	int channels = 0;
+	int waitTimeout = 0;
+	int PercentCompleteVal = 0;
+	int MaxIterations = 1;
+	int i = 0;
+	int j = 0;
+	int CurrentStep = 0;
+	int CurrentChannelVal = 0;
+	int real_point = 1;
 
 	if (start() != asynSuccess)
 	{
 		return asynError;
 	}
 
-	int channels = 0;
-	int size = 0;
-	int image_size = 0;
-	int i;
-	int j;
-	int MaxIterations = 1;
-	int CurrentStep;
-	int PercentCompleteVal = 0;
-	int CurrentChannelVal = 0;
-	int waitTimeout;
-
 	/* Find out how many channels to work with */
 	this->getAcqChannels(channels);
-	//ses->getAcquiredData("acq_channels", 0, &channels, size);
-	this->image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
-	this->acq_image = (double *)calloc(detector.slices_*channels, sizeof(epicsFloat64));
+	/* The image size is always channels * slices whether in fixed or swept mode */
+	ImageSize = channels*detector.slices_;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Image Size = %d\n", driverName, functionName, ImageSize);
+	this->image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
+	this->acq_image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
+
+	/* If in swept energy mode the total number of points will be the number of steps */
+	if (analyzer.fixed_ != true)
+	{
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Swept Mode.  Number of steps = %d\n", driverName, functionName, NumSteps);
+		setIntegerParam(TotalPoints, NumSteps);
+	}
+	/* If in fixed energy mode the total number of points will be 1 (1 complete image) */
+	else
+	{
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Fixed Mode.  Number of channels = %d\n", driverName, functionName, channels);
+		setIntegerParam(TotalPoints, 1);
+	}
 
 	/* Energy point wait timeout is set to four times the dwell time */
 	/* Setting up the initial data collection can be slow, hence why */
 	/* four times was chosen.  Otherwise two times is fine */
+	//waitTimeout = 10000;//(analyzer.dwellTime_ * 4);
 	waitTimeout = (analyzer.dwellTime_ * 4);
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of channels = %d\n", driverName, functionName, channels);
-
 	/* Reset progress bar before new acquisition begins */
-
 	/* The variable percentage complete is set to 0 when initialised */
 	setIntegerParam(PercentComplete, PercentCompleteVal);
 	setIntegerParam(CurrentChannel, 0);
@@ -884,35 +899,43 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
 
-		for(j = 0; j < channels; j++)
+		/* If in swept energy mode.... */
+		if (analyzer.fixed_ != true)
 		{
-			if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
+			for(j = 0; j < NumSteps; j++)
 			{
-				/* If operating in swept energy mode.... */
-				if (analyzer.fixed_ != true)
+				if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 				{
 					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
 					{
 						/* No timeout */
 						getAcqCurrentStep(CurrentStep);
-						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, channels);
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, NumSteps);
 
 						/* Update progress bar */
-						PercentCompleteVal = (int)(((double)((i * channels) + CurrentStep) / (channels * MaxIterations)) * 100);
-						CurrentChannelVal = ((i * channels) + CurrentStep);
+						PercentCompleteVal = (int)(((double)((i * NumSteps) + CurrentStep) / (NumSteps * MaxIterations)) * 100);
+						CurrentChannelVal = ((i * NumSteps) + CurrentStep);
 						setIntegerParam(PercentComplete, PercentCompleteVal);
 						setIntegerParam(CurrentChannel, CurrentChannelVal);
-
-						this->getAcqSpectrum(this->spectrum, size);
-						//ses->getAcquiredData("acq_spectrum", 0, this->spectrum, size);
-						this->getAcqImage(this->acq_image, image_size);
-
 						this->lock();
-						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
-						status = doCallbacksFloat64Array(this->acq_image, (detector.slices_*channels), AcqImage, 0);
 						callParamCallbacks();
 						this->unlock();
 
+						/* In certain configurations there will be a number of points taken before the data acquisition begins */
+						if(CurrentStep > (NumSteps - channels))
+						{
+							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Data Point %d\n\n", driverName, functionName, real_point);
+							real_point++;
+							this->getAcqSpectrum(this->spectrum, channels);
+							this->getAcqImage(this->acq_image, ImageSize);
+							//this->getAcqRawImage(this->acq_image, ImageSize);
+
+							this->lock();
+							status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+							status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
+							callParamCallbacks();
+							this->unlock();
+						}
 						ses->continueAcquisition();
 					}
 					else
@@ -924,20 +947,20 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 						return status;
 					}
 				}
-			}
-			else
-			{
-				/* Timeout */
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
-				ses->stopAcquisition();
-				status = asynError;
-				return status;
+				else
+				{
+					/* EPICS Stop event */
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+					ses->stopAcquisition();
+					status = asynError;
+					return status;
+				}
 			}
 		}
 
 		if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 		{
-			/* The following if condition needs to be commnted out (ie no waitForRegionReady) to work with the I06 analyzer system */
+			/* The following if condition needs to be commented out (ie no waitForRegionReady) to work with the I06 analyzer system */
 			if(ses->waitForRegionReady(waitTimeout) != WError::ERR_TIMEOUT)
 			{
 				/* No timeout */
@@ -955,12 +978,8 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 					this->unlock();
 				}
 
-				size = channels*detector.slices_;
-
-				this->getAcqImage(this->image,size);
-				//memcpy(pData, this->spectrum, channels*sizeof(double));
-				memcpy(pData, this->image, detector.slices_*channels*sizeof(double));
-				ses->continueAcquisition();
+				this->getAcqImage(this->acq_image,ImageSize);
+				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 			}
 			else
 			{
@@ -973,26 +992,34 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 		}
 		else
 		{
-			/* Timeout */
+			/* EPICS Stop event */
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
 			ses->stopAcquisition();
 			status = asynError;
 			return status;
 		}
-	}
-	this->lock();
-	callParamCallbacks();
-	this->unlock();
 
+		this->lock();
+		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
+		callParamCallbacks();
+		this->unlock();
+
+		ses->continueAcquisition();
+	}
+
+	/*int size = 0;
 	char intensity_unit[MAX_STRING_SIZE];
 	getAcqIntensityUnit(intensity_unit, size);
 	//ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, size);
 	setStringParam(AcqIntensityUnit, intensity_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
 
+	/*size = 0;
 	char channel_unit[MAX_STRING_SIZE];
 	getAcqChannelUnit(channel_unit, size);
 	//ses->getAcquiredData("acq_channel_unit", 0, channel_unit, size);
 	setStringParam(AcqChannelUnit, channel_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
 	/* Summary of settings */
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
@@ -1010,31 +1037,17 @@ asynStatus ElectronAnalyser::acquireData(void *pData)
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Maximum Frame Rate = %d\n", driverName, functionName, detectorInfo.frameRate_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info X Channels = %d\n", driverName, functionName, detectorInfo.xChannels_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Info Y Channels = %d\n", driverName, functionName, detectorInfo.yChannels_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
+	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
+	//asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slices = %d\n\n", driverName, functionName, detector.slices_);
 
-	/* Debug print-outs of acquired data */
-	/*int iterator;
-
-	/* Integrated Spectrum */
-/*	for(i = 0; i < channels; i++)
+	if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
 	{
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: At kinetic energy %f, counts = %f\n", driverName, functionName, (analyzer.lowEnergy_ + (i * analyzer.energyStep_)), this->spectrum[i]);
-	}*/
-
-	/*Slice Breakdown */
-/*	for(i = 0; i < detector.slices_; i++)
-	{
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slice #%d\n", driverName, functionName, i);
-		for(j = 0; j < channels; j++)
-		{
-			iterator = ((i*channels)+j);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \tImage #%d = %f\n", driverName, functionName, iterator, *(this->image+iterator));
-		}
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\n", driverName, functionName);
-	}*/
-
+		/* EPICS Stop event */
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
+		ses->stopAcquisition();
+		status = asynError;
+	}
 	return status;
 }
 
@@ -1790,7 +1803,7 @@ asynStatus ElectronAnalyser::getEnergyMode(bool *b){
 /**
  * @brief start acquisition
  *
- * This method sets detector region and analzer region, then initialise acquisition before start.
+ * This method sets detector region and analyzer region, then initialise acquisition before start.
  * This method also changes the EPICS areaDetector status to @p ADStatusAcquire on successfully start,
  * or @p ADStatusError if failed to start.
  *
@@ -1809,6 +1822,14 @@ asynStatus ElectronAnalyser::start()
 	/*if (isError(err, functionName)) {
 		return asynError;
 	}*/
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer dwell time = %d\n", driverName, functionName, analyzer.dwellTime_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer energy step = %f\n", driverName, functionName, analyzer.energyStep_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer low energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer center energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer high energy = %f\n", driverName, functionName, analyzer.highEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer fixed = %d\n", driverName, functionName, analyzer.fixed_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer kinetic = %d\n", driverName, functionName, analyzer.kinetic_);
 
 	this->setAnalyzerRegion(&analyzer);
 	//err = ses->setProperty("analyzer_region", 0, &analyzer);
@@ -1847,7 +1868,9 @@ asynStatus ElectronAnalyser::start()
 	else
 	{
 		char message[MAX_MESSAGE_SIZE];
-		epicsSnprintf(message, sizeof(message),"Number of Steps: %d; Step Time: %d; Total Time: %d; Energy Step Size: %f\n", steps, (analyzer.dwellTime_/1000), (steps*(analyzer.dwellTime_/1000)), analyzer.energyStep_);
+		bool ret_value = false;
+		getUseDetector(&ret_value);
+		epicsSnprintf(message, sizeof(message),"UseDetector = %d; dtime = %f; minEnergyStep = %f; Number of Steps: %d; Step Time: %d; Total Time: %d; Energy Step Size: %f\n", ret_value, dtime, minEnergyStep, steps, (analyzer.dwellTime_/1000), (steps*(analyzer.dwellTime_/1000)), analyzer.energyStep_);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.\n", driverName, functionName, message);
 		setStringParam(ADStatusMessage, message);
 		callParamCallbacks();
