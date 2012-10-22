@@ -880,8 +880,17 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	/* Energy point wait timeout is set to four times the dwell time */
 	/* Setting up the initial data collection can be slow, hence why */
 	/* four times was chosen.  Otherwise two times is fine */
-	//waitTimeout = 10000;//(analyzer.dwellTime_ * 4);
-	waitTimeout = (analyzer.dwellTime_ * 4);
+	/* However, with very low numbers of frames the dwell time becomes */
+	/* too tiny so a bottom limit of 1 sec has been introduced */
+	//waitTimeout = 10000;
+	if(analyzer.dwellTime_ > 5000)
+	{
+		waitTimeout = (analyzer.dwellTime_ * 4);
+	}
+	else
+	{
+		waitTimeout = 5000;
+	}
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
