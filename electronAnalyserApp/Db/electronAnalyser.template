@@ -59,6 +59,7 @@ record(mbbo, "$(P)$(R)ACQ_MODE")
   field(ONVL, "1")
   field(PINI, "YES")
   field(VAL,  "0")
+  field(FLNK, "$(P)$(R)ACQ_MODE_CALC")
 }
 
 # Report back current acquisition mode
@@ -72,6 +73,30 @@ record(mbbi, "$(P)$(R)ACQ_MODE_RBV")
   field(ZRVL, "0")
   field(ONST, "Fixed")
   field(ONVL, "1")
+}
+
+# Only trigger the energy fields to reprocess
+# when swept mode is selected (acq mode = 0)
+record(calcout, "$(P)$(R)ACQ_MODE_CALC")
+{
+  field(DESC, "Trigger in swept mode")
+  field(CALC, "A")
+  field(INPA, "$(P)$(R)ACQ_MODE")
+  field(OUT,  "$(P)$(R)ACQ_MODE_PROCESS PP")
+  field(OOPT, "When Zero")
+}
+
+# Trigger the energy fields to reprocess
+# to ensure that swept mode values aren't
+# lost when switching acquisition modes
+record(fanout, "$(P)$(R)ACQ_MODE_PROCESS")
+{
+  field(DESC, "Acq Mode Fanout")
+  field(SELM, "All")
+  field(SELL, "1")
+  field(LNK1, "$(P)$(R)LOW_ENERGY.PROC")
+  field(LNK2, "$(P)$(R)HIGH_ENERGY.PROC")
+  field(LNK3, "$(P)$(R)STEP_SIZE.PROC")
 }
 
 # Select energy mode
@@ -458,4 +483,16 @@ record(ai, "$(P)$(R)TOTAL_POINTS_RBV")
   field(INP, "@asyn($(PORT) 0)TOTAL_POINTS")
   field(SCAN, "I/O Intr")
   field(PREC, "0")
+}
+
+# Reset power supplies to zero
+record(longout, "$(P)$(R)ZERO_SUPPLIES") 
+{
+  field(DESC, "Zero the power supplies")
+  field(DTYP, "asynInt32")
+  field(OUT, "@asyn($(PORT) 0)ZERO_SUPPLIES")
+  field(PINI, "NO")
+  field(VAL,  "0")
+  field(DRVL, "0")
+  field(DRVH, "1")
 }
