@@ -131,6 +131,7 @@ static const char *driverName = "electronAnalyser";
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
 #define TotalPointsString			"TOTAL_POINTS"
+#define ZeroSuppliesString			"ZERO_SUPPLIES"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -230,7 +231,8 @@ class ElectronAnalyser: public ADDriver
 		int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
 		int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
 		int TotalPoints;			/**< (asynInt32,    	r/w) total number of points to collect*/
-		#define LAST_ELECTRONANALYZER_PARAM TotalPoints
+		int ZeroSupplies;			/**< (asynInt32,    	r/w) reset the power supplies to zero*/
+		#define LAST_ELECTRONANALYZER_PARAM ZeroSupplies
 
 	private:
 		WSESWrapperMain *ses;
@@ -518,6 +520,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
 	createParam(TotalPointsString, asynParamInt32, &TotalPoints);
+	createParam(ZeroSuppliesString, asynParamInt32, &ZeroSupplies);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -716,12 +719,13 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDArraySizeY, &dims[1]);*/
 		if (analyzer.fixed_)
 		{
+			/* In fixed mode, the data will be ROI X Size x Number of Slices */
 			getIntegerParam(NDArraySizeX, &dims[0]);
 		}
 		else
 		{
-			setIntegerParam(NumChannels, steps);
-			//setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
+			/* In swept mode, the data will be Number of Channels x Number of Slices */
+			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
 			getIntegerParam(NumChannels, &dims[0]);
 		}
 		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
@@ -858,31 +862,36 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 	/* Find out how many channels to work with */
 	this->getAcqChannels(channels);
+
 	/* The image size is always channels * slices whether in fixed or swept mode */
 	ImageSize = channels*detector.slices_;
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Image Size = %d\n", driverName, functionName, ImageSize);
 	this->image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
 	this->acq_image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
 
+	/* Find out how many iterations to work with */
+	getIntegerParam(ADNumExposures, &MaxIterations);
+
 	/* If in swept energy mode the total number of points will be the number of steps */
+	/* For the GUI this number is multiplied by the number of iterations */
 	if (analyzer.fixed_ != true)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Swept Mode.  Number of steps = %d\n", driverName, functionName, NumSteps);
-		setIntegerParam(TotalPoints, NumSteps);
+		setIntegerParam(TotalPoints, NumSteps * MaxIterations);
 	}
 	/* If in fixed energy mode the total number of points will be 1 (1 complete image) */
+	/* For the GUI this number is multiplied by the number of iterations */
 	else
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Fixed Mode.  Number of channels = %d\n", driverName, functionName, channels);
-		setIntegerParam(TotalPoints, 1);
+		setIntegerParam(TotalPoints, 1 * MaxIterations);
 	}
 
 	/* Energy point wait timeout is set to four times the dwell time */
 	/* Setting up the initial data collection can be slow, hence why */
 	/* four times was chosen.  Otherwise two times is fine */
 	/* However, with very low numbers of frames the dwell time becomes */
-	/* too tiny so a bottom limit of 1 sec has been introduced */
-	//waitTimeout = 10000;
+	/* too tiny so a bottom limit of 5 sec has been introduced */
 	if(analyzer.dwellTime_ > 5000)
 	{
 		waitTimeout = (analyzer.dwellTime_ * 4);
@@ -901,7 +910,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	callParamCallbacks();
 	this->unlock();
 
-	getIntegerParam(ADNumExposures, &MaxIterations);
 	for(i = 0; i < MaxIterations; i++)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Starting acquisition %d of %d....\n", driverName, functionName, i+1, MaxIterations);
@@ -1353,11 +1361,16 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(ADNumExposures, value);
 		}
 	}
-	/*else if (function == DataChoice)
+	else if (function == ZeroSupplies)
 	{
-		setIntegerParam(DataChoice, value);
-	}*/
-	else {
+		if (value == 1)
+		{
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Resetting power supplies....\n\n", driverName, functionName);
+			zeroSupplies();
+		}
+	}
+	else
+	{
 		/* If this is not a parameter we have handled call the base class */
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
 			status = ADDriver::writeInt32(pasynUser, value);
@@ -1945,11 +1958,12 @@ asynStatus ElectronAnalyser::resetInstrument()
  */
 asynStatus ElectronAnalyser::zeroSupplies()
 {
-	const char * functionName = "resetSupplies()";
+	const char * functionName = "zeroSupplies()";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err =ses->zeroSupplies();
-	if (isError(err, functionName)) {
-		setStringParam(ADStatusMessage, "error reset supplies to zero.");
+	if (isError(err, functionName))
+	{
+		setStringParam(ADStatusMessage, "Problem setting supplies to zero.");
 		callParamCallbacks();
 		return asynError;
 	}
@@ -3318,7 +3332,5 @@ asynStatus ElectronAnalyser::getAcqIOPortName(int index, char * pName, int & siz
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
 	return asynSuccess;
 }
-
-
 
 
