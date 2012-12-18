@@ -6,15 +6,5 @@ TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 SUPPORT=W:/prod/R3.14.11/support
 WORK=W:/work/R3.14.11/support
 
-#SNCSEQ        = $(SUPPORT)/seq/2-0-12dls1
-#ASYN          = $(SUPPORT)/asyn/4-14
-#BUSY          = $(SUPPORT)/busy/1-3dls3
-#CALC          = $(SUPPORT)/calc/2-8dls2
-#SSCAN         = $(SUPPORT)/sscan/2-6-6dls1
-#MCA           = $(SUPPORT)/mca/6-12-4dls1
-#AUTOSAVE      = $(SUPPORT)/autosave/4-6dls2
-#FFMPEGSERVER  = $(SUPPORT)/ffmpegServer/1-3
-#AREA_DETECTOR = $(SUPPORT)/areaDetector/1-7beta1-dls2
-
 #EPICS_BASE=C:/epics/epics/R3.14.11/base
 EPICS_BASE=W:/epics/R3.14.11/base
