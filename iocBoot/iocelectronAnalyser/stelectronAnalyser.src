@@ -3,7 +3,7 @@
 
 cd "$(INSTALL)"
 
-## Register all support components
+# Register all support components
 dbLoadDatabase("$(INSTALL)/dbd/electronAnalyser.dbd")
 electronAnalyser_registerRecordDeviceDriver(pdbbase)
 
@@ -14,16 +14,10 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 #   Number of plugin buffers: 10
 #   total number of NDArray buffers needed; 10 + 1 = 11
 #   Max memory: 2048000 bytes x 11 = 22528000 bytes. Rounded up: ~25MB
-#
-# electronAnalyserConfig(portName, SESWrapper Location & Version, Instrument File, 30, Max Memory)
 
-# Desktop
-#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "4es203WALInstrument.dat", 30, 25000000)
-electronAnalyserConfig("electronAnalyser", 30, 25000000)
-# I06
-#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.5r2", "6ES024Instrument.dat", 30, 25000000)
-# I06 2
-#electronAnalyserConfig("electronAnalyser", "C:\Documents and Settings\fmq68384\Desktop\SES 1.2.6-r6", "6ES024Instrument.dat", 30, 25000000)
+# electronAnalyserConfig(portName, 30, Max Memory)
+electronAnalyserConfig("electronAnalyser", 30, 25000000, 0, 0)
+
 asynSetTraceMask("electronAnalyser", 0, 0x1)
 
 dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=electronAnalyser")
