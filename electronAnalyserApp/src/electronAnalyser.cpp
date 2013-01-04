@@ -24,6 +24,7 @@
 /* EPICS includes */
 #include <epicsThread.h>
 #include <epicsEvent.h>
+#include <epicsString.h>
 
 /* areaDetector includes */
 #include <ADDriver.h>
@@ -146,6 +147,7 @@ class ElectronAnalyser: public ADDriver
 				int maxBuffers, size_t maxMemory, int priority, int stackSize);*/
 		ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize);
 		virtual ~ElectronAnalyser();
+		virtual asynStatus readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], size_t nElements, size_t *nIn);
 		virtual asynStatus writeInt32(asynUser *pasynUser, epicsInt32 value);
 		virtual asynStatus writeFloat64(asynUser *pasynUser, epicsFloat64 value);
 		virtual asynStatus writeOctet(asynUser *pasynUser, const char *value, size_t nChars, size_t *nActual);
@@ -397,7 +399,7 @@ ElectronAnalyser::~ElectronAnalyser()
 			priority, stackSize) // thread priority and stack size (0=default)*/
 
 ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize) :
-	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
+	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynEnumMask | asynFloat64ArrayMask, asynEnumMask | asynFloat64ArrayMask, /* No interfaces beyond those set in ADDriver.cpp */
 	ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
 			priority, stackSize) // thread priority and stack size (0=default)
 {
@@ -750,9 +752,22 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* If there was an error jump to bottom of the loop */
 		if (status)
 		{
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Problem when collecting data from electron analyser \n",driverName, functionName);
-			setStringParam(ADStatusMessage,	"Failed to collect data from the electron analyser");
-			setIntegerParam(ADStatus, ADStatusError);
+			/* Find out why there was a problem acquiring data */
+			int ErrorStatus;
+			getIntegerParam(ADStatus, &ErrorStatus);
+			/* User aborted acquisition */
+			if(ErrorStatus == ADStatusAborted)
+			{
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was aborted by the user\n",driverName, functionName);
+				setStringParam(ADStatusMessage,	"Acquisition was aborted by the user");
+			}
+			/* The acquisition timed out */
+			else
+			{
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition timed out\n",driverName, functionName);
+				setStringParam(ADStatusMessage,	"Acquisition timed out");
+				setIntegerParam(ADStatus, ADStatusError);
+			}
 			/* Reset both acquire and ADAcquire back to zero */
 			acquire = 0;
 			setIntegerParam(ADAcquire, acquire);
@@ -887,19 +902,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setIntegerParam(TotalPoints, 1 * MaxIterations);
 	}
 
-	/* Energy point wait timeout is set to four times the dwell time */
-	/* Setting up the initial data collection can be slow, hence why */
-	/* four times was chosen.  Otherwise two times is fine */
-	/* However, with very low numbers of frames the dwell time becomes */
-	/* too tiny so a bottom limit of 5 sec has been introduced */
-	if(analyzer.dwellTime_ > 5000)
-	{
-		waitTimeout = (analyzer.dwellTime_ * 4);
-	}
-	else
-	{
-		waitTimeout = 5000;
-	}
+	/* Energy point wait timeout is set to the dwell time x 4 */
+	/* The problem always seems to be the initial data point collection */
+	waitTimeout = (analyzer.dwellTime_ * 4);
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
@@ -968,6 +973,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 				{
 					/* EPICS Stop event */
 					asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+					setIntegerParam(ADStatus, ADStatusAborted);
 					ses->stopAcquisition();
 					status = asynError;
 					return status;
@@ -1011,6 +1017,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		{
 			/* EPICS Stop event */
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
+			setIntegerParam(ADStatus, ADStatusAborted);
 			ses->stopAcquisition();
 			status = asynError;
 			return status;
@@ -1068,6 +1075,72 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	return status;
 }
 
+/** Called when asyn clients call pasynEnum->read().
+  * The base class implementation simply prints an error message.
+  * Derived classes may reimplement this function if required.
+  * \param[in] pasynUser pasynUser structure that encodes the reason and address.
+  * \param[in] strings Array of string pointers.
+  * \param[in] values Array of values
+  * \param[in] severities Array of severities
+  * \param[in] nElements Size of value array
+  * \param[out] nIn Number of elements actually returned */
+asynStatus ElectronAnalyser::readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], size_t nElements, size_t *nIn)
+{
+	int function = pasynUser->reason;
+	size_t i;
+	char buf[5];
+
+	if (function == PassEnergy)
+	{
+		for (i=0; ((i<m_PassEnergies.size()) && (i<(int)nElements)); i++)
+		{
+			if (strings[i])
+			{
+				free(strings[i]);
+			}
+			sprintf(buf, "%d", (int)m_PassEnergies.at(i));
+			strings[i] = epicsStrDup(buf);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Reading pass energy of %s\n", driverName, functionName, strings[i]);
+			values[i] = i;
+			severities[i] = 0;
+		}
+	}
+	else if (function == ElementSet)
+	{
+		for (i=0; ((i<m_Elementsets.size()) && (i<(int)nElements)); i++)
+		{
+			if (strings[i])
+			{
+				free(strings[i]);
+			}
+			strings[i] = epicsStrDup(m_Elementsets.at(i).c_str());
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Reading element set of %s\n", driverName, functionName, strings[i]);
+			values[i] = i;
+			severities[i] = 0;
+		}
+	}
+	else if (function == LensMode)
+	{
+		for (i=0; ((i<m_LensModes.size()) && (i<(int)nElements)); i++)
+		{
+			if (strings[i])
+			{
+				free(strings[i]);
+			}
+			strings[i] = epicsStrDup(m_LensModes.at(i).c_str());
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Reading lens mode of %s\n", driverName, functionName, strings[i]);
+			values[i]  = i;
+			severities[i] = 0;
+		}
+	}
+	else
+	{
+		*nIn = 0;
+		return asynError;
+	}
+	*nIn = i;
+	return asynSuccess;
+}
 
 /** Called when asyn clients call pasynInt32->write().
  * Write integer value to the drivers parameter table.
@@ -1091,8 +1164,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	status = setIntegerParam(function, value);
 	getIntegerParam(ADStatus, &adstatus);
 
-	if (function == ADAcquire){
-		if (value && (adstatus == ADStatusIdle || adstatus == ADStatusError))
+	if (function == ADAcquire)
+	{
+		if (value && (adstatus == ADStatusIdle || adstatus == ADStatusError || adstatus == ADStatusAborted))
 		{
 			/* Send an event to wake up the electronAnalyser task.  */
 			epicsEventSignal(this->startEventId);
@@ -1894,7 +1968,7 @@ asynStatus ElectronAnalyser::start()
 		getUseDetector(&ret_value);
 		epicsSnprintf(message, sizeof(message),"UseDetector = %d; dtime = %f; minEnergyStep = %f; Number of Steps: %d; Step Time: %d; Total Time: %d; Energy Step Size: %f\n", ret_value, dtime, minEnergyStep, steps, (analyzer.dwellTime_/1000), (steps*(analyzer.dwellTime_/1000)), analyzer.energyStep_);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.\n", driverName, functionName, message);
-		setStringParam(ADStatusMessage, message);
+		//setStringParam(ADStatusMessage, message);
 		callParamCallbacks();
 	}
 	//TODO  should this be here?
@@ -2175,8 +2249,16 @@ asynStatus ElectronAnalyser::getLibWorkingDir(char *value, int &size)
 	const char * functionName = "getLibWorkingDir(char *value, int &size)";
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 
-	int err = ses->getProperty("lib_working_dir", 0, value);
-	if (isError(err, functionName)) {
+	/* size parameter added here to get around problem seen at PSI */
+	/* The getProperty function is overloaded - one version takes size */
+	/* as a parameter, the other doesn't and sets it to zero */
+	/* The IOC crashes on startup at PSI without size as a parameter here */
+	/* Wondering whether the compiler used at PSI (Visual C++ Express 2008) */
+	/* is not recognising the overload? */
+	/* int err = ses->getProperty("lib_working_dir", 0, value);*/
+	int err = ses->getProperty("lib_working_dir", 0, value, size);
+	if (isError(err, functionName))
+	{
 		return asynError;
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
