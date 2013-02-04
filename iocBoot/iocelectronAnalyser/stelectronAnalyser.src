@@ -18,7 +18,7 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 # electronAnalyserConfig(portName, 30, Max Memory)
 electronAnalyserConfig("electronAnalyser", 30, 25000000, 0, 0)
 
-asynSetTraceMask("electronAnalyser", 0, 0x11)
+asynSetTraceMask("electronAnalyser", 0, 0x1)
 
 dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=electronAnalyser")
 dbLoadRecords("$(INSTALL)/db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
