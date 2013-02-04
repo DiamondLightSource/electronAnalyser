@@ -10,7 +10,7 @@
  * $Author:		James O'Hea & Fajin Yuan $
  * 				Diamond Light Source Ltd
  *
- * $Revision:	1.3 $
+ * $Revision:	1.8 $
  *
  /*================================================================================================*/
 
@@ -251,6 +251,7 @@ class ElectronAnalyser: public ADDriver
 		double *spectrum;
 		double *image;
 		double *acq_image;
+		double *acq_data;
 
 		epicsEventId startEventId;
 		epicsEventId stopEventId;
@@ -389,6 +390,7 @@ ElectronAnalyser::~ElectronAnalyser()
 	free(spectrum);
 	free(image);
 	free(acq_image);
+	free(acq_data);
 }
 
 /* ElectronAnalyser constructor */
@@ -536,6 +538,10 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	getPassEnergyList(&m_PassEnergies);
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, m_bUseExternalIO);
+	m_bUseExternalIO = true;
+	setUseExternalIO(&m_bUseExternalIO);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, m_bUseExternalIO);
 	getUseDetector(&m_bUseDetector);
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
 
@@ -623,6 +629,11 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
 	status |= setIntegerParam(DetectorSlices, 10);
 
+	/* Setting initial values for the progress statuses */
+	status |= setIntegerParam(PercentComplete, 0);
+	status |= setIntegerParam(CurrentChannel, 0);
+	status |= setIntegerParam(TotalPoints, 0);
+
 	updateStatus();
 
 	if (status)
@@ -666,6 +677,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	const char *functionName = "electronAnalyserTask";
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Polling thread started\n", driverName, functionName);
+	// The frame rate has been checked at this point and it is 30
 
 	this->lock();
 	while (1)
@@ -819,6 +831,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* free(spectrum);*/
 		free(image);
 		free(acq_image);
+		free(acq_data);
 
 		/* Check to see if acquisition is complete */
 		if ((imageMode == ADImageSingle) || ((imageMode == ADImageMultiple)
@@ -878,11 +891,20 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	/* Find out how many channels to work with */
 	this->getAcqChannels(channels);
 
+	int ports = 0;
+	this->getAcqIOPorts(ports);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: There are %d ext io ports available\n\n", driverName, functionName, ports);
+
+	bool use_extio = false;
+	this->getUseExternalIO(&use_extio);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, use_extio);
+
 	/* The image size is always channels * slices whether in fixed or swept mode */
 	ImageSize = channels*detector.slices_;
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Image Size = %d\n", driverName, functionName, ImageSize);
 	this->image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
 	this->acq_image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
+	this->acq_data = (double *)calloc(ImageSize, sizeof(epicsFloat64));
 
 	/* Find out how many iterations to work with */
 	getIntegerParam(ADNumExposures, &MaxIterations);
@@ -904,7 +926,15 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 	/* Energy point wait timeout is set to the dwell time x 4 */
 	/* The problem always seems to be the initial data point collection */
-	waitTimeout = (analyzer.dwellTime_ * 4);
+	/*waitTimeout = (analyzer.dwellTime_ * 4);*/
+	if(analyzer.dwellTime_ < 10000)
+	{
+		waitTimeout = 10000;
+	}
+	else
+	{
+		waitTimeout = analyzer.dwellTime_ + 3000;
+	}
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
@@ -950,11 +980,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 							real_point++;
 							this->getAcqSpectrum(this->spectrum, channels);
 							this->getAcqImage(this->acq_image, ImageSize);
+							this->getAcqIOData(this->acq_data, ImageSize);
 							//this->getAcqRawImage(this->acq_image, ImageSize);
 
 							this->lock();
 							status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 							status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
+							status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 							callParamCallbacks();
 							this->unlock();
 						}
@@ -1025,6 +1057,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		this->lock();
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
+		status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 		callParamCallbacks();
 		this->unlock();
 
@@ -1087,6 +1120,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 asynStatus ElectronAnalyser::readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], size_t nElements, size_t *nIn)
 {
 	int function = pasynUser->reason;
+	const char *functionName = "readEnum";
 	size_t i;
 	char buf[5];
 
@@ -1317,7 +1351,18 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		getElementSetCount(size);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d elements are available to use\n", driverName, functionName, size);
 		if (value < size) {
+
+			/* There is a problem in reading element sets from the current data file.  High is returned as 'Hig' and so creates error
+			   when calling setElementSet(Hig).  Hard coding to 'High' there is no error - speaking to VG about this */
+
+			/*const char * readElement;
+			for(int eli = 0; eli < size; eli++)
+			{
+				readElement = m_Elementsets.at(eli).c_str();
+				printf("\nElement at %d is = %s\n\n", eli, readElement);
+			}*/
 			const char * elementSet = m_Elementsets.at(value).c_str();
+			//const char * elementSet = "High";
 			// set element set to Library
 			this->setElementSet(elementSet);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
