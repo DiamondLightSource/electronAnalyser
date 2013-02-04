@@ -1108,6 +1108,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	return status;
 }
 
+/* Provided by Xiaoqiang Wang of PSI */
 /** Called when asyn clients call pasynEnum->read().
   * The base class implementation simply prints an error message.
   * Derived classes may reimplement this function if required.
