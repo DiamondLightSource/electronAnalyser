@@ -16,15 +16,37 @@ electronAnalyser_registerRecordDeviceDriver(pdbbase)
 #   Max memory: 2048000 bytes x 11 = 22528000 bytes. Rounded up: ~25MB
 
 # electronAnalyserConfig(portName, 30, Max Memory)
-electronAnalyserConfig("electronAnalyser", 30, 25000000, 0, 0)
+electronAnalyserConfig("CCD.CAM", 30, -1)
+#electronAnalyserConfig("CCD.CAM", 30, 25000000, 0, 0)
 
-asynSetTraceMask("electronAnalyser", 0, 0x1)
+# NDROIConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxBuffers, maxMemory)
+NDROIConfigure("CCD.ROI", 16, 0, "CCD.CAM", 0, 50, -1)
 
-dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=electronAnalyser")
+# NDFileHDF5Configure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr)
+NDFileHDF5Configure("CCD.HDF", 16, 0, "CCD.CAM", 0)
+
+# NDStdArraysConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxMemory)
+NDStdArraysConfigure("CCD.ARR", 2, 0, "CCD.CAM", 0, -1)
+
+ffmpegServerConfigure(8080)
+# ffmpegStreamConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxMemory)
+ffmpegStreamConfigure("CCD.MPG", 2, 0, "CCD.CAM", "0", -1)
+
+# NDProcessConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxBuffers, maxMemory)
+NDProcessConfigure("CCD.PROC", 16, 0, "CCD.CAM", 0, 50, -1)
+
+# NDStatsConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxBuffers, maxMemory)
+NDStatsConfigure("CCD.STAT", 16, 0, "CCD.CAM", 0, 50, -1)
+
+asynSetTraceMask("CCD.CAM", 0, 0x1)
+#asynSetTraceMask("electronAnalyser", 0, 0x1)
+
+dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=CCD.CAM")
 dbLoadRecords("$(INSTALL)/db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
 
 iocInit()
-asynSetTraceMask("electronAnalyser", 0, 0x11)
+#asynSetTraceMask("electronAnalyser", 0, 0x11)
+asynSetTraceMask("CCD.CAM", 0, 0x11)
 # Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
 
 #asynReport(10, "electronAnalyser")
