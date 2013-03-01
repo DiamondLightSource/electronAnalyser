@@ -46,6 +46,7 @@ DBD += electronAnalyserSupport.dbd
 # electronAnalyser.dbd will be created from these files
 electronAnalyser_DBD += commonDriverSupport.dbd
 electronAnalyser_DBD += electronAnalyserSupport.dbd
+electronAnalyser_DBD += NDPluginSupport.dbd
 electronAnalyser_DBD += ffmpegServer.dbd
 
 # <name>_registerRecordDeviceDriver.cpp will be created from <name>.dbd
@@ -55,7 +56,8 @@ electronAnalyser_SRCS_DEFAULT += electronAnalyserMain.cpp
 electronAnalyser_SRCS_vxWorks += -nil-
 
 # Add locally compiled object code
-electronAnalyser_LIBS += electronAnalyserSupport 
+electronAnalyser_LIBS += electronAnalyserSupport
+electronAnalyser_LIBS += NDPlugin 
 electronAnalyser_LIBS_WIN32 += wses
 electronAnalyser_LIBS += avdevice avformat avcodec avutil swscale ffmpegServer
 
