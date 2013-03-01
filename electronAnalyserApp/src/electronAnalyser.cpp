@@ -1393,6 +1393,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			const double passEnergy = m_PassEnergies.at(value);
 			this->setPassEnergy(&passEnergy);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting pass energy to %f eV\n", driverName, functionName, passEnergy);
+			/* Update total points at this point so the value is known to the user before an acquisition is started */
+			this->setAnalyzerRegion(&analyzer);
+			int steps=0;
+			double dtime=0;
+			double minEnergyStep=0;
+			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", steps, dtime);
+			setIntegerParam(TotalPoints, steps);
 		} else {
 			epicsSnprintf(message, sizeof(message), "set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
@@ -1551,6 +1559,15 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
 			status = ADDriver::writeFloat64(pasynUser, value);
 	}
+	/* Update total points at this point so the value is known to the user before an acquisition is started */
+	this->setAnalyzerRegion(&analyzer);
+	int steps=0;
+	double dtime=0;
+	double minEnergyStep=0;
+	ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", steps, dtime);
+	setIntegerParam(TotalPoints, steps);
+
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
 	if (status)
