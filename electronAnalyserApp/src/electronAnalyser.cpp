@@ -2139,7 +2139,6 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 
 	int i;
 	int NumLens = 0;
-	int size  = 30;
 	int err = ses->getProperty("lens_mode_count", 0, &NumLens);
 	if (isError(err, functionName)) {
 		return asynError;
@@ -2149,6 +2148,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 	for(i = 0; i < NumLens; i++)
 	{
 		char lens[MAX_STRING_SIZE];
+		int size  = 30;
 
 		err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
 		if (isError(err, functionName))
@@ -2175,7 +2175,6 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 
 	int i;
 	int NumElements = 0;
-	int size = 30;
 	int err = ses->getProperty("element_set_count", 0, &NumElements);
 	if (isError(err, functionName))
 	{
@@ -2186,6 +2185,7 @@ asynStatus ElectronAnalyser::getElementSetLlist(NameVector *pElementSetList)
 	for(i = 0; i < NumElements; i++)
 	{
 		char set[MAX_STRING_SIZE];
+		int size = 30;
 
 		err = ses->getProperty("element_set",i , set, size);
 		if (isError(err, functionName))
