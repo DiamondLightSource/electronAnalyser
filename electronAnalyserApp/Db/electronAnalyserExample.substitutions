@@ -1,7 +1,119 @@
 
+# Macros:
+#  P        Device Prefix
+#  R        Device Suffix
+#  PORT     Asyn Port name
+#  TIMEOUT  Timeout
+#  ADDR     Asyn Port address
 file $(AREA_DETECTOR)/db/ADBase.template
 {
 pattern { P, 			  R, 	   PORT, 	       TIMEOUT, ADDR }
-    	{ "ELECTRON-ANALYSER-01", ":TEST:", "electronAnalyser", "1", 	"0"  }
+    	{ "ELECTRON-ANALYSER-01", ":TEST:", "CCD.CAM", "1", 	"0"  }
 }
 
+# Macros:
+#  P             Device Prefix
+#  R             Device Suffix
+#  PORT          Asyn Port name
+#  TIMEOUT       Timeout
+#  ADDR          Asyn Port address
+#  NDARRAY_PORT  Input Array Port
+#  NDARRAY_ADDR  Input Array Address
+#  Enabled       Plugin Enabled at startup?
+file $(AREA_DETECTOR)/db/NDPluginBase.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR, NDARRAY_PORT, NDARRAY_ADDR, Enabled }
+    	{ "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0", "CCD.CAM", "0", "0" }
+    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0", "CCD.CAM", "0", "0" }
+    	{ "ELECTRON-ANALYSER-01", ":ARR:", "CCD.ARR", "1", "0", "CCD.CAM", "0", "0" }
+    	{ "ELECTRON-ANALYSER-01", ":MPG:", "CCD.MPG", "1", "0", "CCD.CAM", "0", "0" }
+    	{ "ELECTRON-ANALYSER-01", ":PROC:", "CCD.PROC", "1", "0", "CCD.CAM", "0", "0" }
+    	{ "ELECTRON-ANALYSER-01", ":STAT:", "CCD.STAT", "1", "0", "CCD.CAM", "0", "0" }
+}
+
+# Macros:
+#  P        Device Prefix
+#  R        Device Suffix
+#  PORT     Asyn Port name
+#  TIMEOUT  Timeout
+#  ADDR     Asyn Port address
+file $(AREA_DETECTOR)/db/NDROI.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR }
+	    { "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0" }
+}
+
+# Macros:
+#  P        Device Prefix
+#  R        Device Suffix
+#  PORT     Asyn Port name
+#  TIMEOUT  Timeout
+#  ADDR     Asyn Port address
+file $(AREA_DETECTOR)/db/NDFile.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR }
+    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0" }
+}
+
+# Macros:
+#  P     Device Prefix
+#  R     Device Suffix
+#  PORT  Asyn Port name
+file $(AREA_DETECTOR)/db/NDFileHDF5.template
+{
+pattern { P, R, PORT }
+    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF" }
+}
+
+# Macros:
+#  P          Device Prefix
+#  R          Device Suffix
+#  PORT       Asyn Port name
+#  TIMEOUT    Timeout
+#  ADDR       Asyn Port address
+#  TYPE       Asyn Type e.g. Int32
+#  FTVL       Format, e.g. Int
+#  NELEMENTS  Number of elements
+file $(AREA_DETECTOR)/db/NDStdArrays.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR, TYPE, FTVL, NELEMENTS }
+    	{ "ELECTRON-ANALYSER-01", ":ARR:", "CCD.ARR", "1", "0", "Float64", "DOUBLE", "1024000" }
+}
+
+# Macros:
+#  P        Device Prefix
+#  R        Device Suffix
+#  PORT     Asyn Port name
+#  QUALITY  Jpeg Quality in percent
+file $(FFMPEGSERVER)/db/ffmpegStream.template
+{
+pattern { P, R, PORT, QUALITY }
+		{ "ELECTRON-ANALYSER-01", ":MPG:", "CCD.MPG", "100" }
+}
+
+# Macros:
+#  P        Device Prefix
+#  R        Device Suffix
+#  PORT     Asyn Port name
+#  TIMEOUT  Timeout
+#  ADDR     Asyn Port address
+file $(AREA_DETECTOR)/db/NDProcess.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR }
+    	{ "ELECTRON-ANALYSER-01", ":PROC:", "CCD.PROC", "1", "0" }
+}
+
+# Macros:
+#  P          Device Prefix
+#  R          Device Suffix
+#  PORT       Asyn Port name
+#  TIMEOUT    Timeout
+#  ADDR       Asyn Port address
+#  XSIZE      Maximum size of X histograms (e.g. 1024)
+#  YSIZE      Maximum size of Y histograms (e.g. 768)
+#  HIST_SIZE  Maximum size of Pixel binning histogram (e.g. 256 for Int8)
+file $(AREA_DETECTOR)/db/NDStats.template
+{
+pattern { P, R, PORT, TIMEOUT, ADDR, XSIZE, YSIZE, HIST_SIZE }
+    	{ "ELECTRON-ANALYSER-01", ":STAT:", "CCD.STAT", "1", "0", "1024", "1000", "256" }
+}
