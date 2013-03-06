@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 
-class WSesInstrument;
+class WSESInstrument;
 class WError;
 
 class WSESWrapperBase
@@ -38,6 +38,8 @@ protected:
   int getDetectorRegion(int index, void *value, int &size);
   int getElementSetCount(int index, void *value, int &size);
   int getElementSet(int index, void *value, int &size);
+  int getElementNameCount(int index, void *value, int &size);
+  int getElementName(int index, void *value, int &size);
   int getLensModeCount(int index, void *value, int &size);
   int getLensMode(int index, void *value, int &size);
   int getPassEnergyCount(int index, void *value, int &size);
@@ -48,6 +50,8 @@ protected:
   int getRegionName(int index, void *value, int &size);
   int getTempFileName(int index, void *value, int &size);
   int getResetDataBetweenIterations(int index, void *value, int &size);
+  int getUseSpin(int index, void *value, int &size);
+  int getUseBindingEnergy(int index, void *value, int &size);
 
   // Property setters
   int readOnlyStub(int index, const void *value);
@@ -64,16 +68,19 @@ protected:
   int setRegionName(int index, const void *value);
   int setTempFileName(int index, const void *value);
   int setResetDataBetweenIterations(int index, const void *value);
+  int setUseSpin(int index, const void *value);
+  int setUseBindingEnergy(int index, const void *value);
 
   bool loadElementSets();
   bool loadLensModes();
   bool loadPassEnergies(const std::string &lensMode, DoubleVector &result);
+  bool loadElementNames();
 
   void splitSESList(const char *buffer, int bufferSize, NameVector &result);
 
   PropertyMap properties_;
 
-  WSesInstrument *lib_;
+  WSESInstrument *lib_;
 
   bool instrumentLoaded_;
   std::string workingDir_;
@@ -84,18 +91,17 @@ protected:
   SesNS::WSpectrum *sesSpectrum_;
   SesNS::WSignals *sesSignals_;
   std::string tempFileName_;
-  bool usingDetector_;
-  bool usingSignals_;
+  unsigned short activeDetectors_;
 
   NameVector elementSets_;
   NameVector lensModes_;
   DoubleVector passEnergies_;
+  NameVector elementNames_;
   unsigned int startTime_;
 
   bool blockPointReady_;
   bool blockRegionReady_;
   bool resetDataBetweenIterations_;
-  int currentStep_;
   int iteration_;
   WError *errors_;
 };

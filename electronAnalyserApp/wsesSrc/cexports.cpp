@@ -57,17 +57,17 @@ extern "C"
 // Standard Library functions
 
 /*!
- * @defgroup exported_functions Exported Functions
- * @brief This is a list of C functions exported from SESWrapper. All functions wrap calls
- * to a global instance of the WSesWrapperMain class.
- * @{
+ * \defgroup exported_functions Exported Functions
+ * \brief This is a list of C functions exported from SESWrapper. All functions wrap calls
+ * to a global instance of the WSESWrapperMain class.
+ * \{
  */
 
 
 /*!
  * Exported function that wraps the WSESWrapperMain::initialize() member function.
  */
-int STDCALL WRP_Initialize(void *reserved)
+int __stdcall WRP_Initialize(void *reserved)
 {
   return gMain->initialize(reserved);
 }
@@ -75,7 +75,7 @@ int STDCALL WRP_Initialize(void *reserved)
 /*!
  * Exported function that wraps the WSESWrapperMain::finalize() member function.
  */
-int STDCALL WRP_Finalize()
+int __stdcall WRP_Finalize()
 {
   return gMain->finalize();
 }
@@ -84,9 +84,9 @@ int STDCALL WRP_Finalize()
 
 /*!
  * Exported function that wraps the WSESWrapperMain::getProperty() member funciton. Does not verify the
- * type of @p value.
+ * type of \p value.
  */
-int STDCALL WRP_GetProperty(const char *property, int index, void *value, int *size)
+int __stdcall WRP_GetProperty(const char *property, int index, void *value, int *size)
 {
   return gMain->getProperty(property, index, value, *size);
 }
@@ -95,7 +95,7 @@ int STDCALL WRP_GetProperty(const char *property, int index, void *value, int *s
  * Exported function that wraps the WSESWrapperMain::getProperty() member function for properties
  * of type TYPE_BOOL.
  */
-int STDCALL WRP_GetPropertyBool(const char *property, int index, bool *value, int *size)
+int __stdcall WRP_GetPropertyBool(const char *property, int index, bool *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_BOOL)
@@ -107,7 +107,7 @@ int STDCALL WRP_GetPropertyBool(const char *property, int index, bool *value, in
  * Exported function that wraps the WSESWrapperMain::getProperty() member function for properties
  * of type TYPE_INT32.
  */
-int STDCALL WRP_GetPropertyInteger(const char *property, int index, int *value, int *size)
+int __stdcall WRP_GetPropertyInteger(const char *property, int index, int *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_INT32)
@@ -119,7 +119,7 @@ int STDCALL WRP_GetPropertyInteger(const char *property, int index, int *value, 
  * Exported function that wraps the WSESWrapperMain::getProperty() member function for properties
  * of type TYPE_DOUBLE.
  */
-int STDCALL WRP_GetPropertyDouble(const char *property, int index, double *value, int *size)
+int __stdcall WRP_GetPropertyDouble(const char *property, int index, double *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_DOUBLE)
@@ -131,7 +131,7 @@ int STDCALL WRP_GetPropertyDouble(const char *property, int index, double *value
  * Exported function that wraps the WSESWrapperMain::getProperty() member function for properties
  * of type TYPE_STRING.
  */
-int STDCALL WRP_GetPropertyString(const char *property, int index, char *value, int *size)
+int __stdcall WRP_GetPropertyString(const char *property, int index, char *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_STRING)
@@ -140,18 +140,18 @@ int STDCALL WRP_GetPropertyString(const char *property, int index, char *value, 
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getProperty() member function for the @c detector_info property.
+ * Exported function that wraps the WSESWrapperMain::getProperty() member function for the \c detector_info property.
  */
-int STDCALL WRP_GetDetectorInfo(SESWrapperNS::PDetectorInfo detectorInfo)
+int __stdcall WRP_GetDetectorInfo(SESWrapperNS::PDetectorInfo detectorInfo)
 {
   int size = sizeof(SESWrapperNS::DetectorInfo);
   return gMain->getProperty("detector_info", 0, detectorInfo, size);
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getProperty() member function for the @c detector_region property.
+ * Exported function that wraps the WSESWrapperMain::getProperty() member function for the \c detector_region property.
  */
-int STDCALL WRP_GetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
+int __stdcall WRP_GetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
 {
   int size = sizeof(SESWrapperNS::DetectorRegion);
   return gMain->getProperty("detector_region", 0, detectorRegion, size);
@@ -159,9 +159,9 @@ int STDCALL WRP_GetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
 
 /*!
  * Exported function that wraps the WSESWrapperMain::setProperty() member function. Does not verify the
- * type of @p value.
+ * type of \p value.
  */
-int STDCALL WRP_SetProperty(const char *property, int reserved, const void *value)
+int __stdcall WRP_SetProperty(const char *property, int reserved, const void *value)
 {
   return gMain->setProperty(property, reserved, value);
 }
@@ -170,7 +170,7 @@ int STDCALL WRP_SetProperty(const char *property, int reserved, const void *valu
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_BOOL.
  */
-int STDCALL WRP_SetPropertyBool(const char *property, int reserved, const bool *value)
+int __stdcall WRP_SetPropertyBool(const char *property, int reserved, const bool *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_BOOL)
@@ -182,7 +182,7 @@ int STDCALL WRP_SetPropertyBool(const char *property, int reserved, const bool *
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_INT32.
  */
-int STDCALL WRP_SetPropertyInteger(const char *property, int reserved, const int *value)
+int __stdcall WRP_SetPropertyInteger(const char *property, int reserved, const int *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_INT32)
@@ -194,7 +194,7 @@ int STDCALL WRP_SetPropertyInteger(const char *property, int reserved, const int
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_DOUBLE.
  */
-int STDCALL WRP_SetPropertyDouble(const char *property, int reserved, const double *value)
+int __stdcall WRP_SetPropertyDouble(const char *property, int reserved, const double *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_DOUBLE)
@@ -206,7 +206,7 @@ int STDCALL WRP_SetPropertyDouble(const char *property, int reserved, const doub
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_STRING.
  */
-int STDCALL WRP_SetPropertyString(const char *property, int reserved, const char *value)
+int __stdcall WRP_SetPropertyString(const char *property, int reserved, const char *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_STRING)
@@ -215,19 +215,19 @@ int STDCALL WRP_SetPropertyString(const char *property, int reserved, const char
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::setProperty() member function for the @c detector_region
+ * Exported function that wraps the WSESWrapperMain::setProperty() member function for the \c detector_region
  * property.
  */
-int STDCALL WRP_SetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
+int __stdcall WRP_SetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
 {
   return gMain->setProperty("detector_region", 0, detectorRegion);
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::setProperty() member function for the @c analyzer_region
+ * Exported function that wraps the WSESWrapperMain::setProperty() member function for the \c analyzer_region
  * property.
  */
-int STDCALL WRP_SetAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion)
+int __stdcall WRP_SetAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion)
 {
   return gMain->setProperty("analyzer_region", 0, analyzerRegion);
 }
@@ -235,7 +235,7 @@ int STDCALL WRP_SetAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion)
 /*!
  * Exported function that wraps the WSESWrapperMain::validate() member function.
  */
-int STDCALL WRP_Validate(const char *elementSet, const char *lensMode, double passEnergy, double kineticEnergy)
+int __stdcall WRP_Validate(const char *elementSet, const char *lensMode, double passEnergy, double kineticEnergy)
 {
   return gMain->validate(elementSet, lensMode, passEnergy, kineticEnergy);
 }
@@ -245,7 +245,7 @@ int STDCALL WRP_Validate(const char *elementSet, const char *lensMode, double pa
 /*!
  * Exported function that wraps the WSESWrapperMain::resetHW() member function.
  */
-int STDCALL WRP_ResetHW()
+int __stdcall WRP_ResetHW()
 {
   return gMain->resetHW();
 }
@@ -253,7 +253,7 @@ int STDCALL WRP_ResetHW()
 /*!
  * Exported function that wraps the WSESWrapperMain::testHW() member function.
  */
-int STDCALL WRP_TestHW()
+int __stdcall WRP_TestHW()
 {
   return gMain->testHW();
 }
@@ -263,7 +263,7 @@ int STDCALL WRP_TestHW()
 /*!
  * Exported function that wraps the WSESWrapperMain::loadInstrument() member function.
  */
-int STDCALL WRP_LoadInstrument(const char *fileName)
+int __stdcall WRP_LoadInstrument(const char *fileName)
 {
   return gMain->loadInstrument(fileName);
 }
@@ -271,15 +271,31 @@ int STDCALL WRP_LoadInstrument(const char *fileName)
 /*!
  * Exported function that wraps the WSESWrapperMain::zeroSupplies() member function.
  */
-int STDCALL WRP_ZeroSupplies()
+int __stdcall WRP_ZeroSupplies()
 {
   return gMain->zeroSupplies();
 }
 
 /*!
+ * Exported function that wraps the WSESWrapperMain::getBindingEnergy() member function.
+ */
+int __stdcall WRP_GetBindingEnergy(double *bindingEnergy)
+{
+  return gMain->getBindingEnergy(bindingEnergy);
+}
+
+/*!
+ * Exported function that wraps the WSESWrapperMain::setBindingEnergy() member function.
+ */
+int __stdcall WRP_SetBindingEnergy(const double bindingEnergy)
+{
+  return gMain->setBindingEnergy(bindingEnergy);
+}
+
+/*!
  * Exported function that wraps the WSESWrapperMain::getKineticEnergy() member function.
  */
-int STDCALL WRP_GetKineticEnergy(double *kineticEnergy)
+int __stdcall WRP_GetKineticEnergy(double *kineticEnergy)
 {
   return gMain->getKineticEnergy(kineticEnergy);
 }
@@ -287,15 +303,31 @@ int STDCALL WRP_GetKineticEnergy(double *kineticEnergy)
 /*!
  * Exported function that wraps the WSESWrapperMain::setKineticEnergy() member function.
  */
-int STDCALL WRP_SetKineticEnergy(const double kineticEnergy)
+int __stdcall WRP_SetKineticEnergy(const double kineticEnergy)
 {
   return gMain->setKineticEnergy(kineticEnergy);
 }
 
 /*!
+ * Exported function that wraps the WSESWrapperMain::getExcitationEnergy() member function.
+ */
+int __stdcall WRP_GetExcitationEnergy(double *excitationEnergy)
+{
+  return gMain->getExcitationEnergy(excitationEnergy);
+}
+
+/*!
+ * Exported function that wraps the WSESWrapperMain::setExcitationEnergy() member function.
+ */
+int __stdcall WRP_SetExcitationEnergy(const double excitationEnergy)
+{
+  return gMain->setExcitationEnergy(excitationEnergy);
+}
+
+/*!
  * Exported function that wraps the WSESWrapperMain::getElementVoltage() member function.
  */
-int STDCALL WRP_GetElementVoltage(const char *elementName, double *voltage)
+int __stdcall WRP_GetElementVoltage(const char *elementName, double *voltage)
 {
   return gMain->getElementVoltage(elementName, voltage);
 }
@@ -303,7 +335,7 @@ int STDCALL WRP_GetElementVoltage(const char *elementName, double *voltage)
 /*!
  * Exported function that wraps the WSESWrapperMain::setElementVoltage() member function.
  */
-int STDCALL WRP_SetElementVoltage(const char *elementName, const double voltage)
+int __stdcall WRP_SetElementVoltage(const char *elementName, const double voltage)
 {
   return gMain->setElementVoltage(elementName, voltage);
 }
@@ -313,7 +345,7 @@ int STDCALL WRP_SetElementVoltage(const char *elementName, const double voltage)
 /*!
  * Exported function that wraps the WSESWrapperMain::checkAnalyzerRegion() member function.
  */
-int STDCALL WRP_CheckAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion, int *steps, double *time_ms, double *energyStep)
+int __stdcall WRP_CheckAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion, int *steps, double *time_ms, double *energyStep)
 {
   return gMain->checkAnalyzerRegion(analyzerRegion, steps, time_ms, energyStep);
 }
@@ -321,7 +353,7 @@ int STDCALL WRP_CheckAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion
 /*!
  * Exported function that wraps the WSESWrapperMain::initAcquisition() member function.
  */
-int STDCALL WRP_InitAcquisition(const bool blockPointReady, const bool blockRegionReady)
+int __stdcall WRP_InitAcquisition(const bool blockPointReady, const bool blockRegionReady)
 {
   return gMain->initAcquisition(blockPointReady, blockRegionReady);
 }
@@ -329,7 +361,7 @@ int STDCALL WRP_InitAcquisition(const bool blockPointReady, const bool blockRegi
 /*!
  * Exported function that wraps the WSESWrapperMain::startAcquisition() member function.
  */
-int STDCALL WRP_StartAcquisition()
+int __stdcall WRP_StartAcquisition()
 {
   return gMain->startAcquisition();
 }
@@ -337,16 +369,16 @@ int STDCALL WRP_StartAcquisition()
 /*!
  * Exported function that wraps the WSESWrapperMain::stopAcquisition() member function.
  */
-int STDCALL WRP_StopAcquisition()
+int __stdcall WRP_StopAcquisition()
 {
   return gMain->stopAcquisition();
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when @p variable is of
- * type @c TYPE_INT32.
+ * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when \p variable is of
+ * type \c TYPE_INT32.
  */
-int STDCALL WRP_GetAcquiredDataInteger(const char *variable, int index, int *data, int *size)
+int __stdcall WRP_GetAcquiredDataInteger(const char *variable, int index, int *data, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(variable) == WSESWrapperMain::Property::TYPE_INT32)
@@ -355,10 +387,10 @@ int STDCALL WRP_GetAcquiredDataInteger(const char *variable, int index, int *dat
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when @p variable is of
- * type @c TYPE_DOUBLE.
+ * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when \p variable is of
+ * type \c TYPE_DOUBLE.
  */
-int STDCALL WRP_GetAcquiredDataDouble(const char *parameter, int index, double *data, int *size)
+int __stdcall WRP_GetAcquiredDataDouble(const char *parameter, int index, double *data, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(parameter) == WSESWrapperMain::Property::TYPE_DOUBLE)
@@ -367,10 +399,10 @@ int STDCALL WRP_GetAcquiredDataDouble(const char *parameter, int index, double *
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when @p variable is of
- * type @c TYPE_STRING.
+ * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when \p variable is of
+ * type \c TYPE_STRING.
  */
-int STDCALL WRP_GetAcquiredDataString(const char *parameter, int index, char *data, int *size)
+int __stdcall WRP_GetAcquiredDataString(const char *parameter, int index, char *data, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(parameter) == WSESWrapperMain::Property::TYPE_STRING)
@@ -379,10 +411,10 @@ int STDCALL WRP_GetAcquiredDataString(const char *parameter, int index, char *da
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when @p variable is of
- * type @c TYPE_VECTOR_DOUBLE.
+ * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when \p variable is of
+ * type \c TYPE_VECTOR_DOUBLE.
  */
-int STDCALL WRP_GetAcquiredDataVectorDouble(const char *parameter, int index, double *data, int *size)
+int __stdcall WRP_GetAcquiredDataVectorDouble(const char *parameter, int index, double *data, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(parameter) == WSESWrapperMain::Property::TYPE_VECTOR_DOUBLE)
@@ -391,10 +423,10 @@ int STDCALL WRP_GetAcquiredDataVectorDouble(const char *parameter, int index, do
 }
 
 /*!
- * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when @p variable is of
- * type @c TYPE_VECTOR_INT32.
+ * Exported function that wraps the WSESWrapperMain::getAcquiredData() member function when \p variable is of
+ * type \c TYPE_VECTOR_INT32.
  */
-int STDCALL WRP_GetAcquiredDataVectorInt32(const char *parameter, int index, int *data, int *size)
+int __stdcall WRP_GetAcquiredDataVectorInt32(const char *parameter, int index, int *data, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(parameter) == WSESWrapperMain::Property::TYPE_VECTOR_INT32)
@@ -405,7 +437,7 @@ int STDCALL WRP_GetAcquiredDataVectorInt32(const char *parameter, int index, int
 /*!
  * Exported function that wraps the WSESWrapperMain::waitForPointReady() member function.
  */
-int STDCALL WRP_WaitForPointReady(int timeout_ms)
+int __stdcall WRP_WaitForPointReady(int timeout_ms)
 {
   return gMain->waitForPointReady(timeout_ms);
 }
@@ -413,7 +445,7 @@ int STDCALL WRP_WaitForPointReady(int timeout_ms)
 /*!
  * Exported function that wraps the WSESWrapperMain::waitForRegionReady() member function.
  */
-int STDCALL WRP_WaitForRegionReady(int timeout_ms)
+int __stdcall WRP_WaitForRegionReady(int timeout_ms)
 {
   return gMain->waitForRegionReady(timeout_ms);
 }
@@ -421,12 +453,12 @@ int STDCALL WRP_WaitForRegionReady(int timeout_ms)
 /*!
  * Exported function that wraps the WSESWrapperMain::continueAcquisition() member function.
  */
-int STDCALL WRP_ContinueAcquisition()
+int __stdcall WRP_ContinueAcquisition()
 {
   return gMain->continueAcquisition();
 }
 
-/*! @} */
+/*! \} */
 
 #ifdef __cplusplus
 }

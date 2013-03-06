@@ -46,12 +46,12 @@ WError::~WError()
 }
 
 /*!
- * Extracts the error message based on @p errorCode.
+ * Extracts the error message based on \p errorCode.
  *
- * @param[in] errorCode An error code previously returned from a function. If no error with this code is found,
+ * \param[in] errorCode An error code previously returned from a function. If no error with this code is found,
  *                      the resulting string is "Unknown error".
  *
- * @return A string describing the error.
+ * \return A string describing the error.
  */
 std::string WError::message(int errorCode)
 {
@@ -67,7 +67,7 @@ std::string WError::message(int errorCode)
  * created. The reference counter is always incremented, and all calls to this function must end with a corresponding
  * call to the release() function for a proper deallocation of the singleton when closing the library.
  *
- * @see release()
+ * \see release()
  */
 WError *WError::instance()
 {
@@ -84,7 +84,7 @@ WError *WError::instance()
  * Releases the reference to the WError singleton. This function must be called in combination with the instance()
  * function for proper decrement of the reference counter and deallocation when closing the SESWrapper library.
  *
- * @see instance()
+ * \see instance()
  */
 void WError::release()
 {

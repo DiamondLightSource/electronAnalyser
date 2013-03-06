@@ -1,13 +1,11 @@
 #ifndef __SESWRAPPER_WSESWRAPPERMAIN_H__
 #define __SESWRAPPER_WSESWRAPPERMAIN_H__
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
 #include "wseswrapperbase.h"
 #include "wevent.h"
+#endif /* DOXYGEN_SHOULD_SKIP_THIS */
 
-/*! @brief This is the main class for the SESWrapper library.
- *
- * All @ref exported_functions uses a global instance of WSESWrapper 
- */
 class WSESWrapperMain : public WSESWrapperBase
 {
 public:
@@ -19,6 +17,7 @@ public:
   ~WSESWrapperMain();
 
   // Standard Library functions
+
   bool isInitialized();
   int initialize(void *);
   int finalize();
@@ -31,18 +30,25 @@ public:
   int validate(const char *elementSet, const char *lensMode, double passEnergy, double kineticEnergy);
 
   // HW specific functions
+
   int resetHW();
   int testHW();
 
   // Analyzer specific members
+
   int loadInstrument(const char *fileName);
   int zeroSupplies();
+  int getBindingEnergy(double *bindingEnergy);
+  int setBindingEnergy(const double bindingEnergy);
   int getKineticEnergy(double *kineticEnergy);
   int setKineticEnergy(const double kineticEnergy);
+  int getExcitationEnergy(double *excitationEnergy);
+  int setExcitationEnergy(const double excitationEnergy);
   int getElementVoltage(const char *elementName, double *voltage);
   int setElementVoltage(const char *element, const double voltage);
 
   // Acquisition specific members
+
   int checkAnalyzerRegion(SESWrapperNS::AnalyzerRegion *analyzerRegion, int *steps, double *time_ms, double *minEnergyStep_eV);
   int initAcquisition(const bool blockPointReady, const bool blockRegionReady);
   int startAcquisition();
@@ -54,20 +60,6 @@ public:
 
   int parameterType(const char *parameter);
 
-private:
-  static void STDCALL errorNotify(int errorCode);
-  static void STDCALL pointReady(int channel);
-  static void STDCALL regionReady();
-
-  bool refreshElementSets();
-  bool refreshLensModes();
-  bool refreshPassEnergies();
-  bool refreshDetector();
-  int run();
-
-  // Acquired data getters
-
-protected:
   int getAcqChannels(int index, void *data, int &size);
   int getAcqSlices(int index, void *data, int &size);
   int getAcqIterations(int index, void *data, int &size);
@@ -90,11 +82,25 @@ protected:
   int getAcqIOSpectrum(int index, void *data, int &size);
   int getAcqIOData(int index, void *data, int &size);
   int getAcqIOPortName(int index, void *data, int &size);
+  int getAcqCurrentPoint(int index, void *value, int &size);
+  int getAcqPointIntensity(int index, void *value, int &size);
+  int getAcqChannelIntensity(int index, void *value, int &size);
 
 private:
-  //---------------------------------------------------------------------------
-  static WSESWrapperMain *this_; // For use by the callbacks, assuming only one instance of this class
+  static void __stdcall errorNotify(int errorCode);
+  static void __stdcall pointReady(int channel);
+  static void __stdcall regionReady();
+
+  bool refreshElementSets();
+  bool refreshLensModes();
+  bool refreshPassEnergies();
+  bool refreshDetector();
+  int run();
+
+  static WSESWrapperMain *this_; // For use by the callbacks, allowing only one instance of this class
   bool initialized_;
+  int currentStep_;
+  int currentPoint_;
 
   DataParameterMap dataParameters_;
 
@@ -102,7 +108,6 @@ private:
   WEvent regionReadyEvent_; 
   WEvent continueAcquisitionEvent_; 
   WEvent abortAcquisitionEvent_;
-  
 };
 
 #endif

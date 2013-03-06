@@ -7,29 +7,37 @@ using namespace SesNS;
 using namespace CommonNS;
 
 /*!
- * Creates a WSesInstrument instance.
+ * \brief Contains the C functions imported from the SESInstrument library.
+ *
+ * The list of functions is compatible with SESInstrument.dll version 1.2.5. The functions described in the
+ * callbacks here are documented in more detail in the instrument-interface.txt available with the SES software.
  */
-WSesInstrument::WSesInstrument()
+
+/*!
+ * Creates a WSESInstrument instance.
+ */
+WSESInstrument::WSESInstrument()
 {
 }
 
 /*!
- * Destroys the WSesInstrument object.
+ * Destroys the WSESInstrument object.
  */
-WSesInstrument::~WSesInstrument()
+WSESInstrument::~WSESInstrument()
 {
 }
 
 /*!
  * Loads the SESInstrument library.
  *
- * @param[in] fileName The name of the SESInstrment library (usually <b>dll\\SESInstrument.dll</b>).
+ * \param[in] fileName The name of the SESInstrment library (usually <b>dll\\SESInstrument.dll</b>).
  *
- * @return Returns @c true if successful.
+ * \return Returns \c true if successful.
  */
-bool WSesInstrument::load(const char *fileName)
+bool WSESInstrument::load(const char *fileName)
 {
   bool success = true;
+
   if (!isLoaded() && !WLibrary::load(fileName))
     return false;
 
@@ -63,6 +71,7 @@ bool WSesInstrument::load(const char *fileName)
   success = ::import(*this, "GDS_GetCurrBindingEnergy", GDS_GetCurrBindingEnergy) && success;
   success = ::import(*this, "GDS_GetGlobalDetector", GDS_GetGlobalDetector) && success;
   success = ::import(*this, "GDS_GetElement", GDS_GetElement) && success;
+  ::import(*this, "GDS_GetElements", GDS_GetElements);
   success = ::import(*this, "GDS_SetElementSet", GDS_SetElementSet) && success;
   success = ::import(*this, "GDS_SetLensMode", GDS_SetLensMode) && success;
   success = ::import(*this, "GDS_SetPassEnergy", GDS_SetPassEnergy) && success;
@@ -95,7 +104,8 @@ bool WSesInstrument::load(const char *fileName)
   success = ::import(*this, "GDS_DetectorInfo", GDS_DetectorInfo) && success;
   ::import(*this, "GDS_GetRawImage", GDS_GetRawImage);
   success = ::import(*this, "GDS_InitAcquisition", GDS_InitAcquisition) && success;
-  success = ::import(*this, "GDS_StartAcquisition", GDS_StartAcquisition) && success;
+  //success = ::import(*this, "GDS_StartAcquisition", GDS_StartAcquisition) && success;
+  GDS_StartAcquisition = 0;
 success = true;
   return success;
 }
@@ -104,7 +114,7 @@ success = true;
  * Releases the SESInstrument library and resets all function addresses. To continue using this class,
  * a call to load() must be made.
  */
-void WSesInstrument::unload()
+void WSESInstrument::unload()
 {
   WLibrary::unload();
 
@@ -127,6 +137,7 @@ void WSesInstrument::unload()
   GDS_HasSupplyLib = 0;
   GDS_HasDetectorLib = 0;
   GDS_HasSignalsLib = 0;
+  GDS_GetElements = 0;
   GDS_GetElementSets = 0;
   GDS_GetLensModes = 0;
   GDS_GetPassEnergies = 0;

@@ -17,8 +17,8 @@ public:
 };
 
 /*!
-  * @class WLibrary
-  * @brief This is a generic class for importing shared libraries dynamically.
+  * \class WLibrary
+  * \brief This is a generic class for importing shared libraries dynamically.
   *
   * It should be subclassed to include the C functions exported from the library it contains. Each function will
   * then be added as a callback function within the subclass.
@@ -45,9 +45,9 @@ WLibrary::~WLibrary()
   * Loads a library. This function can be reimplemented by a subclass to also resolve the exported functions
   * available in the library.
   *
-  * @param[in] fileName The name (including path if needed) of the library to be loaded.
+  * \param[in] fileName The name (including path if needed) of the library to be loaded.
   *
-  * @return @c true if successful, otherwise @c false.
+  * \return \c true if successful, otherwise \c false.
   */
 bool WLibrary::load(const char *fileName)
 {
@@ -79,7 +79,7 @@ void WLibrary::unload()
 }
 
 /*!
-  * @return @c true if a library is loaded, otherwise @c false.
+  * \return \c true if a library is loaded, otherwise \c false.
   */
 bool WLibrary::isLoaded() const
 {
@@ -87,13 +87,13 @@ bool WLibrary::isLoaded() const
 }
 
 /*!
-  * Queries the path and name of the currently loaded library. The @p buffer
+  * Queries the path and name of the currently loaded library. The \p buffer
   * parameter can be NULL if only the required buffer length is requested.
   *
-  * @param[in] buffer The buffer that will contain the path. Can be NULL.
-  * @param[in] size The size of @p buffer.
+  * \param[in] buffer The buffer that will contain the path. Can be NULL.
+  * \param[in] size The size of \p buffer.
   *
-  * @return the length of the path string.
+  * \return the length of the path string.
   */
 int WLibrary::path(char *buffer, int size) const
 {
@@ -105,13 +105,13 @@ int WLibrary::path(char *buffer, int size) const
 /*!
   * Imports a function from the contained library.
   *
-  * @param[in] functionName A string specifying the name of the function to be imported.
+  * \param[in] functionName A string specifying the name of the function to be imported.
   *
-  * @return The address of the imported function. This should be type cast to the appropriate
+  * \return The address of the imported function. This should be type cast to the appropriate
   *         function pointer type from the current void* type. If the import fails,
   *         the function returns 0.
   *
-  * @see SciCoreNS::import()
+  * \see SciCoreNS::import()
   */
 void *WLibrary::import(const char *functionName)
 {

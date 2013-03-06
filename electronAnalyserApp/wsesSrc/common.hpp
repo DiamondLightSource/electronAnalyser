@@ -6,20 +6,20 @@
 #include <string>
 #include <vector>
 
-/*!
+/*! \namespace CommonNS
  * This is a namespace containing common functions not directly related to the functionality of this library.
  */
 namespace CommonNS
 {
   /*!
-   * This function splits the contents of @p buffer using @p delimiter as a separator string. The resulting
-   * strings are stored in the @p result vector.
+   * This function splits the contents of \p buffer using \p delimiter as a separator string. The resulting
+   * strings are stored in the \p result vector.
    *
-   * @param[in] buffer The input string that will be parsed.
-   * @param[in] delimiter The separator. This can be a string of several characters.
-   * @param[out] result A vector of type @p T that will contain the elements from the split operation.
+   * \param[in] buffer The input string that will be parsed.
+   * \param[in] delimiter The separator. This can be a string of several characters.
+   * \param[out] result A vector of type \p T that will contain the elements from the split operation.
    *
-   * @return Returns the number of elements in @p result after the split operation.
+   * \return Returns the number of elements in \p result after the split operation.
    */
   template<typename T> int split(std::string buffer, const std::string &delimiter, std::vector<T> &result)
   {

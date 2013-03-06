@@ -5,7 +5,7 @@
 #include <map>
 
 /*!
- * @brief Maps a message index to a message string from the return values from the exported functions in
+ * \brief Maps a message index to a message string from the return values from the exported functions in
  * SESWrapper.
  */
 class WError
@@ -18,7 +18,7 @@ public:
    * Errors are represented by negative numbers, whereas positive values indicate warnings. Success
    * is always indicated by 0 (NULL).
    *
-   * @see gErrors
+   * \see gErrors
    */
   enum ErrorCodes
   {
@@ -35,7 +35,7 @@ public:
     ERR_INCORRECT_ANALYZER_REGION = -10, /*!< Error in analyzer region settings */
     ERR_INCORRECT_DETECTOR_REGION = -11, /*!< Error in detector region settings */
     ERR_READONLY = -12, /*!< Attempted to access a read-only variable or data parameter */
-    ERR_NO_INSTRUMENT = -13, /*!< No instrument is loaded (see @ref WRP_LoadInstrument). */
+    ERR_NO_INSTRUMENT = -13, /*!< No instrument is loaded (see \ref WRP_LoadInstrument). */
     ERR_ACQUIRING = -14, /*!< Acquisition in progress */
     ERR_TIMEOUT = 8, /*!< Operation timed out */
     ERR_NOT_IMPLEMENTED = 9 /*!< Function has not been implemented */

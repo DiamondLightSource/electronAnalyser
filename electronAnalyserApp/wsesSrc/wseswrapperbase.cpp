@@ -18,21 +18,22 @@
 
 using namespace SESWrapperNS;
 
-/*! @class WSESWrapperBase
- * @brief This class collects all variables and objects for SESWrapper. 
+/*!
+ * \class WSESWrapperBase
+ * This class collects all variables and objects for SESWrapper. 
  *
- * It serves as a container for property callbacks used when "setting" or "getting" values for the properties.
+ * It serves as a container for property callbacks used when "setting" or "getting" values for the \ref properties_sec properties.
  */
 
 /*!
- * Creates  a WSESWrapperBase instance. Also creates the hash table for the properties, where the property
+ * Creates  a WSESWrapperBase instance. Also creates the hash table for the \ref properties_sec, where the property
  * names are linked to their corresponding callbacks through instances of the WVariable template class.
  *
- * @param[in] workingDir The current working directory.
+ * \param[in] workingDir The current working directory.
  */
 WSESWrapperBase::WSESWrapperBase(const char *workingDir)
-: lib_(new WSesInstrument), instrumentLoaded_(false), workingDir_(workingDir), sesSpectrum_(0), sesSignals_(0),
-  usingDetector_(true), usingSignals_(false), currentStep_(0), iteration_(0), startTime_(0),
+: lib_(new WSESInstrument), instrumentLoaded_(false), workingDir_(workingDir), sesSpectrum_(0), sesSignals_(0),
+  activeDetectors_(0x0001), iteration_(0), startTime_(0),
   blockPointReady_(false), blockRegionReady_(false), resetDataBetweenIterations_(false)
 {
   errors_ = WError::instance();
@@ -54,6 +55,8 @@ WSESWrapperBase::WSESWrapperBase(const char *workingDir)
   properties_.insert(PropertyKeyValue("detector_region", Property(this, &WSESWrapperBase::setDetectorRegion, &WSESWrapperBase::getDetectorRegion, Property::TYPE_DETECTORREGION)));
   properties_.insert(PropertyKeyValue("element_set_count", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getElementSetCount, Property::TYPE_INT32)));
   properties_.insert(PropertyKeyValue("element_set", Property(this, &WSESWrapperBase::setElementSet, &WSESWrapperBase::getElementSet, Property::TYPE_STRING)));
+  properties_.insert(PropertyKeyValue("element_name_count", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getElementNameCount, Property::TYPE_INT32)));
+  properties_.insert(PropertyKeyValue("element_name", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getElementName, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("lens_mode_count", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getLensModeCount, Property::TYPE_INT32)));
   properties_.insert(PropertyKeyValue("lens_mode", Property(this, &WSESWrapperBase::setLensMode, &WSESWrapperBase::getLensMode, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("pass_energy_count", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getPassEnergyCount, Property::TYPE_INT32)));
@@ -62,9 +65,11 @@ WSESWrapperBase::WSESWrapperBase(const char *workingDir)
   properties_.insert(PropertyKeyValue("analyzer_region", Property(this, &WSESWrapperBase::setAnalyzerRegion, &WSESWrapperBase::getAnalyzerRegion, Property::TYPE_ANALYZERREGION)));
   properties_.insert(PropertyKeyValue("use_external_io", Property(this, &WSESWrapperBase::setUseExternalIO, &WSESWrapperBase::getUseExternalIO, Property::TYPE_BOOL)));
   properties_.insert(PropertyKeyValue("use_detector", Property(this, &WSESWrapperBase::setUseDetector, &WSESWrapperBase::getUseDetector, Property::TYPE_BOOL)));
+  properties_.insert(PropertyKeyValue("use_spin", Property(this, &WSESWrapperBase::setUseSpin, &WSESWrapperBase::getUseSpin, Property::TYPE_BOOL)));
   properties_.insert(PropertyKeyValue("region_name", Property(this, &WSESWrapperBase::setRegionName, &WSESWrapperBase::getRegionName, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("temp_file_name", Property(this, &WSESWrapperBase::setTempFileName, &WSESWrapperBase::getTempFileName, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("reset_data_between_iterations", Property(this, &WSESWrapperBase::setResetDataBetweenIterations, &WSESWrapperBase::getResetDataBetweenIterations, Property::TYPE_BOOL)));
+  properties_.insert(PropertyKeyValue("use_binding_energy", Property(this, &WSESWrapperBase::setUseBindingEnergy, &WSESWrapperBase::getUseBindingEnergy, Property::TYPE_BOOL)));
 }
 
 /*!
@@ -77,15 +82,15 @@ WSESWrapperBase::~WSESWrapperBase()
 }
 
 /*!
- * Getter for the @c lib_description property. If the @p value parameter is 0, @p size will be 
+ * Getter for the \c lib_description property. If the \p value parameter is 0, \p size will be 
  * modified to return the required buffer length for the description.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the description. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the description. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getLibDescription(int index, void *value, int &size)
 {
@@ -97,16 +102,16 @@ int WSESWrapperBase::getLibDescription(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c lib_version property. If the @p value parameter is 0, @p size will be
+ * Getter for the \c lib_version property. If the \p value parameter is 0, \p size will be
  * modified to return the required buffer length for the version.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the version. The syntax is @code <major>.<minor>.<build> @endcode.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the version. The syntax is \code <major>.<minor>.<build> \endcode.
  *              Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getLibVersion(int index, void *value, int &size)
 {
@@ -118,16 +123,16 @@ int WSESWrapperBase::getLibVersion(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c lib_error variable. If the @p value parameter is 0, @p size will be
- * modified to return the required buffer length for the error indicated by @p index.
+ * Getter for the \c lib_error variable. If the \p value parameter is 0, \p size will be
+ * modified to return the required buffer length for the error indicated by \p index.
  *
- * @param[in] index An error code, e.g. from a previously returned function. If @p index is not a valid error code,
+ * \param[in] index An error code, e.g. from a previously returned function. If \p index is not a valid error code,
  *              the error string is "Unknown Error".
- * @param[out] value A @c char* buffer to be filled with the error message connected to error code @p index. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[out] value A \c char* buffer to be filled with the error message connected to error code \p index. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  * 
- * @return Always returns WError::ERR_OK;
+ * \return Always returns WError::ERR_OK;
  */
 int WSESWrapperBase::getLibError(int index, void *value, int &size)
 {
@@ -141,15 +146,15 @@ int WSESWrapperBase::getLibError(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c lib_working_dir property. If the @p value parameter is 0, @p size will be
+ * Getter for the \c lib_working_dir property. If the \p value parameter is 0, \p size will be
  * modified to return the required buffer length.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the full path of the current working directory. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the full path of the current working directory. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getLibWorkingDir(int index, void *value, int &size)
 {
@@ -166,13 +171,13 @@ int WSESWrapperBase::getLibWorkingDir(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c instrument_status property. The @p value parameter must be a pointer to an 32-bit integer.
+ * Getter for the \c instrument_status property. The \p value parameter must be a pointer to an 32-bit integer.
  *
- * @param[in] index Not used.
- * @param[out] value Pointer to a 32-bit integer. Possible values are given by SesNS::InstrumentStatus.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value Pointer to a 32-bit integer. Possible values are given by SesNS::InstrumentStatus.
+ * \param[in,out] size Not used.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getInstrumentStatus(int index, void *value, int &size)
 {
@@ -186,14 +191,14 @@ int WSESWrapperBase::getInstrumentStatus(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c always_delay_region property. The @p value parameter must be a pointer to a 1-byte boolean.
- * If @p value is 1 or @c true, there is a delay before starting a measurement.
+ * Getter for the \c always_delay_region property. The \p value parameter must be a pointer to a 1-byte boolean.
+ * If \p value is 1 or \c true, there is a delay before starting a measurement.
  *
- * @param[in] index Not used.
- * @param[out] value Pointer to a 1-byte boolean.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value Pointer to a 1-byte boolean.
+ * \param[in,out] size Not used.
  *
- * @return If WSESWrapperMain::loadInstrument() has not been called, returns WError::ERR_NO_INSTRUMENT, otherwise WError::ERR_OK.
+ * \return If WSESWrapperMain::loadInstrument() has not been called, returns WError::ERR_NO_INSTRUMENT, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getAlwaysDelayRegion(int index, void *value, int &size)
 {
@@ -206,14 +211,14 @@ int WSESWrapperBase::getAlwaysDelayRegion(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c allow_io_with_detector property. The @p value parameter must be a pointer to a 1-byte boolean.
- * If @p value is 1 or @c true, external I/O signalling and detector can be used simultaneously.
+ * Getter for the \c allow_io_with_detector property. The \p value parameter must be a pointer to a 1-byte boolean.
+ * If \p value is 1 or \c true, external I/O signalling and detector can be used simultaneously.
  *
- * @param[in] index Not used.
- * @param[out] value Pointer to a 1-byte boolean.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value Pointer to a 1-byte boolean.
+ * \param[in,out] size Not used.
  *
- * @return If WSESWrapperMain::loadInstrument() has not been called, returns WError::ERR_NO_INSTRUMENT, otherwise WError::ERR_OK.
+ * \return If WSESWrapperMain::loadInstrument() has not been called, returns WError::ERR_NO_INSTRUMENT, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getAllowIOWithDetector(int index, void *value, int &size)
 {
@@ -226,16 +231,16 @@ int WSESWrapperBase::getAllowIOWithDetector(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c instrument_model property. If the @p value parameter is 0, @p size will be
+ * Getter for the \c instrument_model property. If the \p value parameter is 0, \p size will be
  * modified to return the required buffer length. If WSESWrapperMain::loadInstrument() has not been called,
- * @p value is usually empty, but do not rely on it.
+ * \p value is usually empty, but do not rely on it.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the name of the instrument model. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the name of the instrument model. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getInstrumentModel(int index, void *value, int &size)
 {
@@ -247,16 +252,16 @@ int WSESWrapperBase::getInstrumentModel(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c instrument_serial_no property. If the @p value parameter is 0, @p size will be
- * modified to return the required buffer length. If WSESWrapperMain::loadInstrument() has not been called, @p value
+ * Getter for the \c instrument_serial_no property. If the \p value parameter is 0, \p size will be
+ * modified to return the required buffer length. If WSESWrapperMain::loadInstrument() has not been called, \p value
  * is usually empty, but do not rely on it.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the name of the instrument serial number. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting array.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the name of the instrument serial number. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getInstrumentSerialNo(int index, void *value, int &size)
 {
@@ -268,13 +273,13 @@ int WSESWrapperBase::getInstrumentSerialNo(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c detector_info property. 
+ * Getter for the \c detector_info property. 
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a SESWrapperNS::DetectorInfo structure.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a SESWrapperNS::DetectorInfo structure.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not
  *         been called, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getDetectorInfo(int index, void *value, int &size)
@@ -302,13 +307,13 @@ int WSESWrapperBase::getDetectorInfo(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c detector_region property. 
+ * Getter for the \c detector_region property. 
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a SESWrapperNS::DetectorRegion structure.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a SESWrapperNS::DetectorRegion structure.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSesWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getDetectorRegion(int index, void *value, int &size)
@@ -334,17 +339,17 @@ int WSESWrapperBase::getDetectorRegion(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c element_set_count property. The @p value parameter must be a pointer to a 32-bit integer.
+ * Getter for the \c element_set_count property. The \p value parameter must be a pointer to a 32-bit integer.
  *
- * @param[in] index Not used.
- * @param[out] value A 32-bit integer that will contain the number of available element sets. This value can later be used
- *              as an index to the @c element_set_from_index property getter.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A 32-bit integer that will contain the number of available element sets. This value can later be used
+ *              as an index to the \c element_set_from_index property getter.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  *
- * @see WSESWrapperBase::getElementSetFromIndex()
+ * \see WSESWrapperBase::getElementSetFromIndex()
  */
 int WSESWrapperBase::getElementSetCount(int index, void *value, int &size)
 {
@@ -360,15 +365,15 @@ int WSESWrapperBase::getElementSetCount(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c element_set property. If the @p value parameter is 0, @p size will be
+ * Getter for the \c element_set property. If the \p value parameter is 0, \p size will be
  * modified to return the required buffer length for the requested element set.
  *
- * @param[in] index If set to -1, obtains the current element set. If 0 <= @p index < @c element_set_count, obtains the element set name for that index.
- * @param[out] value A @c char* buffer to be filled with an element set. Can be 0 (NULL).
- * @param[in,out] size If @p value is non-null, this parameter is assumed to contain the maximum number of elements in the
- *             buffer. After completion, @p size is always modified to contain the length of the resulting buffer.
+ * \param[in] index If set to -1, obtains the current element set. If 0 <= \p index < \c element_set_count, obtains the element set name for that index.
+ * \param[out] value A \c char* buffer to be filled with an element set. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting buffer.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
  *         failure to report the current element set, WError::ERR_INDEX if index is out-of-range, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getElementSet(int index, void *value, int &size)
@@ -388,7 +393,7 @@ int WSESWrapperBase::getElementSet(int index, void *value, int &size)
   {
     if (strValue != 0)
       strValue[elementSets_[index].copy(strValue, size)] = 0;
-    size = strlen(strValue);
+    size = elementSets_[index].length();
   }
   else
     errorCode = WError::ERR_INDEX;
@@ -397,17 +402,74 @@ int WSESWrapperBase::getElementSet(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c lens_mode_count property. The @p value parameter must be a pointer to a 32-bit integer.
+ * Getter for the \c element_name_count property. The \p value parameter must be a pointer to a 32-bit integer.
  *
- * @param[in] index Not used.
- * @param[out] value A 32-bit integer that will contain the number of available lens modes. This value can later be used
- *              as an index to the @c lens_mode_from_index property getter.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A 32-bit integer that will contain the number of available element names. This value can later be used
+ *              as an index to the \c element_name property getter.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  *
- * @see WSESWrapperBase::getLensModeFromIndex(), WSESWrapperBase::getLensMode()
+ * \see WSESWrapperBase::getElementName()
+ */
+int WSESWrapperBase::getElementNameCount(int index, void *value, int &size)
+{
+  if (!instrumentLoaded_)
+    return WError::ERR_NO_INSTRUMENT;
+
+  int *intValue = reinterpret_cast<int *>(value);
+
+  if (intValue != 0)
+    *intValue = elementNames_.size();
+
+	return WError::ERR_OK;
+}
+
+/*!
+ * Getter for the \c element_name property. If the \p value parameter is 0, \p size will be
+ * modified to return the required buffer length for the requested element name.
+ *
+ * \param[in] index If 0 <= \p index < \c element_name_count, obtains the element name for that index.
+ * \param[out] value A \c char* buffer to be filled with an element name. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum size of the
+ *             buffer.
+ *
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
+ *         failure to report the element name, WError::ERR_INDEX if index is out-of-range, otherwise WError::ERR_OK.
+ */
+int WSESWrapperBase::getElementName(int index, void *value, int &size)
+{
+  if (!instrumentLoaded_)
+    return WError::ERR_NO_INSTRUMENT;
+
+  char *strValue = reinterpret_cast<char *>(value);
+  int errorCode = WError::ERR_OK;
+
+  if (index >= 0 && index < int(elementNames_.size()))
+  {
+    if (strValue != 0)
+      strValue[elementNames_[index].copy(strValue, size)] = 0;
+  }
+  else
+    errorCode = WError::ERR_INDEX;
+
+  return errorCode;
+}
+
+/*!
+ * Getter for the \c lens_mode_count property. The \p value parameter must be a pointer to a 32-bit integer.
+ *
+ * \param[in] index Not used.
+ * \param[out] value A 32-bit integer that will contain the number of available lens modes. This value can later be used
+ *              as an index to the \c lens_mode_from_index property getter.
+ * \param[in,out] size Not used.
+ *
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ *         otherwise WError::ERR_OK.
+ *
+ * \see WSESWrapperBase::getLensModeFromIndex(), WSESWrapperBase::getLensMode()
  */
 int WSESWrapperBase::getLensModeCount(int index, void *value, int &size)
 {
@@ -423,15 +485,15 @@ int WSESWrapperBase::getLensModeCount(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c lens_mode property. If the @p value parameter is 0, @p size will be
+ * Getter for the \c lens_mode property. If the \p value parameter is 0, \p size will be
  * modified to return the required buffer length for the requested lens mode.
  *
- * @param[in] index If set to -1, obtains the current lens mode. If 0 <= @p index < @c lens_mode_count, obtains the lens mode name for that index.
- * @param[out] value A @c char* buffer to be filled with the current lens mode. Can be 0 (NULL).
- * @param[in,out] size If @p value is 0, this parameter is modified with the required size of the buffer, otherwise it is
- *             used to determine the size of @c value.
+ * \param[in] index If set to -1, obtains the current lens mode. If 0 <= \p index < \c lens_mode_count, obtains the lens mode name for that index.
+ * \param[out] value A \c char* buffer to be filled with the current lens mode. Can be 0 (NULL).
+ * \param[in,out] size If \p value is 0, this parameter is modified with the required size of the buffer, otherwise it is
+ *             used to determine the size of \c value.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
  *         failure to report the current lens mode, WError::ERR_INDEX if index is out-of-range, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getLensMode(int index, void *value, int &size)
@@ -451,7 +513,7 @@ int WSESWrapperBase::getLensMode(int index, void *value, int &size)
   {
     if (strValue != 0)
       strValue[lensModes_[index].copy(strValue, size)] = 0;
-    size = strlen(strValue);
+    size = lensModes_[index].length();
   }
   else
     errorCode = WError::ERR_INDEX;
@@ -460,19 +522,19 @@ int WSESWrapperBase::getLensMode(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c pass_energy_count property. The @p value parameter must be a pointer to a 32-bit integer.
- * @note The number of available pass energies is dependent on the current lens mode. If you change the lens
+ * Getter for the \c pass_energy_count property. The \p value parameter must be a pointer to a 32-bit integer.
+ * \note The number of available pass energies is dependent on the current lens mode. If you change the lens
  *       mode, you need to update your internal list of pass energies, beginning with this function.
  *
- * @param[in] index Not used.
- * @param[out] value A 32-bit integer that will contain the number of available lens modes. This value can later be used
- *              as an index to the @c lens_mode_from_index property getter.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A 32-bit integer that will contain the number of available lens modes. This value can later be used
+ *              as an index to the \c lens_mode_from_index property getter.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  *
- * @see WSESWrapperBase::getLensModeFromIndex(), WSESWrapperBase::getLensMode()
+ * \see WSESWrapperBase::getLensModeFromIndex(), WSESWrapperBase::getLensMode()
  */
 int WSESWrapperBase::getPassEnergyCount(int index, void *value, int &size)
 {
@@ -489,14 +551,14 @@ int WSESWrapperBase::getPassEnergyCount(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c pass_energy property. The @p value parameter must be a pointer to a @c double (8-byte floating
+ * Getter for the \c pass_energy property. The \p value parameter must be a pointer to a \c double (8-byte floating
  * point).
  *
- * @param[in] index If set to -1, obtains the current pass energy. If 0 <= @p index < @c pass_energy_count, obtains the pass energy for that index.
- * @param[out] value A pointer to a @c double to be filled with the current pass energy.
- * @param[in,out] size Not used.
+ * \param[in] index If set to -1, obtains the current pass energy. If 0 <= \p index < \c pass_energy_count, obtains the pass energy for that index.
+ * \param[out] value A pointer to a \c double to be filled with the current pass energy.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called, WError::ERR_FAIL on
  *         failure to report the current pass energy, WError::ERR_INDEX if index is out-of-range, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getPassEnergy(int index, void *value, int &size)
@@ -524,13 +586,13 @@ int WSESWrapperBase::getPassEnergy(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c analyzer_region property. 
+ * Getter for the \c analyzer_region property. 
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a SESWrapperNS::AnalyzerRegion structure.
- * @param[in,out] size Not used.
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a SESWrapperNS::AnalyzerRegion structure.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSesWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getAnalyzerRegion(int index, void *value, int &size)
@@ -541,7 +603,7 @@ int WSESWrapperBase::getAnalyzerRegion(int index, void *value, int &size)
   SESWrapperNS::AnalyzerRegion *analyzerRegion = reinterpret_cast<SESWrapperNS::AnalyzerRegion *>(value);
   if (analyzerRegion != 0)
   {
-	analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
+    analyzerRegion->centerEnergy_ = sesRegion_.FixEnergy;
     analyzerRegion->dwellTime_ = sesRegion_.StepTime;
     analyzerRegion->energyStep_ = sesRegion_.EnergyStep;
     analyzerRegion->fixed_ = sesRegion_.Fixed;
@@ -553,14 +615,14 @@ int WSESWrapperBase::getAnalyzerRegion(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c use_external_io property. 
+ * Getter for the \c use_external_io property. 
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a 1-byte boolean. If @c value is 0 (or @c false), no communication with the external
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a 1-byte boolean. If \c value is 0 (or \c false), no communication with the external
  *              I/O card is made. One example of an external I/O card is the DAQ cards from National Instruments.
- * @param[in,out] size Not used.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSesWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getUseExternalIO(int index, void *value, int &size)
@@ -570,19 +632,19 @@ int WSESWrapperBase::getUseExternalIO(int index, void *value, int &size)
 
   bool *boolValue = reinterpret_cast<bool *>(value);
   if (boolValue != 0)
-    *boolValue = usingSignals_;
+    *boolValue = ((activeDetectors_ & 0x0002) != 0);
   return WError::ERR_OK;
 }
 
 /*!
- * Getter for the @c use_detector property. 
+ * Getter for the \c use_detector property. 
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a 1-byte boolean. If @c value is 0 (or @c false), no communication with the detector
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a 1-byte boolean. If \c value is 0 (or \c false), no communication with the detector
  *              is made.
- * @param[in,out] size Not used.
+ * \param[in,out] size Not used.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSesWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::getUseDetector(int index, void *value, int &size)
@@ -592,19 +654,19 @@ int WSESWrapperBase::getUseDetector(int index, void *value, int &size)
 
   bool *boolValue = reinterpret_cast<bool *>(value);
   if (boolValue != 0)
-    *boolValue = usingDetector_;
+    *boolValue = ((activeDetectors_ & 0x0001) != 0);
   return WError::ERR_OK;
 }
 
 /*!
- * Getter for the @c region_name property. 
+ * Getter for the \c region_name property. 
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the name of the region. Can be 0 (NULL).
- * @param[in,out] size If @p value is 0, this parameter is modified with the required length of the region name, otherwise
- *             it is used to determine the size of @c value.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the name of the region. Can be 0 (NULL).
+ * \param[in,out] size If \p value is 0, this parameter is modified with the required length of the region name, otherwise
+ *             it is used to determine the size of \c value.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getRegionName(int index, void *value, int &size)
 {
@@ -616,15 +678,15 @@ int WSESWrapperBase::getRegionName(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c temp_file_name property.
+ * Getter for the \c temp_file_name property.
  *
- * @param[in] index Not used.
- * @param[out] value A @c char* buffer to be filled with the name of the temporary working file created during acquisition.
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the name of the temporary working file created during acquisition.
  *              Can be 0 (NULL).
- * @param[in,out] size If @p value is 0, this parameter is modified with the required length of the file name, otherwise
- *             it is used to determine the size of @c value.
+ * \param[in,out] size If \p value is 0, this parameter is modified with the required length of the file name, otherwise
+ *             it is used to determine the size of \c value.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getTempFileName(int index, void *value, int &size)
 {
@@ -636,15 +698,15 @@ int WSESWrapperBase::getTempFileName(int index, void *value, int &size)
 }
 
 /*!
- * Getter for the @c reset_data_between_iterations property.
+ * Getter for the \c reset_data_between_iterations property.
  *
- * @param[in] index Not used.
- * @param[out] value A pointer to a 1-byte boolean. If @c value is 0 (or @c false), data will be accumulated
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a 1-byte boolean. If \c value is 0 (or \c false), data will be accumulated
  *                   between each call to startAcquisition unless initAcquisition is called. If it is 1 (or
- *                   @c true), all data is reset to 0 between the iterations, even if initAcquisition is not called.
- * @param[in,out] size Not used.
+ *                   \c true), all data is reset to 0 between the iterations, even if initAcquisition is not called.
+ * \param[in,out] size Not used.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::getResetDataBetweenIterations(int index, void *value, int &size)
 {
@@ -654,15 +716,69 @@ int WSESWrapperBase::getResetDataBetweenIterations(int index, void *value, int &
   return WError::ERR_OK;
 }
 
+/*!
+ * Getter for the \c use_spin property. If there are no spin detectors installed, this function returns
+ * WError::ERR_NOT_APPLICABLE and sets \p value to \c false.
+ *
+ * \param[in] index Specifies which spin detector being queried. The value ranges between 1 and the number of available
+ *                  spin detectors. Which spin detector belongs to what index depends on the system configuration.
+ * \param[out] value A pointer to a 1-byte boolean. This is set to \c true if the spin detector specified by \p index is
+ *                   active.
+ * \param[in,out] size Not used.
+ *
+ * \return WError::ERR_OK if a spin detector is found at index \p index.
+ */
+int WSESWrapperBase::getUseSpin(int index, void *value, int &size)
+{
+  if (!instrumentLoaded_)
+    return WError::ERR_NO_INSTRUMENT;
+
+  bool *boolValue = reinterpret_cast<bool *>(value);
+
+  int count = 0;
+  lib_->GDS_GetOption(SesNS::DetectorCount, &count);
+  ++index;
+
+  *boolValue = false;
+
+  if (count < 3)
+    return WError::ERR_NOT_APPLICABLE;
+
+  if (index < 2 || (count > 2 && index >= count))
+    return WError::ERR_INDEX;
+
+  unsigned short activeDetector = 0;
+  lib_->GDS_GetOption(SesNS::ActiveDetector, &activeDetector);
+  
+  return WError::ERR_OK;
+}
+
+/*!
+ * Getter for the \c use_binding_energy property. 
+ *
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a 1-byte boolean. Set to \c true when the energies in the analyzer region are assumed to be given as binding energies.
+ * \param[in,out] size Not used.
+ *
+ * \return Always returns WError::ERR_OK.
+ */
+int WSESWrapperBase::getUseBindingEnergy(int index, void *value, int &size)
+{
+  bool *boolValue = reinterpret_cast<bool *>(value);
+
+  *boolValue = !sesRegion_.Kinetic;
+  return WError::ERR_OK;
+}
+
 // Property setters
 
 /*!
  * Stub for the read-only properties.
  *
- * @param[in] index Not used.
- * @param[in] value Not used.
+ * \param[in] index Not used.
+ * \param[in] value Not used.
  *
- * @return Always returns WError::ERR_READONLY to indicate that an attempt was made to modify a read-only property.
+ * \return Always returns WError::ERR_READONLY to indicate that an attempt was made to modify a read-only property.
  */
 int WSESWrapperBase::readOnlyStub(int index, const void *value)
 {
@@ -670,12 +786,12 @@ int WSESWrapperBase::readOnlyStub(int index, const void *value)
 }
 
 /*!
- * Setter for the @c lib_working_dir property. Changes the working directory for the library.
+ * Setter for the \c lib_working_dir property. Changes the working directory for the library.
  *
- * @param[in] index Not used.
- * @param[in] value A null-terminated C string that contains the path to the new working directory.
+ * \param[in] index Not used.
+ * \param[in] value A null-terminated C string that contains the path to the new working directory.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 {
@@ -691,13 +807,13 @@ int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 }
 
 /*!
- * Setter for the @c always_delay_region property. If @c true (1), a delay will be made before starting
+ * Setter for the \c always_delay_region property. If \c true (1), a delay will be made before starting
  * the acquisition of a region.
  *
- * @param[in] index Not used.
- * @param[in] value A 1-byte boolean of value @c true (1) or @c false (0). 
+ * \param[in] index Not used.
+ * \param[in] value A 1-byte boolean of value \c true (1) or \c false (0). 
  *
- * @return WError::ERR_NOT_INITIALIZED if the library has not been successfully initialized, otherwise WError::ERR_OK.
+ * \return WError::ERR_NOT_INITIALIZED if the library has not been successfully initialized, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setAlwaysDelayRegion(int index, const void *value)
 {
@@ -709,13 +825,13 @@ int WSESWrapperBase::setAlwaysDelayRegion(int index, const void *value)
 }
 
 /*!
- * Setter for the @c allow_io_with_detector property. If @c true (1), external I/O communication will be
+ * Setter for the \c allow_io_with_detector property. If \c true (1), external I/O communication will be
  * possible simultaneously with detector communication.
  *
- * @param[in] index Not used.
- * @param[in] value A 1-byte boolean of value @c true (1) or @c false (0). 
+ * \param[in] index Not used.
+ * \param[in] value A 1-byte boolean of value \c true (1) or \c false (0). 
  *
- * @return WError::ERR_NOT_INITIALIZED if the library has not been successfully initialized, otherwise WError::ERR_OK.
+ * \return WError::ERR_NOT_INITIALIZED if the library has not been successfully initialized, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setAllowIOWithDetector(int index, const void *value)
 {
@@ -727,13 +843,13 @@ int WSESWrapperBase::setAllowIOWithDetector(int index, const void *value)
 }
 
 /*!
- * Setter for the @c detector_region property. This will set up a new ROI (Region of Interest) for the acquisition.
+ * Setter for the \c detector_region property. This will set up a new ROI (Region of Interest) for the acquisition.
  * The values in the detector region will be validated through a call to the GDS_CheckRegion() function.
  * 
- * @param[in] index Not used.
- * @param[in] value A pointer to a SESWrapperNS::DetectorRegion structure.
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a SESWrapperNS::DetectorRegion structure.
  *
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapper::loadInstrument() has not been called, WError::ERR_INCORRECT_DETECTOR_REGION
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapper::loadInstrument() has not been called, WError::ERR_INCORRECT_DETECTOR_REGION
  *         is an error was detected in the detector region, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setDetectorRegion(int index, const void *value)
@@ -783,12 +899,12 @@ int WSESWrapperBase::setDetectorRegion(int index, const void *value)
 }
 
 /*!
- * Setter for the @c element_set property.
+ * Setter for the \c element_set property.
  *
- * @param[in] index Must be set to -1. Values between 0 and @c element_set_count - 1 are index for future use.
- * @param[in] value A null-terminated string that specifies the name of the new element set.
+ * \param[in] index Must be set to -1. Values between 0 and \c element_set_count - 1 are index for future use.
+ * \param[in] value A null-terminated string that specifies the name of the new element set.
  * 
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         WError::ERR_INCORRECT_ELEMENT_SET if the given element set is not available, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setElementSet(int index, const void *value)
@@ -804,13 +920,13 @@ int WSESWrapperBase::setElementSet(int index, const void *value)
 }
 
 /*!
- * Setter for the @c element_set property. This function reloads the pass energy list when successful.
+ * Setter for the \c element_set property. This function reloads the pass energy list when successful.
  * This requires updates for the pass energy lists for the calling application.
  *
- * @param[in] index  Must be set to -1. Values between 0 and @c element_set_count - 1 are index for future use.
- * @param[in] value A null-terminated string that specifies the name of the new lens mode.
+ * \param[in] index  Must be set to -1. Values between 0 and \c element_set_count - 1 are index for future use.
+ * \param[in] value A null-terminated string that specifies the name of the new lens mode.
  * 
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         WError::ERR_INCORRECT_LENS_MODE if the given lens mode is not available, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setLensMode(int index, const void *value)
@@ -829,13 +945,13 @@ int WSESWrapperBase::setLensMode(int index, const void *value)
 }
 
 /*!
- * Setter for the @c pass_energy property. If the pass energy to set is taken from a list of pass energies, make
+ * Setter for the \c pass_energy property. If the pass energy to set is taken from a list of pass energies, make
  * sure to update that list after modifying the lens mode and before calling this function.
  *
- * @param[in] index  Must be set to -1. Values between 0 and @c element_set_count - 1 are index for future use.
- * @param[in] value A pointer to a @c double (8-byte floating point).
+ * \param[in] index  Must be set to -1. Values between 0 and \c element_set_count - 1 are index for future use.
+ * \param[in] value A pointer to a \c double (8-byte floating point).
  * 
- * @return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
+ * \return WError::ERR_NO_INSTRUMENT if WSESWrapperMain::loadInstrument() has not been called,
  *         WError::ERR_INCORRECT_PASS_ENERGY if the given pass energy is not available, otherwise WError::ERR_OK.
  */
 int WSESWrapperBase::setPassEnergy(int index, const void *value)
@@ -856,22 +972,22 @@ int WSESWrapperBase::setPassEnergy(int index, const void *value)
 }
 
 /*!
- * Setter for the @c analyzer_region property. The members in the WAnalyzerRegion structure are stored
+ * Setter for the \c analyzer_region property. The members in the WAnalyzerRegion structure are stored
  * in an internal object for later use in a call to WSESWrapperMain::initAcquisition(). There is no immediate
  * checking done of the validity of the given values. If such a check is required before starting acquisition,
  * the WSESWrapperMain::checkAnalyzerRegion() can be called.
  *
- * @param[in] index Not used.
- * @param[in] value A pointer to a WAnalyzerRegion structure.
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a WAnalyzerRegion structure.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
 {
   const WAnalyzerRegion *analyzerRegion = reinterpret_cast<const WAnalyzerRegion *>(value);
   if (analyzerRegion != 0)
   {
-	sesRegion_.DriftRegion = false;
+    sesRegion_.DriftRegion = false;
     sesRegion_.EnergyStep = analyzerRegion->energyStep_;
     sesRegion_.ExcEnergy = 0;
     sesRegion_.Fixed = analyzerRegion->fixed_;
@@ -890,46 +1006,96 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
 }
 
 /*!
- * Setter for the @c use_external_io property. Modify this to toggle the use of the external I/O card, if present.
+ * Setter for the \c use_external_io property. Modify this to toggle the use of the external I/O card, if present.
  *
- * @param[in] index Not used.
- * @param[in] value A pointer to a 1-byte boolean.
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a 1-byte boolean.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setUseExternalIO(int index, const void *value)
 {
   const bool *boolValue = reinterpret_cast<const bool *>(value);
   if (boolValue != 0)
-    usingSignals_ = *boolValue;
+    activeDetectors_ = *boolValue ? activeDetectors_ | 0x0002 : activeDetectors_ & ~0x0002;
   return WError::ERR_OK;
 }
 
 /*!
- * Setter for the @c use_detector property. Modify this to toggle the use of the detector. Can be used in combination
- * with the @c use_external_io property.
+ * Setter for the \c use_spin property. If there are no spin detectors installed, this function returns
+ * WError::ERR_NOT_APPLICABLE.
  *
- * @param[in] index Not used.
- * @param[in] value A pointer to a 1-byte boolean.
+ * \param[in] index Specifies which spin detector being queried. The value ranges between 1 and the number of available
+ *                  spin detectors. Which spin detector belongs to what index depends on the system configuration.
+ * \param[out] value A pointer to a 1-byte boolean.
  *
- * @return Always returns WError::ERR_OK.
+ * \return WError::ERR_OK if a spin detector is found at index \p index.
+ */
+int WSESWrapperBase::setUseSpin(int index, const void *value)
+{
+  if (!instrumentLoaded_)
+    return WError::ERR_NO_INSTRUMENT;
+
+  const bool *boolValue = reinterpret_cast<const bool *>(value);
+
+  int count = 0;
+  lib_->GDS_GetOption(SesNS::DetectorCount, &count);
+  ++index;
+
+  if (count < 3)
+    return WError::ERR_NOT_APPLICABLE;
+
+  if (index < 2 || (count > 2 && index >= count))
+    return WError::ERR_INDEX;
+
+  unsigned short activeDetector = 0;
+  lib_->GDS_SetOption(SesNS::ActiveDetector, &activeDetector);
+  
+  return WError::ERR_OK;
+}
+
+/*!
+ * Setter for the \c use_binding_energy property.
+ * \warning If you set this to \c true, you must also set the excitation energy.
+ *
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a 1-byte boolean.
+ *
+ * \return Always returns WError::ERR_OK.
+ */
+int WSESWrapperBase::setUseBindingEnergy(int index, const void *value)
+{
+  const bool *boolValue = reinterpret_cast<const bool *>(value);
+  if (boolValue != 0)
+    sesRegion_.Kinetic = !*boolValue;
+  return WError::ERR_OK;
+}
+
+/*!
+ * Setter for the \c use_detector property. Modify this to toggle the use of the detector. Can be used in combination
+ * with the \c use_external_io property.
+ *
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a 1-byte boolean.
+ *
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setUseDetector(int index, const void *value)
 {
   const bool *boolValue = reinterpret_cast<const bool *>(value);
   if (boolValue != 0)
-    usingDetector_ = *boolValue;
+    activeDetectors_ = *boolValue ? activeDetectors_ | 0x0001 : activeDetectors_ & ~0x0001;
   return WError::ERR_OK;
 }
 
 /*!
- * Setter for the @c region_name property. 
+ * Setter for the \c region_name property. 
  *
- * @param[in] index Not used.
- * @param[in] value A null-terminated C string that specifies the region name. The name is limited to 32 characters,
+ * \param[in] index Not used.
+ * \param[in] value A null-terminated C string that specifies the region name. The name is limited to 32 characters,
  *              including the null character.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setRegionName(int index, const void *value)
 {
@@ -939,12 +1105,12 @@ int WSESWrapperBase::setRegionName(int index, const void *value)
 }
 
 /*!
- * Setter for the @c temp_file_name property. 
+ * Setter for the \c temp_file_name property. 
  *
- * @param[in] index Not used.
- * @param[in] value A null-terminated C string that specifies the name of the temporary file created during acquisition.
+ * \param[in] index Not used.
+ * \param[in] value A null-terminated C string that specifies the name of the temporary file created during acquisition.
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setTempFileName(int index, const void *value)
 {
@@ -953,12 +1119,12 @@ int WSESWrapperBase::setTempFileName(int index, const void *value)
 }
 
 /*!
- * Setter for the @c reset_data_between_iterations property.
+ * Setter for the \c reset_data_between_iterations property.
  *
- * @param[in] index Not used.
- * @param[in] value A pointer to a 1-byte boolean. 
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a 1-byte boolean. 
  *
- * @return Always returns WError::ERR_OK.
+ * \return Always returns WError::ERR_OK.
  */
 int WSESWrapperBase::setResetDataBetweenIterations(int index, const void *value)
 {
@@ -971,14 +1137,14 @@ int WSESWrapperBase::setResetDataBetweenIterations(int index, const void *value)
 /*!
  * Reloads the elemet sets. Called after loading a new instrument configuration.
  *
- * @return @c true if successful.
+ * \return \c true if successful.
  */
 bool WSESWrapperBase::loadElementSets()
 {
   elementSets_.clear();
 
-  /*if (!instrumentLoaded_)
-    return false;*/
+  if (!instrumentLoaded_)
+    return false;
 
   char *buffer = 0;
   int bufferSize = 0;
@@ -1000,14 +1166,14 @@ bool WSESWrapperBase::loadElementSets()
 /*!
  * Loads the lens modes. Called after loading a new instrument configuration.
  *
- * @return @c true if successful.
+ * \return \c true if successful.
  */
 bool WSESWrapperBase::loadLensModes()
 {
   lensModes_.clear();
 
-  /*if (!instrumentLoaded_)
-    return false;*/
+  if (!instrumentLoaded_)
+    return false;
 
   char *buffer = 0;
   int bufferSize = 0;
@@ -1029,14 +1195,14 @@ bool WSESWrapperBase::loadLensModes()
 /*!
  * Reloads the Pass energies. Called after loading a new instrument configuration.
  *
- * @return @c true if successful.
+ * \return \c true if successful.
  */
 bool WSESWrapperBase::loadPassEnergies(const std::string &lensMode, DoubleVector &result)
 {
   passEnergies_.clear();
 
-  /*if (!instrumentLoaded_)
-    return false;*/
+  if (!instrumentLoaded_)
+    return false;
 
   char *buffer = 0;
   int bufferSize = 0;
@@ -1062,12 +1228,37 @@ bool WSESWrapperBase::loadPassEnergies(const std::string &lensMode, DoubleVector
 }
 
 /*!
+ * Reloads the Element names. Called after loading a new instrument configuration.
+ *
+ * \return \c true if successful.
+ */
+bool WSESWrapperBase::loadElementNames()
+{
+  elementNames_.clear();
+
+  if (!instrumentLoaded_)
+    return false;
+  
+  if (lib_->GDS_GetElements == 0)
+    return true; // Optional function, should not generate errors.
+
+  char *buffer = 0;
+  int size = 0;
+  int result = lib_->GDS_GetElements(0, &size);
+  buffer = new char[size];
+  result = lib_->GDS_GetElements(buffer, &size);
+  splitSESList(buffer, size, elementNames_);
+  delete[] buffer;
+  return true;
+}
+
+/*!
  * Helper function to split strings obtained as lists from calls to SESInstrument functions.
  *
- * @param[in] buffer The null-terminated string containing the elements to be split. Each element is assumed to be wrapped
+ * \param[in] buffer The null-terminated string containing the elements to be split. Each element is assumed to be wrapped
  *               between quotation marks ("), and separated with space (e.g. '"element 1" "element 2" "element 3"').
- * @param[in] bufferSize The maximum size of the buffer, used as an extra security measure in case the string lacks the null termination.
- * @param[out] result a string vector containing the split elements.
+ * \param[in] bufferSize The maximum size of the buffer, used as an extra security measure in case the string lacks the null termination.
+ * \param[out] result a string vector containing the split elements.
  */
 void WSESWrapperBase::splitSESList(const char *buffer, int bufferSize, NameVector &result)
 {
@@ -1084,19 +1275,4 @@ void WSESWrapperBase::splitSESList(const char *buffer, int bufferSize, NameVecto
     istr.get();
     istr >> std::ws;
   }
-
-  //std::ostringstream ostr;
-
-  //const char *p = buffer + 1;
-  //for (;bufferSize > 0 && *p != 0;)
-  //{
-  //  for (; *p != '"' && bufferSize > 0; *p++, bufferSize--)
-  //    ostr << *p;
-  //  ostr << std::ends;
-  //  result.push_back(ostr.str());
-  //  p += 3;
-  //  bufferSize -= 3;
-  //  ostr.seekp(0);
-  //  ostr.clear();
-  //}
 }

@@ -14,12 +14,12 @@ public:
    */
   enum ValueType
   {
-    TYPE_BOOL, /*!< Parameters of type @p bool (1-byte unsigned char) */
-    TYPE_INT32, /*!< Parameters of type @p int (32-bit signed integer) */
-    TYPE_DOUBLE, /*!< Parameters of type @p double (64-bit floating point) */
+    TYPE_BOOL, /*!< Parameters of type \p bool (1-byte unsigned char) */
+    TYPE_INT32, /*!< Parameters of type \p int (32-bit signed integer) */
+    TYPE_DOUBLE, /*!< Parameters of type \p double (64-bit floating point) */
     TYPE_STRING, /*!< Null-terminated strings of type <tt>char *</tt> */
-    TYPE_VECTOR_INT32, /*!< Arrays of type @p int (32-bit signed integer) */
-    TYPE_VECTOR_DOUBLE, /*!< Arrays of type @p double (64-bit floating point) */
+    TYPE_VECTOR_INT32, /*!< Arrays of type \p int (32-bit signed integer) */
+    TYPE_VECTOR_DOUBLE, /*!< Arrays of type \p double (64-bit floating point) */
     TYPE_DETECTORINFO, /*!< Pointers to struct DetectorInfo */
     TYPE_DETECTORREGION, /*!< Pointers to struct DetectorRegion */
     TYPE_ANALYZERREGION /*!< Pointers to struct AnalyzerRegion */
@@ -41,12 +41,12 @@ private:
 };
 
 /*!
- * Constructor for the WVariable class. Creates a getter and a setter from the callbacks provided by @p container.
+ * Constructor for the WVariable class. Creates a getter and a setter from the callbacks provided by \p container.
  *
- * @param[in] container Pointer to an instance of the containing class.
- * @param[in] setCallback Member function pointer representing the setter of the container's variable.
- * @param[in] getCallback Member function pointer representing the getter of the container's variable.
- * @param[in] valueType Specifies the type of variable (one of the ValueType enums).
+ * \param[in] container Pointer to an instance of the containing class.
+ * \param[in] setCallback Member function pointer representing the setter of the container's variable.
+ * \param[in] getCallback Member function pointer representing the getter of the container's variable.
+ * \param[in] valueType Specifies the type of variable (one of the ValueType enums).
  */
 template<class _Container>
 WVariable<_Container>::WVariable(_Container *container, SetCallback setCallback, GetCallback getCallback, ValueType valueType)
@@ -57,7 +57,7 @@ WVariable<_Container>::WVariable(_Container *container, SetCallback setCallback,
 /*!
  * Copy constructor for the WVariable class.
  *
- * @param[in] src The source object to copy.
+ * \param[in] src The source object to copy.
  */
 template<class _Container>
 WVariable<_Container>::WVariable(const WVariable &src)
@@ -76,7 +76,7 @@ WVariable<_Container>::~WVariable()
 /*!
  * Queries the value type of this variable.
  *
- * @return The type of variable, one of the ValueType enums.
+ * \return The type of variable, one of the ValueType enums.
  */
 template<class _Container>
 int WVariable<_Container>::valueType() const
@@ -87,10 +87,10 @@ int WVariable<_Container>::valueType() const
 /*!
  * Calls the setter for the variable.
  *
- * @param[in] index An index used for variables of vector or array types.
- * @param[in] value A pointer to the value to be set.
+ * \param[in] index An index used for variables of vector or array types.
+ * \param[in] value A pointer to the value to be set.
  *
- * @returns Usually WError::ERR_OK on success, otherwise an error code.
+ * \returns Usually WError::ERR_OK on success, otherwise an error code.
  */
 template<class _Container>
 int WVariable<_Container>::set(int index, const void *value)
@@ -101,12 +101,12 @@ int WVariable<_Container>::set(int index, const void *value)
 /*!
  * Calls the getter for the variable.
  *
- * @param[in] index An index used for variables of vector or array types.
- * @param[out] value A pointer to the value to obtain. For vectors or arrays, this can usually be 0 (NULL),
- *                   in which case @p size is modified to request the size of the vector/array.
- * @param[in,out] size The size of the value, if that value is a vector or array.
+ * \param[in] index An index used for variables of vector or array types.
+ * \param[out] value A pointer to the value to obtain. For vectors or arrays, this can usually be 0 (NULL),
+ *                   in which case \p size is modified to request the size of the vector/array.
+ * \param[in,out] size The size of the value, if that value is a vector or array.
  *
- * @returns Usually WError::ERR_OK on success, otherwise an error code.
+ * \returns Usually WError::ERR_OK on success, otherwise an error code.
  */
 template<class _Container>
 int WVariable<_Container>::get(int index, void *value, int &size)
