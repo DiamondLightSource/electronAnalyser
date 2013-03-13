@@ -270,6 +270,27 @@ record(calc, "$(P)$(R)ENERGY_WIDTH_RBV")
   field(PREC, "3")
 }
 
+# User enters desired excitation energy
+record(ao, "$(P)$(R)EXCITATION_ENERGY") 
+{
+  field(DESC, "Excitation Energy")
+  field(DTYP, "asynFloat64")
+  field(OUT,  "@asyn($(PORT) 0)EXCITATION_ENERGY")
+  field(PREC, "3")
+  field(PINI, "YES")
+  field(VAL,  "10")
+}
+
+# Report back current excitation energy
+record(ai, "$(P)$(R)EXCITATION_ENERGY_RBV") 
+{
+  field(DESC, "Excitation Energy Readback")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT) 0)EXCITATION_ENERGY")
+  field(SCAN, "I/O Intr")
+  field(PREC, "3")
+}
+
 ###################### Step ########################
 
 # User enters desired energy step size
@@ -278,7 +299,7 @@ record(ao, "$(P)$(R)STEP_SIZE")
   field(DESC, "Energy Step Size")
   field(DTYP, "asynFloat64")
   field(OUT,  "@asyn($(PORT) 0)ENERGY_STEP")
-  field(PREC, "3")
+  field(PREC, "5")
   field(PINI, "YES")
   field(VAL,  "0.2")
 }
@@ -290,7 +311,7 @@ record(ai, "$(P)$(R)STEP_SIZE_RBV")
   field(DTYP, "asynFloat64")
   field(INP,  "@asyn($(PORT) 0)ENERGY_STEP")
   field(SCAN, "I/O Intr")
-  field(PREC, "3")
+  field(PREC, "5")
 }
 
 # User enters desired number of frames
@@ -333,6 +354,7 @@ record(ao, "$(P)$(R)STEP_TIME")
   field(DRVL, "0.0333333")
   field(DRVH, "333.333")
   field(FLNK, "$(P)$(R)STEP_TIME_CALC")
+  field(PREC, "5")
 }
 
 # Calculate frames from step time
