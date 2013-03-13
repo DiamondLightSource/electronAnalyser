@@ -28,7 +28,7 @@ NDFileHDF5Configure("CCD.HDF", 16, 0, "CCD.CAM", 0)
 # NDStdArraysConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxMemory)
 NDStdArraysConfigure("CCD.ARR", 2, 0, "CCD.CAM", 0, -1)
 
-ffmpegServerConfigure(8080)
+ffmpegServerConfigure(8085)
 # ffmpegStreamConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxMemory)
 ffmpegStreamConfigure("CCD.MPG", 2, 0, "CCD.CAM", "0", -1)
 
