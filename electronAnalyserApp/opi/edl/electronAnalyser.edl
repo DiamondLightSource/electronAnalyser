@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 531
-y 215
+x 672
+y 172
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -47,7 +47,7 @@ minor 0
 release 0
 x 5
 y 485
-w 165
+w 175
 h 135
 lineColor index 14
 fill
@@ -84,9 +84,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 180
+x 185
 y 485
-w 205
+w 200
 h 135
 lineColor index 14
 fill
@@ -99,7 +99,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 180
+x 185
 y 475
 w 53
 h 14
@@ -154,9 +154,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 65
+x 55
 y 495
-w 95
+w 120
 h 20
 fgColor index 25
 bgColor index 3
@@ -174,7 +174,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
+x 10
 y 500
 w 29
 h 14
@@ -194,9 +194,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 260
+x 265
 y 545
-w 120
+w 115
 h 20
 fgColor index 25
 bgColor index 3
@@ -214,7 +214,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
+x 190
 y 545
 w 80
 h 20
@@ -233,7 +233,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
+x 190
 y 520
 w 80
 h 20
@@ -252,9 +252,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 260
+x 265
 y 520
-w 120
+w 115
 h 20
 fgColor index 25
 bgColor index 3
@@ -272,9 +272,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 260
+x 265
 y 495
-w 120
+w 115
 h 20
 fgColor index 25
 bgColor index 3
@@ -292,7 +292,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
+x 190
 y 495
 w 80
 h 20
@@ -313,9 +313,10 @@ minor 0
 release 0
 x 145
 y 670
-w 45
+w 55
 h 20
 controlPv "$(P)$(R)AcquireTime_RBV"
+precision 5
 fgColor index 16
 fgAlarm
 bgColor index 10
@@ -330,13 +331,13 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 95
+x 85
 y 670
-w 45
+w 55
 h 20
 controlPv "$(P)$(R)STEP_TIME"
 displayMode "decimal"
-precision 3
+precision 5
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -350,7 +351,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
+x 10
 y 670
 w 80
 h 20
@@ -371,7 +372,7 @@ minor 0
 release 0
 x 330
 y 670
-w 45
+w 50
 h 20
 controlPv "$(P)$(R)NumExposures_RBV"
 fgColor index 16
@@ -388,9 +389,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 280
+x 275
 y 670
-w 45
+w 50
 h 20
 controlPv "$(P)$(R)NumExposures"
 fgColor index 25
@@ -406,8 +407,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 215
-y 673
+x 210
+y 675
 w 56
 h 14
 font "arial-bold-r-12.0"
@@ -426,9 +427,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 260
+x 265
 y 595
-w 120
+w 115
 h 20
 fgColor index 25
 bgColor index 3
@@ -446,7 +447,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
+x 190
 y 600
 w 48
 h 14
@@ -466,7 +467,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 215
+x 210
 y 650
 w 37
 h 14
@@ -486,9 +487,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 280
+x 275
 y 645
-w 45
+w 50
 h 20
 controlPv "$(P)$(R)SLICES"
 fgColor index 25
@@ -506,7 +507,7 @@ minor 0
 release 0
 x 330
 y 645
-w 45
+w 50
 h 20
 controlPv "$(P)$(R)SLICES_RBV"
 fgColor index 16
@@ -523,7 +524,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 185
+x 190
 y 575
 w 48
 h 14
@@ -543,9 +544,9 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 260
+x 265
 y 570
-w 120
+w 115
 h 20
 fgColor index 25
 bgColor index 3
@@ -749,7 +750,7 @@ minor 0
 release 0
 x 145
 y 645
-w 45
+w 55
 h 20
 controlPv "$(P)$(R)FRAMES"
 fgColor index 16
@@ -766,9 +767,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 95
+x 85
 y 645
-w 45
+w 55
 h 20
 controlPv "$(P)$(R)FRAMES"
 fgColor index 25
@@ -784,7 +785,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
+x 10
 y 650
 w 45
 h 14
@@ -798,16 +799,40 @@ value {
 autoSize
 endObjectProperties
 
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 210
+y 695
+w 170
+h 20
+fgColor index 24
+onColor index 3
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "$(P)$(R)ZERO_SUPPLIES"
+pressValue "1"
+releaseValue "0"
+onLabel "Zero Supplies"
+offLabel "Zero Supplies"
+3d
+font "arial-bold-r-12.0"
+endObjectProperties
+
 # (Group)
 object activeGroupClass
 beginObjectProperties
 major 4
 minor 0
 release 0
-x 15
-y 520
-w 175
-h 195
+x 10
+y 595
+w 165
+h 20
 
 beginGroup
 
@@ -817,17 +842,18 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
-y 695
-w 80
-h 20
+x 10
+y 600
+w 60
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Size (eV)"
+  "Excitation"
 }
+autoSize
 endObjectProperties
 
 # (Textentry)
@@ -836,11 +862,11 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 95
-y 695
+x 75
+y 595
 w 45
 h 20
-controlPv "$(P)$(R)STEP_SIZE"
+controlPv "$(P)$(R)EXCITATION_ENERGY"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -854,11 +880,11 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 145
-y 695
-w 45
+x 125
+y 595
+w 50
 h 20
-controlPv "$(P)$(R)STEP_SIZE_RBV"
+controlPv "$(P)$(R)EXCITATION_ENERGY_RBV"
 fgColor index 16
 fgAlarm
 bgColor index 10
@@ -867,24 +893,25 @@ font "arial-bold-r-12.0"
 fontAlign "center"
 endObjectProperties
 
-# (Textupdate)
-object TextupdateClass
+endGroup
+
+visPv "$(P)$(R)ENERGY_MODE"
+visMin "0"
+visMax "1"
+endObjectProperties
+
+# (Group)
+object activeGroupClass
 beginObjectProperties
-major 10
+major 4
 minor 0
 release 0
-x 65
-y 570
-w 95
+x 10
+y 545
+w 165
 h 20
-controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
-fgColor index 16
-fgAlarm
-bgColor index 10
-fill
-font "arial-bold-r-12.0"
-fontAlign "center"
-endObjectProperties
+
+beginGroup
 
 # (Static Text)
 object activeXTextClass
@@ -892,8 +919,8 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
-y 575
+x 10
+y 550
 w 37
 h 14
 font "arial-bold-r-12.0"
@@ -901,7 +928,7 @@ fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Width"
+  "Fixed "
 }
 autoSize
 endObjectProperties
@@ -912,11 +939,11 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 65
+x 55
 y 545
-w 45
+w 55
 h 20
-controlPv "$(P)$(R)HIGH_ENERGY"
+controlPv "$(P)$(R)CENTRE_ENERGY"
 fgColor index 25
 fgAlarm
 bgColor index 3
@@ -932,7 +959,144 @@ minor 0
 release 0
 x 115
 y 545
-w 45
+w 60
+h 20
+controlPv "$(P)$(R)CENTRE_ENERGY_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
+endObjectProperties
+
+endGroup
+
+visPv "$(P)$(R)ACQ_MODE_RBV"
+visInvert
+visMin "0"
+visMax "1"
+endObjectProperties
+
+# (Group)
+object activeGroupClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 10
+y 520
+w 190
+h 195
+
+beginGroup
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 145
+y 695
+w 55
+h 20
+controlPv "$(P)$(R)STEP_SIZE_RBV"
+precision 5
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
+endObjectProperties
+
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 85
+y 695
+w 55
+h 20
+controlPv "$(P)$(R)STEP_SIZE"
+precision 5
+fgColor index 25
+fgAlarm
+bgColor index 3
+fill
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 695
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Size (eV)"
+}
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 575
+w 37
+h 14
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Width"
+}
+autoSize
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 55
+y 570
+w 120
+h 20
+controlPv "$(P)$(R)ENERGY_WIDTH_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 115
+y 545
+w 60
 h 20
 controlPv "$(P)$(R)HIGH_ENERGY_RBV"
 fgColor index 16
@@ -943,13 +1107,31 @@ font "arial-bold-r-12.0"
 fontAlign "center"
 endObjectProperties
 
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 55
+y 545
+w 55
+h 20
+controlPv "$(P)$(R)HIGH_ENERGY"
+fgColor index 25
+fgAlarm
+bgColor index 3
+fill
+font "arial-bold-r-12.0"
+endObjectProperties
+
 # (Static Text)
 object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
+x 10
 y 550
 w 29
 h 14
@@ -971,7 +1153,7 @@ minor 0
 release 0
 x 115
 y 520
-w 45
+w 60
 h 20
 controlPv "$(P)$(R)LOW_ENERGY_RBV"
 fgColor index 16
@@ -988,9 +1170,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 65
+x 55
 y 520
-w 45
+w 55
 h 20
 controlPv "$(P)$(R)LOW_ENERGY"
 fgColor index 25
@@ -1006,7 +1188,7 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 15
+x 10
 y 525
 w 28
 h 14
@@ -1025,107 +1207,5 @@ endGroup
 visPv "$(P)$(R)ACQ_MODE_RBV"
 visMin "0"
 visMax "1"
-endObjectProperties
-
-# (Group)
-object activeGroupClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 15
-y 545
-w 145
-h 20
-
-beginGroup
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 115
-y 545
-w 45
-h 20
-controlPv "$(P)$(R)CENTRE_ENERGY_RBV"
-fgColor index 16
-fgAlarm
-bgColor index 10
-fill
-font "arial-bold-r-12.0"
-fontAlign "center"
-endObjectProperties
-
-# (Textentry)
-object TextentryClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 65
-y 545
-w 45
-h 20
-controlPv "$(P)$(R)CENTRE_ENERGY"
-fgColor index 25
-fgAlarm
-bgColor index 3
-fill
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 15
-y 550
-w 41
-h 14
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Centre "
-}
-autoSize
-endObjectProperties
-
-endGroup
-
-visPv "$(P)$(R)ACQ_MODE_RBV"
-visInvert
-visMin "0"
-visMax "1"
-endObjectProperties
-
-# (Message Button)
-object activeMessageButtonClass
-beginObjectProperties
-major 4
-minor 0
-release 0
-x 215
-y 695
-w 160
-h 20
-fgColor index 24
-onColor index 3
-offColor index 3
-topShadowColor index 1
-botShadowColor index 11
-controlPv "$(P)$(R)ZERO_SUPPLIES"
-pressValue "1"
-releaseValue "0"
-onLabel "Zero Supplies"
-offLabel "Zero Supplies"
-3d
-font "arial-bold-r-12.0"
 endObjectProperties
 
