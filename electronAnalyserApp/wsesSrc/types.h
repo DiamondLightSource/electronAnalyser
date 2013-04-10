@@ -40,9 +40,6 @@ namespace SESWrapperNS
     int lastYChannel_; /*!< Specifies the last Y channel to be used on the detector. */
     int slices_; /*!< Specifies the current number of Y channels (slices). */
     bool adcMode_; /*!< Specifies whether the detector is running in ADC mode, or Pulse Counting mode */
-    // added by Fajin Yuan @2011/01/07 to reflect SesNS::WDetector
-    int adcMask_;
-    int discLevel_; 
   } DetectorRegion;
 
   /*! \brief Pointer to a DetectorRegion struct. */
@@ -60,8 +57,6 @@ namespace SESWrapperNS
   */
   typedef struct WAnalyzerRegion
   {
-    // added by Fajin Yuan 2011/01/07 to expose setting in SesNS::WRegion
-    bool kinetic_; /*!< Defines whether binding energy (0=No) or kinetic energy (1=YES) to be used for the energy scale of the spectrum. */
     bool fixed_; /*!< Determines if the region will be measured in fixed (\c true) or swept (\c false) mode. This is a one-byte boolean. The value can be set to 1 (for \c true) or 0 (for \c false). */
     double highEnergy_; /*!< Specifies the high-end energy (eV) for swept mode acquisition. */
     double lowEnergy_; /*!< Specifies the low-end energy (eV) for swept mode acquisition. */
