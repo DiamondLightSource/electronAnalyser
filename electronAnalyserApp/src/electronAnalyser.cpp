@@ -80,8 +80,6 @@ static const char *driverName = "electronAnalyser";
 #define DetectorLastYChannelString  "LAST_Y_CHANNELS"
 #define DetectorSlicesString    	"DETECTOR_SLICES"
 #define DetectorModeString 			"DETECTOR_MODE"
-#define DetectorDiscriminatorLevelString "DETECTOR_DISC_LEVEL"
-#define DetectorADCMaskString		"DETECTOR_ADC_MASK"
 /* Analyser Region */
 #define AnalyzerAcquisitionModeString "ACQUISITION_MODE"
 #define AnalyzerHighEnergyString 	"HIGH_ENERGY"
@@ -89,6 +87,7 @@ static const char *driverName = "electronAnalyser";
 #define AnalyzerCenterEnergyString 	"CENTER_ENERGY"
 #define AnalyzerEnergyStepString 	"ENERGY_STEP"
 #define AnalyzerDwellTimeString 	"DWELL_TIME"
+#define ExcitationEnergyString		"EXCITATION_ENERGY"
 /* Energy Scale */
 #define EnergyModeString 			"ENERGY_MODE"
 #define RunModeString 				"RUN_MODE"
@@ -180,8 +179,6 @@ class ElectronAnalyser: public ADDriver
 		int DetectorLastYChannel;	/**< (asynInt32,    	r/w) Specifies the last Y channel to be used on the detector. */
 		int DetectorSlices;			/**< (asynInt32,    	r/w) Specifies the current number of Y channels (slices). */
 		int DetectorMode;			/**< (asynInt32,    	r/w) Specifies whether the detector is running in ADC mode (1=YES), or Pulse Counting mode (0=No).*/
-		int DetectorDiscriminatorLevel;/**< (asynInt32,    	r/w) Specifies the detector discriminator level.*/
-		int DetectorADCMask;		/**< (asynInt32,    	r/w) Specifies the detector ADC mask. */
 		/* Analyser Region */
 		int AnalyzerAcquisitionMode;/**< (asynInt32,    	r/w) Determines if the region will be measured in fixed (1=YES) or swept (0=NO) mode. */
 		int AnalyzerHighEnergy;		/**< (asynFloat64,  	r/w) Specifies the high-end kinetic energy (eV) for swept mode acquisition. */
@@ -189,6 +186,7 @@ class ElectronAnalyser: public ADDriver
 		int AnalyzerCenterEnergy;	/**< (asynFloat64,  	r/w) Specifies the center energy (eV) for fixed mode acquisition (the low and high end energies is calculated from this value and the current pass energy). */
 		int AnalyzerEnergyStep;		/**< (asynFloat64,  	r/w) Specifies the energy step size (eV) for swept mode acquisition. */
 		int AnalyzerDwellTime;		/**< (asynInt32,  	r/w) Specifies the dwell time (ms) for fixed or swept mode acquisition. */
+		int ExcitationEnergy;		/**< (asynInt32,  		r/w) Specifies the excitation energy (eV) */
 		/* Energy Scale */
 		int EnergyMode;				/**< (asynInt32,    	r/w) Determines if the energy scale is in Kinetic (1=YES) or Binding (0=NO) mode. */
 		int RunMode;				/**< (asynInt32, 		r/w) selects how software should perform the acquisition and save data.*/
@@ -257,6 +255,10 @@ class ElectronAnalyser: public ADDriver
 		epicsEventId stopEventId;
 
 		/* Analyser specific parameters */
+		virtual asynStatus getExcitationEnergy(double *excitationEnergy);
+		virtual asynStatus setExcitationEnergy(const double excitationEnergy);
+		virtual asynStatus getBindingEnergy(double *bindingEnergy);
+		virtual asynStatus setBindingEnergy(const double bindingEnergy);
 		virtual asynStatus getKineticEnergy(double *kineticEnergy);
 		virtual asynStatus setKineticEnergy(const double kineticEnergy);
 		virtual asynStatus getElementVoltage(const char *elementName, double *voltage);
@@ -265,8 +267,6 @@ class ElectronAnalyser: public ADDriver
 
 		virtual asynStatus setAcquisitionMode(const bool b);
 		virtual asynStatus getAcquisitionMode(bool *b);
-		virtual asynStatus setEnergyMode(const bool b);
-		virtual asynStatus getEnergyMode(bool *b);
 
 		virtual asynStatus start();
 		virtual asynStatus stop();
@@ -318,6 +318,8 @@ class ElectronAnalyser: public ADDriver
 		virtual asynStatus setTempFileName(const char *value);
 		virtual asynStatus getResetDataBetweenIterations(bool * value);
 		virtual asynStatus setResetDataBetweenIterations(const bool * value);
+		virtual asynStatus setUseBindingEnergy(int index, const void *value);
+		virtual asynStatus getUseBindingEnergy(int index, void *value, int &size);
 
 		/* Access methods to Data Parameters */
 		virtual asynStatus getAcqChannels(int & channels);
@@ -471,8 +473,6 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(DetectorLastYChannelString, asynParamInt32, &DetectorLastYChannel);
 	createParam(DetectorSlicesString, asynParamInt32, &DetectorSlices);
 	createParam(DetectorModeString, asynParamInt32, &DetectorMode);
-	createParam(DetectorDiscriminatorLevelString, asynParamInt32, &DetectorDiscriminatorLevel);
-	createParam(DetectorADCMaskString, asynParamInt32, &DetectorADCMask);
 	/* Analyser Region */
 	createParam(AnalyzerAcquisitionModeString, asynParamInt32, &AnalyzerAcquisitionMode);
 	createParam(AnalyzerHighEnergyString, asynParamFloat64, &AnalyzerHighEnergy);
@@ -480,6 +480,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(AnalyzerCenterEnergyString, asynParamFloat64, &AnalyzerCenterEnergy);
 	createParam(AnalyzerEnergyStepString, asynParamFloat64, &AnalyzerEnergyStep);
 	createParam(AnalyzerDwellTimeString, asynParamInt32, &AnalyzerDwellTime);
+	createParam(ExcitationEnergyString, asynParamFloat64, &ExcitationEnergy);
 	/* Energy Scale */
 	createParam(EnergyModeString, asynParamInt32, &EnergyMode);
 	createParam(RunModeString, asynParamInt32, &RunMode);
@@ -622,7 +623,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(NDAutoIncrement, 1);
 	status |= setDoubleParam(ADTemperature, m_dTemperature);
 
-	/* Electron analySer specific parameters */
+	/* Electron analyser specific parameters */
 	status |= setIntegerParam(AlwaysDelayRegion, m_bAlwaysDelayRegion?1:0);
 	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
@@ -738,7 +739,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		}
 		else
 		{
-			/* In swept mode, the data will be Number of Channels x Number of Slices */
+			/* In swept mode, the data will be Number of Channels x Number of Slices (lead-in data points are not included) */
 			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
 			getIntegerParam(NumChannels, &dims[0]);
 		}
@@ -980,13 +981,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 							real_point++;
 							this->getAcqSpectrum(this->spectrum, channels);
 							this->getAcqImage(this->acq_image, ImageSize);
-							this->getAcqIOData(this->acq_data, ImageSize);
+							//this->getAcqIOData(this->acq_data, ImageSize);
 							//this->getAcqRawImage(this->acq_image, ImageSize);
 
 							this->lock();
 							status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 							status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-							status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
+							//status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 							callParamCallbacks();
 							this->unlock();
 						}
@@ -1080,7 +1081,10 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 	/* Summary of settings */
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Energy Mode = %d\n", driverName, functionName, analyzer.kinetic_);
+	bool BindingMode = false;
+	int dummySize = 0;
+	getUseBindingEnergy(0, &BindingMode, dummySize);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Binding Mode = %d\n", driverName, functionName, BindingMode);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Mode = %d\n\n", driverName, functionName, detector.adcMode_);
 
 	getPassEnergy(-1,m_dCurrentPassEnergy);
@@ -1191,6 +1195,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	char message[MAX_MESSAGE_SIZE];
 	int size = 0;
 	int OldValue;
+	bool BindingMode = false;
 
 	// parameters for functions
 	int adstatus;
@@ -1226,9 +1231,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			m_bAllowIOWithDetector = false;
 		}
 		this->setAllowIOWithDetector(&m_bAllowIOWithDetector);
-	} else if (function == DetectorFirstXChannel) {
+	}
+	/*else if (function == DetectorFirstXChannel) {
 		if (value < 0 || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADMinX, OldValue);
@@ -1238,7 +1244,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == DetectorLastXChannel){
 		if (value < detector.firstXChannel_ || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d\n", detector.firstXChannel_,detectorInfo.xChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between %d and %d\n", detector.firstXChannel_,detectorInfo.xChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeX, OldValue);
@@ -1248,7 +1254,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == DetectorFirstYChannel){
 		if (value < 0 || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADMinY, OldValue);
@@ -1258,7 +1264,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == DetectorLastYChannel){
 		if (value < detector.firstYChannel_ || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between %d and %d\n", detector.firstYChannel_,detectorInfo.yChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between %d and %d\n", detector.firstYChannel_,detectorInfo.yChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeY, OldValue);
@@ -1266,9 +1272,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			detector.lastYChannel_=value;
 			setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
-	} else if (function == DetectorSlices){
+	}*/
+	else if (function == DetectorSlices){
 		if (value < 1 || value > detectorInfo.maxSlices_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between 1 and %d\n", detectorInfo.maxSlices_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d\n", detectorInfo.maxSlices_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			detector.slices_ = OldValue;
@@ -1299,13 +1306,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		 * data collected will be monochrome */
 		setIntegerParam(NDColorMode, NDColorModeMono);
 	}
-	else if (function == DetectorDiscriminatorLevel) {
-		//TODO any constrains?
-		detector.discLevel_=value;
-	} else if (function == DetectorADCMask){
-		//TODO any constrains?
-		detector.adcMask_=value;
-	} else if (function == AnalyzerAcquisitionMode){
+	else if (function == AnalyzerAcquisitionMode){
 		if (value)
 		{
 			// use fixed mode
@@ -1323,13 +1324,15 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		{
 			// use Kinetic energy scale
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the energy mode = Kinetic\n", driverName, functionName);
-			analyzer.kinetic_ = true;
+			BindingMode = false;
+			setUseBindingEnergy(0, &BindingMode);
 		}
 		else
 		{
 			// use Binding energy scale
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Binding\n", driverName, functionName);
-			analyzer.kinetic_ = false;
+			BindingMode = true;
+			setUseBindingEnergy(0, &BindingMode);
 		}
 	} else if (function == AnalyzerDwellTime){
 		if (value <= 0) {
@@ -1352,24 +1355,19 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		getElementSetCount(size);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d elements are available to use\n", driverName, functionName, size);
 		if (value < size) {
-
-			/* There is a problem in reading element sets from the current data file.  High is returned as 'Hig' and so creates error
-			   when calling setElementSet(Hig).  Hard coding to 'High' there is no error - speaking to VG about this */
-
-			/*const char * readElement;
+			const char * readElement;
 			for(int eli = 0; eli < size; eli++)
 			{
 				readElement = m_Elementsets.at(eli).c_str();
-				printf("\nElement at %d is = %s\n\n", eli, readElement);
-			}*/
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\nElement at %d is = %s\n", eli, readElement);
+			}
 			const char * elementSet = m_Elementsets.at(value).c_str();
-			//const char * elementSet = "High";
 			// set element set to Library
 			this->setElementSet(elementSet);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
 		} else {
 			// out of index
-			epicsSnprintf(message, sizeof(message), "set 'Element_Set' failed, index must be between 0 and %d\n", size);
+			epicsSnprintf(message, sizeof(message), "Set 'Element_Set' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
@@ -1382,7 +1380,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			this->setLensMode(lensMode);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting lens mode to %s\n", driverName, functionName, lensMode);
 		} else {
-			epicsSnprintf(message, sizeof(message), "set 'Lens_Mode' failed, index must be between 0 and %d\n", size);
+			epicsSnprintf(message, sizeof(message), "Set 'Lens_Mode' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
@@ -1394,15 +1392,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			this->setPassEnergy(&passEnergy);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting pass energy to %f eV\n", driverName, functionName, passEnergy);
 			/* Update total points at this point so the value is known to the user before an acquisition is started */
-			this->setAnalyzerRegion(&analyzer);
 			int steps=0;
 			double dtime=0;
 			double minEnergyStep=0;
 			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", steps, dtime);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
 			setIntegerParam(TotalPoints, steps);
 		} else {
-			epicsSnprintf(message, sizeof(message), "set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
+			epicsSnprintf(message, sizeof(message), "Set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
@@ -1434,10 +1431,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		// no action, value used by get IO spectrum call and get port name call.
 	} else if (function == ADMinX){
 		if (value < 0 || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(DetectorFirstXChannel, OldValue);
+			setIntegerParam(ADMinX, OldValue);
 		} else {
 			detector.firstXChannel_=value;
 			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
@@ -1445,10 +1442,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == ADMinY){
 		if (value < 0 || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(DetectorFirstYChannel, OldValue);
+			setIntegerParam(ADMinY, OldValue);
 		} else {
 			detector.firstYChannel_=value;
 			setIntegerParam(DetectorFirstYChannel,detector.firstYChannel_);
@@ -1456,10 +1453,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == ADSizeX){
 		if (value > detectorInfo.xChannels_ - detector.firstXChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be less than %d\n", detectorInfo.xChannels_-detector.firstXChannel_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be less than %d\n", detectorInfo.xChannels_-detector.firstXChannel_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(DetectorLastXChannel, OldValue);
+			setIntegerParam(ADSizeX, OldValue);
 		} else {
 			detector.lastXChannel_=value - detector.firstXChannel_;
 			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
@@ -1467,10 +1464,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == ADSizeY){
 		if (value > detectorInfo.yChannels_ - detector.firstYChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "set failed, value must be less than %d\n", detectorInfo.yChannels_ - detector.firstYChannel_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be less than %d\n", detectorInfo.yChannels_ - detector.firstYChannel_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(DetectorLastYChannel, OldValue);
+			setIntegerParam(ADSizeY, OldValue);
 		} else {
 			detector.lastYChannel_=value - detector.firstYChannel_;
 			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
@@ -1494,6 +1491,17 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value == 1)
 		{
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Resetting power supplies....\n\n", driverName, functionName);
+
+			int AcquisitionState = 0;
+			getIntegerParam(ADAcquire, &AcquisitionState);
+
+			/* You can't zero the power supplies during an acquisition */
+			/* If an acquisition is running, set the EPICS stopEvent to abort it first */
+			if(AcquisitionState == 1)
+			{
+				epicsEventSignal(this->stopEventId);
+			}
+			setStringParam(ADStatusMessage, "Power supplies reset");
 			zeroSupplies();
 		}
 	}
@@ -1554,6 +1562,9 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		analyzer.dwellTime_ = int(value * 1000);
 		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nanalyzer dwell time = %d\n\n", driverName, functionName, analyzer.dwellTime_);
+	} else if (function == ExcitationEnergy){
+		setExcitationEnergy(value);
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nExcitation Energy = %f eV\n\n", driverName, functionName, value);
 	} else {
 		/* If this parameter belongs to a base class call its method */
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
@@ -1565,7 +1576,8 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	double dtime=0;
 	double minEnergyStep=0;
 	ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", steps, dtime);
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
 	setIntegerParam(TotalPoints, steps);
 
 	/* Do callbacks so higher layers see any changes */
@@ -1936,27 +1948,6 @@ asynStatus ElectronAnalyser::getAcquisitionMode(bool *b){
 	*b = this->analyzer.fixed_;
 	return asynSuccess;
 }
-/**
- * @brief Changes the energy mode of analyzer region definition.
- *
- * This setting only applies to hardware library at initAcquisition().
- *
- * @param[in] b @c true for kinetic energy, @c false for binding energy
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::setEnergyMode(const bool b){
-	this->analyzer.kinetic_=b;
-	return asynSuccess;
-}
-/**
- * @brief gets the current energy mode of the analyzer
- * @param b @c true for kinetic energy, @c false for binding energy
- * @return always asynSuccess
- */
-asynStatus ElectronAnalyser::getEnergyMode(bool *b){
-	*b=this->analyzer.kinetic_;
-	return asynSuccess;
-}
 
 /// ######################## integration methods ######################
 /**
@@ -1988,7 +1979,10 @@ asynStatus ElectronAnalyser::start()
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer center energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer high energy = %f\n", driverName, functionName, analyzer.highEnergy_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer fixed = %d\n", driverName, functionName, analyzer.fixed_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer kinetic = %d\n", driverName, functionName, analyzer.kinetic_);
+	bool BindingMode = false;
+	int dummySize = 0;
+	getUseBindingEnergy(0, &BindingMode, dummySize);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Binding Energy Mode = %d\n", driverName, functionName, BindingMode);
 
 	this->setAnalyzerRegion(&analyzer);
 	//err = ses->setProperty("analyzer_region", 0, &analyzer);
@@ -2148,7 +2142,7 @@ asynStatus ElectronAnalyser::getLensModeList(NameVector *pLensModeList)
 	for(i = 0; i < NumLens; i++)
 	{
 		char lens[MAX_STRING_SIZE];
-		int size  = 30;
+		int size = 30;
 
 		err = ses->getProperty("lens_mode", i, lens, size); // ther is not @c lens_mode_from_index defined in the wrapper
 		if (isError(err, functionName))
@@ -3478,4 +3472,114 @@ asynStatus ElectronAnalyser::getAcqIOPortName(int index, char * pName, int & siz
 	return asynSuccess;
 }
 
+/*!
+ * Changes the excitation energy.
+ *
+ * @param[in] excitationEnergy The excitation energy (in eV) to be set.
+ * @return asynError if excitation energy can not be set, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::setExcitationEnergy(const double excitationEnergy)
+{
+	const char * functionName = "setExcitationEnergy(const double excitationEnergy)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
+	int err =  ses->setExcitationEnergy(excitationEnergy);
+    if(isError(err, functionName)) return asynError;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
+	return asynSuccess;
+}
 
+/*!
+ * Reads the current excitation energy from the SESInstrument library.
+ *
+ * @param[out] excitationEnergy Pointer to a double to be modified with the current excitation energy.
+ * @return asynError if excitation energy can not be read, otherwise asynSuccess
+ */
+asynStatus ElectronAnalyser::getExcitationEnergy(double *excitationEnergy)
+{
+	const char * functionName = "getExcitationEnergy(double *excitationEnergy)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
+	int err = ses->getExcitationEnergy(excitationEnergy);
+    if(isError(err, functionName)) return asynError;
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting...\n", driverName, functionName);
+	return asynSuccess;
+}
+
+/*!
+ * Reads the current kinetic energy from the SESInstrument library and converts it to binding energy before returning.
+ * \warning If the excitation energy has not been set before calling this function, the result is undefined.
+ *
+ * \param[out] bindingEnergy Pointer to a double to be modified with the current binding energy.
+ *
+ * \return WError::ERR_NO_INSTRUMENT if loadInstrument() has not been called, WError::ERR_FAIL
+ *         if the energy could not be read, otherwise WError::ERR_OK.
+ */
+asynStatus ElectronAnalyser::getBindingEnergy(double *bindingEnergy)
+{
+	const char * functionName = "getBindingEnergy(double *bindingEnergy)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
+	int err = ses->getBindingEnergy(bindingEnergy);
+    if(isError(err, functionName)) return asynError;
+    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting...\n", driverName, functionName);
+	return asynSuccess;
+}
+
+/*!
+ * Changes the binding energy.
+ * \warning If the excitation energy has not been set before calling this function, the result is undefined.
+ *
+ * \param[in] bindingEnergy The binding energy (in eV) to be set.
+ *
+ * \return WError::ERR_NO_INSTRUMENT if loadInstrument() has not been called, WError::ERR_FAIL
+ *         if the energy could not be read, otherwise WError::ERR_OK.
+ */
+asynStatus ElectronAnalyser::setBindingEnergy(const double bindingEnergy)
+{
+	const char * functionName = "setBindingEnergy(const double bindingEnergy)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering....\n", driverName, functionName);
+	int err =  ses->setBindingEnergy(bindingEnergy);
+    if(isError(err, functionName)) return asynError;
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exiting....\n", driverName, functionName);
+	return asynSuccess;
+}
+
+/*!
+ * Setter for the \c use_binding_energy property.
+ * \warning If you set this to \c true, you must also set the excitation energy.
+ *
+ * \param[in] index Not used.
+ * \param[in] value A pointer to a 1-byte boolean.
+ *
+ * \return Always returns WError::ERR_OK.
+ */
+asynStatus ElectronAnalyser::setUseBindingEnergy(int index, const void *value)
+{
+	const char * functionName = "setUseBindingEnergy(int index, const void *value)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
+	int err = ses->setProperty("use_binding_energy", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
+	return asynSuccess;
+}
+
+/*!
+ * Getter for the \c use_binding_energy property.
+ *
+ * \param[in] index Not used.
+ * \param[out] value A pointer to a 1-byte boolean. Set to \c true when the energies in the analyzer region are assumed to be given as binding energies.
+ * \param[in,out] size Not used.
+ *
+ * \return Always returns WError::ERR_OK.
+ */
+asynStatus ElectronAnalyser::getUseBindingEnergy(int index, void *value, int &size)
+{
+	const char * functionName = "getUseBindingEnergy(int index, void *value, int &size)";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
+	int err = ses->getProperty("use_binding_energy", 0, value);
+	if(isError(err, functionName)){
+		return asynError;
+	}
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
+	return asynSuccess;
+}
