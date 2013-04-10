@@ -81,6 +81,7 @@ record(calcout, "$(P)$(R)ACQ_MODE_CALC")
 {
   field(DESC, "Trigger in swept mode")
   field(CALC, "A")
+  field(PINI, "YES")
   field(INPA, "$(P)$(R)ACQ_MODE")
   field(OUT,  "$(P)$(R)ACQ_MODE_PROCESS PP")
   field(OOPT, "When Zero")
