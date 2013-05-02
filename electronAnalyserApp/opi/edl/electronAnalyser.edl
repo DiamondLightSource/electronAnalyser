@@ -601,13 +601,13 @@ minor 1
 release 0
 x 5
 y 725
-w 51
+w 66
 h 14
 font "arial-medium-r-12.0"
 fgColor index 14
 bgColor index 5
 value {
-  "  Status   "
+  "  Progress   "
 }
 autoSize
 border
@@ -620,54 +620,17 @@ major 4
 minor 1
 release 0
 x 10
-y 740
-w 80
-h 20
+y 745
+w 90
+h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Current Point"
+  "Current Region"
 }
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 165
-y 740
-w 80
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Progress"
-}
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 305
-y 740
-w 80
-h 20
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "Total Points"
-}
+autoSize
 endObjectProperties
 
 # (Bar)
@@ -676,70 +639,19 @@ beginObjectProperties
 major 4
 minor 1
 release 0
-x 10
-y 780
-w 370
-h 25
-indicatorColor index 25
+x 90
+y 795
+w 215
+h 15
+indicatorColor index 40
+indicatorAlarm
 fgColor index 14
 bgColor index 3
 indicatorPv "$(P)$(R)PROGRESS_RBV"
 font "arial-bold-r-12.0"
-border
 min "0"
 max "100"
 scaleFormat "FFloat"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 55
-y 755
-w 75
-h 25
-controlPv "$(P)$(R)CURRENT_CHANNEL_RBV"
-fgColor index 19
-fgAlarm
-bgColor index 3
-font "arial-bold-r-14.0"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 175
-y 755
-w 45
-h 25
-controlPv "$(P)$(R)PROGRESS_RBV"
-fgColor index 19
-fgAlarm
-bgColor index 3
-font "arial-bold-r-14.0"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 310
-y 755
-w 70
-h 25
-controlPv "$(P)$(R)TOTAL_POINTS_RBV"
-fgColor index 19
-fgAlarm
-bgColor index 3
-font "arial-bold-r-14.0"
 endObjectProperties
 
 # (Textupdate)
@@ -1207,5 +1119,147 @@ endGroup
 visPv "$(P)$(R)ACQ_MODE_RBV"
 visMin "0"
 visMax "1"
+endObjectProperties
+
+# (Bar)
+object activeBarClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 90
+y 760
+w 215
+h 15
+indicatorColor index 30
+indicatorAlarm
+fgColor index 14
+bgColor index 3
+indicatorPv "$(P)$(R)REGION_PROGRESS_RBV"
+font "arial-bold-r-12.0"
+min "0"
+max "100"
+scaleFormat "FFloat"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 40
+y 755
+w 75
+h 25
+controlPv "$(P)$(R)CURRENT_POINT_RBV"
+fgColor index 14
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 755
+w 45
+h 25
+controlPv "$(P)$(R)REGION_PROGRESS_RBV"
+fgColor index 14
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 40
+y 790
+w 75
+h 25
+controlPv "$(P)$(R)CURRENT_CHANNEL_RBV"
+fgColor index 14
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 790
+w 45
+h 25
+controlPv "$(P)$(R)PROGRESS_RBV"
+fgColor index 14
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 780
+w 43
+h 14
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Overall"
+}
+autoSize
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 340
+y 790
+w 70
+h 25
+controlPv "$(P)$(R)TOTAL_POINTS_RBV"
+fgColor index 14
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 340
+y 755
+w 70
+h 25
+controlPv "$(P)$(R)TOTAL_POINTS_ITERATION_RBV"
+fgColor index 14
+fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
 endObjectProperties
 
