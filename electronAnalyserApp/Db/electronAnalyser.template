@@ -447,6 +447,17 @@ record(ai, "$(P)$(R)PROGRESS_RBV")
   field(EGU,  "%")
 }
 
+# Progress of data collection in percent
+record(ai, "$(P)$(R)REGION_PROGRESS_RBV") 
+{
+  field(DESC, "Region Progress")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)REGION_PERCENT_COMPLETE")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+  field(EGU,  "%")
+}
+
 record(ai, "$(P)$(R)NUM_CHANNELS_RBV") 
 {
   field(DESC, "Number of Channels")
@@ -456,12 +467,62 @@ record(ai, "$(P)$(R)NUM_CHANNELS_RBV")
   field(PREC, "0")
 }
 
-# Number of current data point being collected
+# Number of current point being collected
 record(ai, "$(P)$(R)CURRENT_CHANNEL_RBV") 
 {
   field(DESC, "Current Acq Channel")
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT) 0)CURRENT_CHANNEL")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Number of current point in a region being collected
+record(ai, "$(P)$(R)CURRENT_POINT_RBV") 
+{
+  field(DESC, "Current Point")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)CURRENT_POINT")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Number of current data point being collected
+record(ai, "$(P)$(R)CURRENT_DATA_POINT_RBV") 
+{
+  field(DESC, "Current Data Point")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)CURRENT_DATA_POINT")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Total number of data points in iteration
+record(ai, "$(P)$(R)TOTAL_DATA_POINTS_RBV") 
+{
+  field(DESC, "Total Data Points")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)TOTAL_DATA_POINTS")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Number of current lead point being collected
+record(ai, "$(P)$(R)CURRENT_LEAD_POINT_RBV") 
+{
+  field(DESC, "Current Lead Point")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)CURRENT_LEAD_POINT")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Total number of lead points in iteration
+record(ai, "$(P)$(R)TOTAL_LEAD_POINTS_RBV") 
+{
+  field(DESC, "Total Lead Points")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)TOTAL_LEAD_POINTS")
   field(SCAN, "I/O Intr")
   field(PREC, "0")
 }
@@ -473,6 +534,28 @@ record(ai, "$(P)$(R)TOTAL_POINTS_RBV")
   field(DESC, "Total Acq Points")
   field(DTYP, "asynInt32")
   field(INP,  "@asyn($(PORT) 0)TOTAL_POINTS")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Total number of data points to be 
+# collected within an iteration
+record(ai, "$(P)$(R)TOTAL_POINTS_ITERATION_RBV") 
+{
+  field(DESC, "Total Iteration Acq Points")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)TOTAL_POINTS_ITERATION")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
+# Marks whether data is leading in or not
+# 0 = Real Data, 1 = Leading In
+record(ai, "$(P)$(R)LEADING_IN_RBV") 
+{
+  field(DESC, "Leading In State")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)LEADING_IN")
   field(SCAN, "I/O Intr")
   field(PREC, "0")
 }
