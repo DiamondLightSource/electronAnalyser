@@ -128,10 +128,18 @@ static const char *driverName = "electronAnalyser";
 #define AcqIODataString 			"ACQ_IO_DATA"
 #define AcqIOPortNameString 		"ACQ_IO_PORT_NAME"
 #define PercentCompleteString		"PERCENT_COMPLETE"
+#define RegionPercentCompleteString	"REGION_PERCENT_COMPLETE"
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
+#define CurrentPointString			"CURRENT_POINT"
 #define TotalPointsString			"TOTAL_POINTS"
+#define TotalPointsIterationString  "TOTAL_POINTS_ITERATION"
 #define ZeroSuppliesString			"ZERO_SUPPLIES"
+#define CurrentDataPointString		"CURRENT_DATA_POINT"
+#define TotalDataPointsString		"TOTAL_DATA_POINTS"
+#define CurrentLeadPointString		"CURRENT_LEAD_POINT"
+#define TotalLeadPointsString		"TOTAL_LEAD_POINTS"
+#define LeadingInString				"LEADING_IN"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -227,10 +235,18 @@ class ElectronAnalyser: public ADDriver
 		int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
 		int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
 		int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
+		int CurrentDataPoint;		/**< (asynInt32,    	r/w) current data point*/
+		int CurrentPoint;			/**< (asynInt32,    	r/w) current region point*/
+		int TotalDataPoints;		/**< (asynInt32,    	r/w) total number of data points*/
+		int CurrentLeadPoint;		/**< (asynInt32,    	r/w) current lead point*/
+		int TotalLeadPoints;		/**< (asynInt32,    	r/w) total number of lead in points*/
+		int LeadingIn;				/**< (asynInt32,    	r/w) state whether lead in data is being read out*/
 		int PercentComplete;		/**< (asynInt32,    	r/w) progress of data acquisition in percent*/
+		int RegionPercentComplete;	/**< (asynInt32,    	r/w) progress of region data acquisition in percent*/
 		int CurrentChannel;			/**< (asynInt32,    	r/w) current data acquisition channel*/
 		int NumChannels;			/**< (asynInt32,    	r/w) number of channels to use*/
 		int TotalPoints;			/**< (asynInt32,    	r/w) total number of points to collect*/
+		int TotalPointsIteration;	/**< (asynInt32,    	r/w) total number of points within an iteration to collect*/
 		int ZeroSupplies;			/**< (asynInt32,    	r/w) reset the power supplies to zero*/
 		#define LAST_ELECTRONANALYZER_PARAM ZeroSupplies
 
@@ -522,10 +538,18 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(AcqIODataString, asynParamFloat64Array, &AcqIOData);
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
+	createParam(RegionPercentCompleteString, asynParamInt32, &RegionPercentComplete);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
+	createParam(CurrentPointString, asynParamInt32, &CurrentPoint);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
 	createParam(TotalPointsString, asynParamInt32, &TotalPoints);
+	createParam(TotalPointsIterationString, asynParamInt32, &TotalPointsIteration);
 	createParam(ZeroSuppliesString, asynParamInt32, &ZeroSupplies);
+	createParam(CurrentDataPointString, asynParamInt32, &CurrentDataPoint);
+	createParam(TotalDataPointsString, asynParamInt32, &TotalDataPoints);
+	createParam(CurrentLeadPointString, asynParamInt32, &CurrentLeadPoint);
+	createParam(TotalLeadPointsString, asynParamInt32, &TotalLeadPoints);
+	createParam(LeadingInString, asynParamInt32, &LeadingIn);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -634,6 +658,10 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(PercentComplete, 0);
 	status |= setIntegerParam(CurrentChannel, 0);
 	status |= setIntegerParam(TotalPoints, 0);
+	status |= setIntegerParam(TotalPointsIteration, 0);
+	status |= setIntegerParam(CurrentDataPoint, 0);
+	status |= setIntegerParam(CurrentLeadPoint, 0);
+	status |= setIntegerParam(CurrentPoint, 0);
 
 	updateStatus();
 
@@ -877,12 +905,15 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int channels = 0;
 	int waitTimeout = 0;
 	int PercentCompleteVal = 0;
+	int RegionPercentCompleteVal = 0;
 	int MaxIterations = 1;
 	int i = 0;
 	int j = 0;
 	int CurrentStep = 0;
 	int CurrentChannelVal = 0;
 	int real_point = 1;
+	int lead_in_point = 1;
+	int StartingPoint = 0;
 
 	if (start() != asynSuccess)
 	{
@@ -915,6 +946,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	if (analyzer.fixed_ != true)
 	{
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Swept Mode.  Number of steps = %d\n", driverName, functionName, NumSteps);
+		setIntegerParam(TotalPointsIteration, NumSteps);
 		setIntegerParam(TotalPoints, NumSteps * MaxIterations);
 	}
 	/* If in fixed energy mode the total number of points will be 1 (1 complete image) */
@@ -939,8 +971,15 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
+	StartingPoint = -(NumSteps - channels);
+	setIntegerParam(CurrentPoint, StartingPoint);
 	setIntegerParam(PercentComplete, PercentCompleteVal);
+	setIntegerParam(RegionPercentComplete, 0);
 	setIntegerParam(CurrentChannel, 0);
+	setIntegerParam(CurrentDataPoint, 0);
+	setIntegerParam(CurrentLeadPoint, 0);
+	setIntegerParam(TotalDataPoints, channels);
+	setIntegerParam(TotalLeadPoints, (NumSteps - channels));
 	/* NumChannels is set to ((Energy Width / Energy Step) + 1) when initialised - could be reset to zero although maybe confusing to user? */
 	this->lock();
 	callParamCallbacks();
@@ -955,29 +994,30 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		/* If in swept energy mode.... */
 		if (analyzer.fixed_ != true)
 		{
+			StartingPoint = -(NumSteps - channels);
 			for(j = 0; j < NumSteps; j++)
 			{
 				if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
 				{
 					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
 					{
+
 						/* No timeout */
 						getAcqCurrentStep(CurrentStep);
 						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, NumSteps);
+						StartingPoint++;
+						setIntegerParam(CurrentPoint, StartingPoint);
 
-						/* Update progress bar */
-						PercentCompleteVal = (int)(((double)((i * NumSteps) + CurrentStep) / (NumSteps * MaxIterations)) * 100);
-						CurrentChannelVal = ((i * NumSteps) + CurrentStep);
-						setIntegerParam(PercentComplete, PercentCompleteVal);
-						setIntegerParam(CurrentChannel, CurrentChannelVal);
-						this->lock();
-						callParamCallbacks();
-						this->unlock();
+						setIntegerParam(TotalPointsIteration, NumSteps);
+						setIntegerParam(TotalPoints, NumSteps * MaxIterations);
 
 						/* In certain configurations there will be a number of points taken before the data acquisition begins */
+
 						if(CurrentStep > (NumSteps - channels))
 						{
-							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Data Point %d\n\n", driverName, functionName, real_point);
+							setIntegerParam(LeadingIn, 0);
+							setIntegerParam(CurrentDataPoint, real_point);
+							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Data Point %d of %d\n\n", driverName, functionName, real_point, channels);
 							real_point++;
 							this->getAcqSpectrum(this->spectrum, channels);
 							this->getAcqImage(this->acq_image, ImageSize);
@@ -991,6 +1031,25 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 							callParamCallbacks();
 							this->unlock();
 						}
+						else
+						{
+							setIntegerParam(LeadingIn, 1);
+							setIntegerParam(CurrentLeadPoint, lead_in_point);
+							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Lead In Point %d of %d\n\n", driverName, functionName, lead_in_point, (NumSteps - channels));
+							lead_in_point++;
+						}
+
+						/* Update progress bar */
+						PercentCompleteVal = (int)(((double)((i * NumSteps) + CurrentStep) / (NumSteps * MaxIterations)) * 100);
+						RegionPercentCompleteVal = (int)(((double)CurrentStep / NumSteps) * 100);
+						CurrentChannelVal = ((i * NumSteps) + CurrentStep);
+						setIntegerParam(PercentComplete, PercentCompleteVal);
+						setIntegerParam(RegionPercentComplete, RegionPercentCompleteVal);
+						setIntegerParam(CurrentChannel, CurrentChannelVal);
+						this->lock();
+						callParamCallbacks();
+						this->unlock();
+
 						ses->continueAcquisition();
 					}
 					else
@@ -1024,6 +1083,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 				if (analyzer.fixed_ == true)
 				{
+					setIntegerParam(LeadingIn, 0);
 					/* Update progress bar */
 					PercentCompleteVal = (int)(((double)(i+1) / MaxIterations) * 100);
 					setIntegerParam(PercentComplete, PercentCompleteVal);
@@ -1061,6 +1121,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 		callParamCallbacks();
 		this->unlock();
+
+		real_point = 1;
+		lead_in_point = 1;
 
 		ses->continueAcquisition();
 	}
@@ -1196,6 +1259,10 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	int size = 0;
 	int OldValue;
 	bool BindingMode = false;
+
+	int steps=0;
+	double dtime=0;
+	double minEnergyStep=0;
 
 	// parameters for functions
 	int adstatus;
@@ -1392,12 +1459,12 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			this->setPassEnergy(&passEnergy);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting pass energy to %f eV\n", driverName, functionName, passEnergy);
 			/* Update total points at this point so the value is known to the user before an acquisition is started */
-			int steps=0;
-			double dtime=0;
-			double minEnergyStep=0;
 			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
-			setIntegerParam(TotalPoints, steps);
+			int MaxIterations = 1;
+			getIntegerParam(ADNumExposures, &MaxIterations);
+			setIntegerParam(TotalPointsIteration, steps);
+			setIntegerParam(TotalPoints, steps * MaxIterations);
 		} else {
 			epicsSnprintf(message, sizeof(message), "Set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
@@ -1474,9 +1541,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(NDArraySizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
 	} else if (function == ADNumExposures) {
-		if (value < 1 || value > 100)
+		if (value < 1 || value > 10000)
 		{
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be greater than 0 and less than 100\n");
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and 10000\n");
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADNumExposures, OldValue);
@@ -1484,6 +1551,12 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		else
 		{
 			setIntegerParam(ADNumExposures, value);
+			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
+			int MaxIterations = 1;
+			getIntegerParam(ADNumExposures, &MaxIterations);
+			setIntegerParam(TotalPointsIteration, steps);
+			setIntegerParam(TotalPoints, steps * MaxIterations);
 		}
 	}
 	else if (function == ZeroSupplies)
@@ -1578,7 +1651,11 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
-	setIntegerParam(TotalPoints, steps);
+
+	int MaxIterations = 1;
+	getIntegerParam(ADNumExposures, &MaxIterations);
+	setIntegerParam(TotalPointsIteration, steps);
+	setIntegerParam(TotalPoints, steps * MaxIterations);
 
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
