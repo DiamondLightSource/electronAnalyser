@@ -409,7 +409,7 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "50000")
+  field(NELM, "50000000")
 }
 
 # Acquired image of data
@@ -420,7 +420,7 @@ record(waveform, "$(P)$(R)IMAGE")
   field(INP,  "@asyn($(PORT) 0)ACQ_IMAGE")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "50000")
+  field(NELM, "50000000")
 }
 
 # Acquired external IO data
@@ -431,7 +431,7 @@ record(waveform, "$(P)$(R)EXTIO")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "50000")
+  field(NELM, "50000000")
 }
 
 ################## Progress ######################

@@ -38,7 +38,7 @@
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
 /* MAX_STRING_SIZE is defined in epicsTypes.h (as 32) */
-#define MAX_MEMORY_SIZE 50000
+#define MAX_MEMORY_SIZE 50000000
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
 
 using namespace std;
