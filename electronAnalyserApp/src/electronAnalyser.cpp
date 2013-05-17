@@ -20,6 +20,8 @@
 #include <sys/stat.h>   // For stat()
 #include <iostream>
 #include <string>
+/* For the ceil command */
+#include <math.h>
 
 /* EPICS includes */
 #include <epicsThread.h>
@@ -768,7 +770,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		else
 		{
 			/* In swept mode, the data will be Number of Channels x Number of Slices (lead-in data points are not included) */
-			setIntegerParam(NumChannels, (int)(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1));
+			setIntegerParam(NumChannels, (int)(ceil(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1)));
 			getIntegerParam(NumChannels, &dims[0]);
 		}
 		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
@@ -801,6 +803,8 @@ void ElectronAnalyser::electronAnalyserTask()
 			{
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was aborted by the user\n",driverName, functionName);
 				setStringParam(ADStatusMessage,	"Acquisition was aborted by the user");
+				acquire = 0;
+				setIntegerParam(ADAcquire, acquire);
 			}
 			/* The acquisition timed out */
 			else
@@ -808,12 +812,12 @@ void ElectronAnalyser::electronAnalyserTask()
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition timed out\n",driverName, functionName);
 				setStringParam(ADStatusMessage,	"Acquisition timed out");
 				setIntegerParam(ADStatus, ADStatusError);
+				/* Reset both acquire and ADAcquire back to zero */
+				acquire = 0;
+				setIntegerParam(ADAcquire, acquire);
+				pImage->release();
+				continue;
 			}
-			/* Reset both acquire and ADAcquire back to zero */
-			acquire = 0;
-			setIntegerParam(ADAcquire, acquire);
-			pImage->release();
-			continue;
 		}
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, dims[0]);
@@ -1070,6 +1074,8 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 					status = asynError;
 					return status;
 				}
+				/* Write all completed iterations to pData */
+				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 			}
 		}
 
