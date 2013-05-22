@@ -14,23 +14,23 @@ SUPPORT=/dls_sw/prod/R3.14.11/support
 # define INSTALL_LOCATION_APP here
 
 # ASYN is needed for sockets and for smartControl
-ASYN=$(SUPPORT)/asyn/4-19
+ASYN=$(SUPPORT)/asyn/4-21
 
 # CALC is needed for scalcout record that SSCAN uses
-CALC=$(SUPPORT)/calc/2-8dls4
+CALC=$(SUPPORT)/calc/3-1
 
 # SSCAN is needed for scanning threshold on Pilatus
-SSCAN=$(SUPPORT)/sscan/2-6-6dls2
+SSCAN=$(SUPPORT)/sscan/2-8-1
 
 # BUSY is needed for busy record
-BUSY=$(SUPPORT)/busy/1-4
+BUSY=$(SUPPORT)/busy/1-4dls1
 
 #AUTOSAVE is needed for save_restore
-AUTOSAVE=$(SUPPORT)/autosave/4-6dls5
+#AUTOSAVE=$(SUPPORT)/autosave/4-6dls5
 
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-10
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-16-1
 
-AREA_DETECTOR=$(SUPPORT)/areaDetector/1-8beta6
+AREA_DETECTOR=$(SUPPORT)/areaDetector/1-9dls1
 
 # EPICS_BASE usually appears last so other apps can override stuff:
 EPICS_BASE=/dls_sw/epics/R3.14.11/base
