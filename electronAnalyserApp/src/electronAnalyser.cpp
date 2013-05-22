@@ -20,6 +20,8 @@
 #include <sys/stat.h>   // For stat()
 #include <iostream>
 #include <string>
+/* Included for the access function - previously included via tiffSupport in areaDetector */
+#include  <io.h>
 /* For the ceil command */
 #include <math.h>
 
@@ -38,7 +40,7 @@
 #define MAX_MESSAGE_SIZE 256
 #define MAX_FILENAME_LEN 256
 /* MAX_STRING_SIZE is defined in epicsTypes.h (as 32) */
-#define MAX_MEMORY_SIZE 50000000
+#define MAX_MEMORY_SIZE 5000000
 #define AD_STATUS_EXTENSION_START_POINT ADStatusWaiting+1
 
 using namespace std;
@@ -702,7 +704,8 @@ void ElectronAnalyser::electronAnalyserTask()
 	epicsTimeStamp startTime, endTime;
 	double elapsedTime;
 	NDArray *pImage;
-	int dims[2];
+	size_t dims[2];
+	int intdims[2];
 	NDDataType_t dataType;
 	//float temperature;
 	const char *functionName = "electronAnalyserTask";
@@ -765,13 +768,17 @@ void ElectronAnalyser::electronAnalyserTask()
 		if (analyzer.fixed_)
 		{
 			/* In fixed mode, the data will be ROI X Size x Number of Slices */
-			getIntegerParam(NDArraySizeX, &dims[0]);
+			//getIntegerParam(NDArraySizeX, &dims[0]);
+			getIntegerParam(NDArraySizeX, &intdims[0]);
+			dims[0] = intdims[0];
 		}
 		else
 		{
 			/* In swept mode, the data will be Number of Channels x Number of Slices (lead-in data points are not included) */
 			setIntegerParam(NumChannels, (int)(ceil(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1)));
-			getIntegerParam(NumChannels, &dims[0]);
+			//getIntegerParam(NumChannels, &dims[0]);
+			getIntegerParam(NumChannels, &intdims[0]);
+			dims[0] = intdims[0];
 		}
 		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
 		dims[1] = detector.slices_;
