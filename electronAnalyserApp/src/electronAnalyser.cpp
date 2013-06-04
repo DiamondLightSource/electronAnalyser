@@ -632,8 +632,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(ADMaxSizeY, detectorInfo.yChannels_);
 	status |= setIntegerParam(ADMinX, detector.firstXChannel_ - 1);
 	status |= setIntegerParam(ADMinY, detector.firstYChannel_ - 1);
-	status |= setIntegerParam(ADSizeX, detector.lastXChannel_ - 1);
-	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - 1);
+	status |= setIntegerParam(ADSizeX, detector.lastXChannel_);
+	status |= setIntegerParam(ADSizeY, detector.lastYChannel_);
 
 	/* Set NDArray parameters */
 	status |= setIntegerParam(NDArraySizeX, detectorInfo.xChannels_);
@@ -925,6 +925,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int real_point = 1;
 	int lead_in_point = 1;
 	int StartingPoint = 0;
+	int whileLoops = 0;
 
 	if (start() != asynSuccess)
 	{
@@ -1008,62 +1009,22 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			StartingPoint = -(NumSteps - channels);
 			for(j = 0; j < NumSteps; j++)
 			{
-				if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
+				whileLoops = 0;
+
+				while(ses->waitForPointReady(50) == WError::ERR_TIMEOUT)
 				{
-					if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
+					/* Data not yet ready, check for abort in the meantime.... */
+					if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
 					{
-
-						/* No timeout */
-						getAcqCurrentStep(CurrentStep);
-						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, NumSteps);
-						StartingPoint++;
-						setIntegerParam(CurrentPoint, StartingPoint);
-
-						setIntegerParam(TotalPointsIteration, NumSteps);
-						setIntegerParam(TotalPoints, NumSteps * MaxIterations);
-
-						/* In certain configurations there will be a number of points taken before the data acquisition begins */
-
-						if(CurrentStep > (NumSteps - channels))
-						{
-							setIntegerParam(LeadingIn, 0);
-							setIntegerParam(CurrentDataPoint, real_point);
-							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Data Point %d of %d\n\n", driverName, functionName, real_point, channels);
-							real_point++;
-							this->getAcqSpectrum(this->spectrum, channels);
-							this->getAcqImage(this->acq_image, ImageSize);
-							//this->getAcqIOData(this->acq_data, ImageSize);
-							//this->getAcqRawImage(this->acq_image, ImageSize);
-
-							this->lock();
-							status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
-							status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-							//status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
-							callParamCallbacks();
-							this->unlock();
-						}
-						else
-						{
-							setIntegerParam(LeadingIn, 1);
-							setIntegerParam(CurrentLeadPoint, lead_in_point);
-							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Lead In Point %d of %d\n\n", driverName, functionName, lead_in_point, (NumSteps - channels));
-							lead_in_point++;
-						}
-
-						/* Update progress bar */
-						PercentCompleteVal = (int)(((double)((i * NumSteps) + CurrentStep) / (NumSteps * MaxIterations)) * 100);
-						RegionPercentCompleteVal = (int)(((double)CurrentStep / NumSteps) * 100);
-						CurrentChannelVal = ((i * NumSteps) + CurrentStep);
-						setIntegerParam(PercentComplete, PercentCompleteVal);
-						setIntegerParam(RegionPercentComplete, RegionPercentCompleteVal);
-						setIntegerParam(CurrentChannel, CurrentChannelVal);
-						this->lock();
-						callParamCallbacks();
-						this->unlock();
-
-						ses->continueAcquisition();
+						/* EPICS Stop event */
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+						setIntegerParam(ADStatus, ADStatusAborted);
+						ses->stopAcquisition();
+						status = asynError;
+						return status;
 					}
-					else
+					whileLoops++;
+					if(whileLoops >= (waitTimeout / 50))
 					{
 						/* Timeout */
 						asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition of data point timed out\n", driverName, functionName);
@@ -1072,62 +1033,109 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						return status;
 					}
 				}
-				else
+				/* Data ready - do acquisition.... */
+
+				if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
 				{
-					/* EPICS Stop event */
-					asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
-					setIntegerParam(ADStatus, ADStatusAborted);
-					ses->stopAcquisition();
-					status = asynError;
-					return status;
+					/* No timeout */
+					getAcqCurrentStep(CurrentStep);
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Point %d of %d ready\n", driverName, functionName, CurrentStep, NumSteps);
+					StartingPoint++;
+					setIntegerParam(CurrentPoint, StartingPoint);
+
+					setIntegerParam(TotalPointsIteration, NumSteps);
+					setIntegerParam(TotalPoints, NumSteps * MaxIterations);
+
+					/* In certain configurations there will be a number of points taken before the data acquisition begins */
+
+					if(CurrentStep > (NumSteps - channels))
+					{
+						setIntegerParam(LeadingIn, 0);
+						setIntegerParam(CurrentDataPoint, real_point);
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Data Point %d of %d\n\n", driverName, functionName, real_point, channels);
+						real_point++;
+						this->getAcqSpectrum(this->spectrum, channels);
+						this->getAcqImage(this->acq_image, ImageSize);
+						//this->getAcqIOData(this->acq_data, ImageSize);
+						//this->getAcqRawImage(this->acq_image, ImageSize);
+
+						this->lock();
+						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+						status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
+						//status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
+						callParamCallbacks();
+						this->unlock();
+					}
+					else
+					{
+						setIntegerParam(LeadingIn, 1);
+						setIntegerParam(CurrentLeadPoint, lead_in_point);
+						asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Lead In Point %d of %d\n\n", driverName, functionName, lead_in_point, (NumSteps - channels));
+						lead_in_point++;
+					}
+
+					/* Update progress bar */
+					PercentCompleteVal = (int)(((double)((i * NumSteps) + CurrentStep) / (NumSteps * MaxIterations)) * 100);
+					RegionPercentCompleteVal = (int)(((double)CurrentStep / NumSteps) * 100);
+					CurrentChannelVal = ((i * NumSteps) + CurrentStep);
+					setIntegerParam(PercentComplete, PercentCompleteVal);
+					setIntegerParam(RegionPercentComplete, RegionPercentCompleteVal);
+					setIntegerParam(CurrentChannel, CurrentChannelVal);
+					this->lock();
+					callParamCallbacks();
+					this->unlock();
+
+					ses->continueAcquisition();
 				}
 				/* Write all completed iterations to pData */
 				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 			}
 		}
 
-		if (epicsEventTryWait(this->stopEventId) != epicsEventWaitOK)
+		whileLoops = 0;
+
+		/* The following if condition needs to be commented out (ie no waitForRegionReady) to work with the I06 analyzer system */
+		while(ses->waitForRegionReady(50) == WError::ERR_TIMEOUT)
 		{
-			/* The following if condition needs to be commented out (ie no waitForRegionReady) to work with the I06 analyzer system */
-			if(ses->waitForRegionReady(waitTimeout) != WError::ERR_TIMEOUT)
+			/* Data not yet ready, check for abort in the meantime.... */
+			if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
 			{
-				/* No timeout */
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
-
-				if (analyzer.fixed_ == true)
-				{
-					setIntegerParam(LeadingIn, 0);
-					/* Update progress bar */
-					PercentCompleteVal = (int)(((double)(i+1) / MaxIterations) * 100);
-					setIntegerParam(PercentComplete, PercentCompleteVal);
-					setIntegerParam(CurrentChannel, i+1);
-					setIntegerParam(NumChannels, 1);
-					this->lock();
-					callParamCallbacks();
-					this->unlock();
-				}
-
-				this->getAcqImage(this->acq_image,ImageSize);
-				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
+				/* EPICS Stop event */
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
+				setIntegerParam(ADStatus, ADStatusAborted);
+				ses->stopAcquisition();
+				status = asynError;
+				return status;
 			}
-			else
+			whileLoops++;
+			if(whileLoops >= (waitTimeout / 50))
 			{
 				/* Timeout */
-				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition of data region timed out\n", driverName, functionName);
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition of region timed out\n", driverName, functionName);
 				ses->stopAcquisition();
 				status = asynError;
 				return status;
 			}
 		}
-		else
+
+		/* Data ready - do acquisition.... */
+		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition %d of %d complete\n\n", driverName, functionName, i+1, MaxIterations);
+
+		if (analyzer.fixed_ == true)
 		{
-			/* EPICS Stop event */
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
-			setIntegerParam(ADStatus, ADStatusAborted);
-			ses->stopAcquisition();
-			status = asynError;
-			return status;
+			setIntegerParam(LeadingIn, 0);
+			/* Update progress bar */
+			PercentCompleteVal = (int)(((double)(i+1) / MaxIterations) * 100);
+			setIntegerParam(PercentComplete, PercentCompleteVal);
+			setIntegerParam(CurrentChannel, i+1);
+			setIntegerParam(NumChannels, 1);
+			this->lock();
+			callParamCallbacks();
+			this->unlock();
 		}
+
+		this->getAcqImage(this->acq_image,ImageSize);
+		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 
 		this->lock();
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
@@ -1533,7 +1541,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == ADSizeX){
 		if (value > detectorInfo.xChannels_ - detector.firstXChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be less than %d\n", detectorInfo.xChannels_-detector.firstXChannel_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be =< %d\n", detectorInfo.xChannels_-detector.firstXChannel_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeX, OldValue);
@@ -1544,7 +1552,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 	} else if (function == ADSizeY){
 		if (value > detectorInfo.yChannels_ - detector.firstYChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be less than %d\n", detectorInfo.yChannels_ - detector.firstYChannel_);
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be =< %d\n", detectorInfo.yChannels_ - detector.firstYChannel_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeY, OldValue);
