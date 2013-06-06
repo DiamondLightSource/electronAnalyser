@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 672
-y 172
+x 165
+y 184
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -335,7 +335,7 @@ x 85
 y 670
 w 55
 h 20
-controlPv "$(P)$(R)STEP_TIME"
+controlPv "$(P)$(R)AcquireTime"
 displayMode "decimal"
 precision 5
 fgColor index 25
@@ -1259,6 +1259,38 @@ h 25
 controlPv "$(P)$(R)TOTAL_POINTS_ITERATION_RBV"
 fgColor index 14
 fgAlarm
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 735
+w 70
+h 25
+controlPv "$(P)$(R)TOTAL_TIME_RBV"
+fgColor index 14
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 770
+w 70
+h 25
+controlPv "$(P)$(R)TOTAL_ACQ_TIME_RBV"
+fgColor index 14
 bgColor index 3
 font "arial-bold-r-12.0"
 endObjectProperties
