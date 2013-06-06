@@ -343,7 +343,8 @@ record(calcout, "$(P)$(R)FRAMES_CALC")
   field(CALC, "A/((B=0)?30.0:B)")
   field(INPA, "$(P)$(R)FRAMES")
   field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
-  field(OUT,  "$(P)$(R)STEP_TIME PP")
+# field(OUT,  "$(P)$(R)STEP_TIME PP")
+  field(OUT,  "$(P)$(R)AcquireTime PP")
 }
 
 # User enters desired step time
@@ -364,7 +365,8 @@ record(calcout, "$(P)$(R)STEP_TIME_CALC")
   field(DESC, "Calculate frames")
   # Condition set in calc to avoid initialisation with zero
   field(CALC, "A*((B=0)?30.0:B)")
-  field(INPA, "$(P)$(R)STEP_TIME")
+# field(INPA, "$(P)$(R)STEP_TIME")
+  field(INPA, "$(P)$(R)AcquireTime CP")
   field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
   field(OUT,  "$(P)$(R)FRAMES PP")
 }
@@ -558,6 +560,28 @@ record(ai, "$(P)$(R)LEADING_IN_RBV")
   field(INP,  "@asyn($(PORT) 0)LEADING_IN")
   field(SCAN, "I/O Intr")
   field(PREC, "0")
+}
+
+# Report back predicted iteration acquisition time
+record(ai, "$(P)$(R)TOTAL_TIME_RBV") 
+{
+  field(DESC, "Total Time Readback")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT) 0)TOTAL_TIME")
+  field(SCAN, "I/O Intr")
+  field(PREC, "1")
+  field(EGU,  "secs")
+}
+
+# Calculate total time for all iterations
+record(calcout, "$(P)$(R)TOTAL_ACQ_TIME_RBV")
+{
+  field(DESC, "Calculate total time")
+  field(CALC, "A*B")
+  field(INPA, "$(P)$(R)TOTAL_TIME_RBV CP")
+  field(INPB, "$(P)$(R)NumExposures_RBV CP")
+  field(EGU,  "secs")
+  field(PREC, "1")
 }
 
 # Reset power supplies to zero
