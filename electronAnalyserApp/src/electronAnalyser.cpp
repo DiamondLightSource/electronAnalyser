@@ -135,6 +135,7 @@ static const char *driverName = "electronAnalyser";
 #define RegionPercentCompleteString	"REGION_PERCENT_COMPLETE"
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
+#define TotalTimeString				"TOTAL_TIME"
 #define CurrentPointString			"CURRENT_POINT"
 #define TotalPointsString			"TOTAL_POINTS"
 #define TotalPointsIterationString  "TOTAL_POINTS_ITERATION"
@@ -239,6 +240,7 @@ class ElectronAnalyser: public ADDriver
 		int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
 		int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
 		int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
+		int TotalTime;				/**< (asynInt32,    	r/w) total acquisition time in msec*/
 		int CurrentDataPoint;		/**< (asynInt32,    	r/w) current data point*/
 		int CurrentPoint;			/**< (asynInt32,    	r/w) current region point*/
 		int TotalDataPoints;		/**< (asynInt32,    	r/w) total number of data points*/
@@ -543,6 +545,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(RegionPercentCompleteString, asynParamInt32, &RegionPercentComplete);
+	createParam(TotalTimeString, asynParamFloat64, &TotalTime);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(CurrentPointString, asynParamInt32, &CurrentPoint);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
@@ -1486,6 +1489,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			getIntegerParam(ADNumExposures, &MaxIterations);
 			setIntegerParam(TotalPointsIteration, steps);
 			setIntegerParam(TotalPoints, steps * MaxIterations);
+			setDoubleParam(TotalTime, dtime/1000.0);
 		} else {
 			epicsSnprintf(message, sizeof(message), "Set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
@@ -1578,6 +1582,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			getIntegerParam(ADNumExposures, &MaxIterations);
 			setIntegerParam(TotalPointsIteration, steps);
 			setIntegerParam(TotalPoints, steps * MaxIterations);
+			setDoubleParam(TotalTime, dtime/1000.0);
 		}
 	}
 	else if (function == ZeroSupplies)
@@ -1677,6 +1682,7 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	getIntegerParam(ADNumExposures, &MaxIterations);
 	setIntegerParam(TotalPointsIteration, steps);
 	setIntegerParam(TotalPoints, steps * MaxIterations);
+	setDoubleParam(TotalTime, dtime/1000.0);
 
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
