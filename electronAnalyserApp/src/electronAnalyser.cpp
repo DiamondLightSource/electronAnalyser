@@ -1059,13 +1059,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						real_point++;
 						this->getAcqSpectrum(this->spectrum, channels);
 						this->getAcqImage(this->acq_image, ImageSize);
-						//this->getAcqIOData(this->acq_data, ImageSize);
+						this->getAcqIOData(this->acq_data, ImageSize);
 						//this->getAcqRawImage(this->acq_image, ImageSize);
 
 						this->lock();
 						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 						status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-						//status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
+						status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 						callParamCallbacks();
 						this->unlock();
 					}
@@ -1284,6 +1284,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	int OldValue;
 	bool BindingMode = false;
 
+	int MaxIterations = 1;
+
 	int steps=0;
 	double dtime=0;
 	double minEnergyStep=0;
@@ -1403,12 +1405,20 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			// use fixed mode
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Fixed\n", driverName, functionName);
 			analyzer.fixed_ = true;
+			getIntegerParam(ADNumExposures, &MaxIterations);
+			setIntegerParam(TotalPoints, MaxIterations);
+			setIntegerParam(CurrentChannel, 0);
+			double AcquireTime;
+			getDoubleParam(ADAcquireTime, &AcquireTime);
+			setDoubleParam(TotalTime, AcquireTime);
 		}
 		else
 		{
 			// use swept mode
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Swept\n", driverName, functionName);
 			analyzer.fixed_ = false;
+			setIntegerParam(CurrentChannel, 0);
+			setIntegerParam(CurrentPoint, 0);
 		}
 	} else if (function == EnergyMode){
 		if (value)
@@ -1485,7 +1495,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			/* Update total points at this point so the value is known to the user before an acquisition is started */
 			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
-			int MaxIterations = 1;
 			getIntegerParam(ADNumExposures, &MaxIterations);
 			setIntegerParam(TotalPointsIteration, steps);
 			setIntegerParam(TotalPoints, steps * MaxIterations);
