@@ -436,6 +436,25 @@ record(waveform, "$(P)$(R)EXTIO")
   field(NELM, "5000000")
 }
 
+################## Region Name #####################
+
+record(waveform, "$(P)$(R)REGION_NAME")
+{
+    field(DTYP, "asynOctetWrite")
+    field(INP,  "@asyn($(PORT) 0)REGION_NAME")
+    field(FTVL, "CHAR")
+    field(NELM, "40")
+}
+
+record(waveform, "$(P)$(R)REGION_NAME_RBV")
+{
+    field(DTYP, "asynOctetRead")
+    field(INP,  "@asyn($(PORT) 0)REGION_NAME")
+    field(FTVL, "CHAR")
+    field(NELM, "40")
+    field(SCAN, "I/O Intr")
+}
+
 ################## Progress ######################
 
 # Progress of data collection in percent
@@ -571,6 +590,28 @@ record(ai, "$(P)$(R)TOTAL_TIME_RBV")
   field(SCAN, "I/O Intr")
   field(PREC, "1")
   field(EGU,  "secs")
+}
+
+# Report back estimated region time left
+record(ai, "$(P)$(R)REGION_TIME_LEFT_RBV") 
+{
+  field(DESC, "Region Time Left")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT) 0)REGION_TIME_LEFT")
+  field(SCAN, "I/O Intr")
+  field(PREC, "1")
+  field(EGU,  "secs left")
+}
+
+# Report back estimated total time left
+record(ai, "$(P)$(R)TOTAL_TIME_LEFT_RBV") 
+{
+  field(DESC, "Total Time Left")
+  field(DTYP, "asynFloat64")
+  field(INP,  "@asyn($(PORT) 0)TOTAL_TIME_LEFT")
+  field(SCAN, "I/O Intr")
+  field(PREC, "1")
+  field(EGU,  "secs left")
 }
 
 # Calculate total time for all iterations
