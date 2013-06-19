@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 165
-y 184
+x 650
+y 237
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -872,12 +872,13 @@ minor 0
 release 0
 x 175
 y 770
-w 70
+w 130
 h 25
-controlPv "$(P)$(R)TOTAL_ACQ_TIME_RBV"
+controlPv "$(P)$(R)TOTAL_TIME_LEFT_RBV"
 fgColor index 14
 bgColor index 3
 font "arial-bold-r-12.0"
+lineWidth 0
 endObjectProperties
 
 # (Static Text)
@@ -977,22 +978,6 @@ major 10
 minor 0
 release 0
 x 175
-y 735
-w 70
-h 25
-controlPv "$(P)$(R)TOTAL_TIME_RBV"
-fgColor index 14
-bgColor index 3
-font "arial-bold-r-12.0"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 175
 y 755
 w 45
 h 25
@@ -1019,6 +1004,22 @@ bgColor index 3
 font "arial-bold-r-12.0"
 endObjectProperties
 
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 175
+y 735
+w 120
+h 25
+controlPv "$(P)$(R)REGION_TIME_LEFT_RBV"
+fgColor index 14
+bgColor index 3
+font "arial-bold-r-12.0"
+endObjectProperties
+
 # (Static Text)
 object activeXTextClass
 beginObjectProperties
@@ -1027,14 +1028,14 @@ minor 1
 release 0
 x 10
 y 745
-w 90
+w 42
 h 14
 font "arial-bold-r-12.0"
 fgColor index 14
 bgColor index 3
 useDisplayBg
 value {
-  "Current Region"
+  "Region"
 }
 autoSize
 endObjectProperties
@@ -1181,25 +1182,6 @@ major 10
 minor 0
 release 0
 x 115
-y 520
-w 60
-h 20
-controlPv "$(P)$(R)LOW_ENERGY_RBV"
-fgColor index 16
-fgAlarm
-bgColor index 10
-fill
-font "arial-bold-r-12.0"
-fontAlign "center"
-endObjectProperties
-
-# (Textupdate)
-object TextupdateClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 115
 y 545
 w 60
 h 20
@@ -1228,6 +1210,45 @@ fgAlarm
 bgColor index 3
 fill
 font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 10
+y 550
+w 29
+h 14
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "High"
+}
+autoSize
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 115
+y 520
+w 60
+h 20
+controlPv "$(P)$(R)LOW_ENERGY_RBV"
+fgColor index 16
+fgAlarm
+bgColor index 10
+fill
+font "arial-bold-r-12.0"
+fontAlign "center"
 endObjectProperties
 
 # (Textentry)
@@ -1264,26 +1285,6 @@ bgColor index 3
 useDisplayBg
 value {
   "Low "
-}
-autoSize
-endObjectProperties
-
-# (Static Text)
-object activeXTextClass
-beginObjectProperties
-major 4
-minor 1
-release 0
-x 10
-y 550
-w 29
-h 14
-font "arial-bold-r-12.0"
-fgColor index 14
-bgColor index 3
-useDisplayBg
-value {
-  "High"
 }
 autoSize
 endObjectProperties
