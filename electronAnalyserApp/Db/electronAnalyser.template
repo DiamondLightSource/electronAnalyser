@@ -600,7 +600,7 @@ record(ai, "$(P)$(R)REGION_TIME_LEFT_RBV")
   field(INP,  "@asyn($(PORT) 0)REGION_TIME_LEFT")
   field(SCAN, "I/O Intr")
   field(PREC, "1")
-  field(EGU,  "secs left")
+  field(EGU,  "secs")
 }
 
 # Report back estimated total time left
@@ -611,7 +611,7 @@ record(ai, "$(P)$(R)TOTAL_TIME_LEFT_RBV")
   field(INP,  "@asyn($(PORT) 0)TOTAL_TIME_LEFT")
   field(SCAN, "I/O Intr")
   field(PREC, "1")
-  field(EGU,  "secs left")
+  field(EGU,  "secs")
 }
 
 # Calculate total time for all iterations

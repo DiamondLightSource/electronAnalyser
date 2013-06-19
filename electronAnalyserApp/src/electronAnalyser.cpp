@@ -136,6 +136,8 @@ static const char *driverName = "electronAnalyser";
 #define CurrentChannelString		"CURRENT_CHANNEL"
 #define NumChannelsString			"NUM_CHANNELS"
 #define TotalTimeString				"TOTAL_TIME"
+#define RegionTimeLeftString		"REGION_TIME_LEFT"
+#define TotalTimeLeftString			"TOTAL_TIME_LEFT"
 #define CurrentPointString			"CURRENT_POINT"
 #define TotalPointsString			"TOTAL_POINTS"
 #define TotalPointsIterationString  "TOTAL_POINTS_ITERATION"
@@ -241,6 +243,8 @@ class ElectronAnalyser: public ADDriver
 		int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
 		int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
 		int TotalTime;				/**< (asynInt32,    	r/w) total acquisition time in msec*/
+		int RegionTimeLeft;			/**< (asynInt32,    	r/w) region time left*/
+		int TotalTimeLeft;			/**< (asynInt32,    	r/w) total time left*/
 		int CurrentDataPoint;		/**< (asynInt32,    	r/w) current data point*/
 		int CurrentPoint;			/**< (asynInt32,    	r/w) current region point*/
 		int TotalDataPoints;		/**< (asynInt32,    	r/w) total number of data points*/
@@ -546,6 +550,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(RegionPercentCompleteString, asynParamInt32, &RegionPercentComplete);
 	createParam(TotalTimeString, asynParamFloat64, &TotalTime);
+	createParam(RegionTimeLeftString, asynParamFloat64, &RegionTimeLeft);
+	createParam(TotalTimeLeftString, asynParamFloat64, &TotalTimeLeft);
 	createParam(CurrentChannelString, asynParamInt32, &CurrentChannel);
 	createParam(CurrentPointString, asynParamInt32, &CurrentPoint);
 	createParam(NumChannelsString, asynParamInt32, &NumChannels);
@@ -929,6 +935,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int lead_in_point = 1;
 	int StartingPoint = 0;
 	int whileLoops = 0;
+	double TotalAcqTime;
 
 	if (start() != asynSuccess)
 	{
@@ -1000,8 +1007,16 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	callParamCallbacks();
 	this->unlock();
 
+	getDoubleParam(TotalTime, &TotalAcqTime);
+
 	for(i = 0; i < MaxIterations; i++)
 	{
+		setDoubleParam(RegionTimeLeft, TotalAcqTime);
+		setDoubleParam(TotalTimeLeft, (TotalAcqTime * (MaxIterations - i)));
+		this->lock();
+		callParamCallbacks();
+		this->unlock();
+
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Starting acquisition %d of %d....\n", driverName, functionName, i+1, MaxIterations);
 		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
@@ -1064,7 +1079,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 						this->lock();
 						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
-						status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
 						status = doCallbacksFloat64Array(this->acq_data, ImageSize, AcqIOData, 0);
 						callParamCallbacks();
 						this->unlock();
@@ -1083,6 +1097,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 					CurrentChannelVal = ((i * NumSteps) + CurrentStep);
 					setIntegerParam(PercentComplete, PercentCompleteVal);
 					setIntegerParam(RegionPercentComplete, RegionPercentCompleteVal);
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\nEstimated time left = %f\n\n", (TotalAcqTime - ((TotalAcqTime / 100) * RegionPercentCompleteVal)));
+					setDoubleParam(RegionTimeLeft, (TotalAcqTime - ((TotalAcqTime / 100) * RegionPercentCompleteVal)));
+					setDoubleParam(TotalTimeLeft, ((TotalAcqTime * MaxIterations) - (((TotalAcqTime * MaxIterations) / 100) * PercentCompleteVal)));
 					setIntegerParam(CurrentChannel, CurrentChannelVal);
 					this->lock();
 					callParamCallbacks();
@@ -1132,6 +1149,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			setIntegerParam(PercentComplete, PercentCompleteVal);
 			setIntegerParam(CurrentChannel, i+1);
 			setIntegerParam(NumChannels, 1);
+			setDoubleParam(TotalTimeLeft, ((TotalAcqTime * MaxIterations) - (((TotalAcqTime * MaxIterations) / 100) * PercentCompleteVal)));
 			this->lock();
 			callParamCallbacks();
 			this->unlock();
@@ -1139,6 +1157,12 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		this->getAcqImage(this->acq_image,ImageSize);
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
+
+	/*	int size = MAX_STRING_SIZE;
+		char regionnamestr[MAX_STRING_SIZE];
+		this->getRegionName(regionnamestr, size);
+
+		setStringParam(RegionName, regionnamestr);*/
 
 		this->lock();
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
@@ -1411,6 +1435,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			double AcquireTime;
 			getDoubleParam(ADAcquireTime, &AcquireTime);
 			setDoubleParam(TotalTime, AcquireTime);
+			setDoubleParam(TotalTimeLeft, AcquireTime*MaxIterations);
 		}
 		else
 		{
@@ -1419,6 +1444,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			analyzer.fixed_ = false;
 			setIntegerParam(CurrentChannel, 0);
 			setIntegerParam(CurrentPoint, 0);
+			// Should set total time and total time left here even though recalculated when mode changed (via template re-proc) ???
 		}
 	} else if (function == EnergyMode){
 		if (value)
@@ -1499,6 +1525,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(TotalPointsIteration, steps);
 			setIntegerParam(TotalPoints, steps * MaxIterations);
 			setDoubleParam(TotalTime, dtime/1000.0);
+			setDoubleParam(RegionTimeLeft, dtime/1000.0);
+			setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
 		} else {
 			epicsSnprintf(message, sizeof(message), "Set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
@@ -1592,6 +1620,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(TotalPointsIteration, steps);
 			setIntegerParam(TotalPoints, steps * MaxIterations);
 			setDoubleParam(TotalTime, dtime/1000.0);
+			setDoubleParam(RegionTimeLeft, dtime/1000.0);
+			setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
 		}
 	}
 	else if (function == ZeroSupplies)
@@ -1692,6 +1722,8 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	setIntegerParam(TotalPointsIteration, steps);
 	setIntegerParam(TotalPoints, steps * MaxIterations);
 	setDoubleParam(TotalTime, dtime/1000.0);
+	setDoubleParam(RegionTimeLeft, dtime/1000.0);
+	setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
 
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
@@ -1751,17 +1783,23 @@ asynStatus ElectronAnalyser::writeOctet(asynUser *pasynUser, const char *value,
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s\n", driverName, functionName, message);
 			}
 		}
-	} else if (function == RegionName){
+	}
+	else if (function == RegionName)
+	{
 		if (adstatus == ADStatusIdle)
 		{
 			status = this->setRegionName(value);
 		}
-	} else if (function == TempFileName){
+	}
+	else if (function == TempFileName)
+	{
 		if (adstatus == ADStatusIdle)
 		{
 			status = this->setTempFileName(value);
 		}
-	} else {
+	}
+	else
+	{
 		/* If this parameter belongs to a base class call its method */
 		if (function < FIRST_ELECTRONANALYZER_PARAM)
 			status = ADDriver::writeOctet(pasynUser, value, nChars, nActual);
