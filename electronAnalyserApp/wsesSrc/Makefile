@@ -17,7 +17,6 @@ INC += types.h
 INC += werror.h
 INC += wevent.h 
 INC += wlibrary.h
-INC += wmutex.h
 INC += wsesinstrument.h
 INC += wseswrapperbase.h
 INC += wseswrappermain.h
@@ -38,7 +37,7 @@ USR_INCLUDES_WIN32 +=
 USR_LIBS_WIN32 +=
 
 # The following are compiled and added to the support library
-wses_SRCS_WIN32 += cexports.cpp werror.cpp wevent.cpp wlibrary.cpp wmutex.cpp wsesinstrument.cpp wvariable.cpp wseswrapperbase.cpp wseswrappermain.cpp
+wses_SRCS_WIN32 += cexports.cpp werror.cpp wevent.cpp wlibrary.cpp wsesinstrument.cpp wvariable.cpp wseswrapperbase.cpp wseswrappermain.cpp
 
 
 include $(TOP)/configure/RULES

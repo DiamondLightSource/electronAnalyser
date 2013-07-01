@@ -989,13 +989,13 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
   {
     sesRegion_.DriftRegion = false;
     sesRegion_.EnergyStep = analyzerRegion->energyStep_;
-    sesRegion_.ExcEnergy = 0;
+//  sesRegion_.ExcEnergy = 0;		This is controlled by the setExcitationEnergy function
     sesRegion_.Fixed = analyzerRegion->fixed_;
     sesRegion_.FixEnergy = analyzerRegion->centerEnergy_;
     sesRegion_.Grating = 0;
     sesRegion_.HighEnergy = analyzerRegion->highEnergy_;
     sesRegion_.Illumination = 0;
-    sesRegion_.Kinetic = true;
+//  sesRegion_.Kinetic = true;		This is controlled by the use_binding_energy property
     sesRegion_.LowEnergy = analyzerRegion->lowEnergy_;
     sesRegion_.Order = 0;
     sesRegion_.Slit = 0;
