@@ -1636,6 +1636,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		else
 		{
 			setIntegerParam(ADNumExposures, value);
+			this->setAnalyzerRegion(&analyzer);
 			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
 			int MaxIterations = 1;
