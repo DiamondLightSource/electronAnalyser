@@ -50,3 +50,5 @@ asynSetTraceMask("CCD.CAM", 0, 0x11)
 # Setup the asyn trace mask to print TRACE_FLOW and TRACE_ERROR asyn messages
 
 #asynReport(10, "electronAnalyser")
+
+dbpf ELECTRON-ANALYSER-01:TEST:PoolUsedMem.SCAN "Passive"

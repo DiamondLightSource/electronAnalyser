@@ -796,7 +796,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			/* Subtracting an nominally small epsilon value to */
 			/* ensure no rounding error in the number of channels calculation */
 			double epsilon = 0.000000001;
-			setIntegerParam(NumChannels, (int)(ceil(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+1)-epsilon));
+			setIntegerParam(NumChannels, (int)(ceil(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+ (double)(1.0)-epsilon)));
 			//getIntegerParam(NumChannels, &dims[0]);
 			getIntegerParam(NumChannels, &intdims[0]);
 			dims[0] = intdims[0];
