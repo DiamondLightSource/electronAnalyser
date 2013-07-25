@@ -8,7 +8,7 @@
 # each time EPICS_BASE, SNCSEQ, or any other external
 # module defined in the RELEASE file is rebuilt.
 
-SUPPORT=/dls_sw/prod/R3.14.11/support
+SUPPORT=/dls_sw/prod/R3.14.12.3/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
@@ -28,12 +28,12 @@ BUSY=$(SUPPORT)/busy/1-4dls1
 #AUTOSAVE is needed for save_restore
 #AUTOSAVE=$(SUPPORT)/autosave/4-6dls5
 
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-16-1
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-16-3
 
-AREA_DETECTOR=$(SUPPORT)/areaDetector/1-9dls1
+AREA_DETECTOR=$(SUPPORT)/areaDetector/1-9dls4
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/dls_sw/epics/R3.14.11/base
+EPICS_BASE=/dls_sw/epics/R3.14.12.3/base
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 -include $(TOP)/configure/RELEASE.private
