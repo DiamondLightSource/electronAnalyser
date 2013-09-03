@@ -70,13 +70,13 @@ electronAnalyser_SYS_LIBS_WIN32 +=nafxcw
 #SESInstrument_DIR = ../lib
 
 # This is probably not necessary as we build statically against the .lib files
-#BIN_INSTALLS_WIN32 += ../dll/SESWrapper.dll ../dll/SESInstrument.dll $(AREA_DETECTOR)/ADApp/tiffSupport/libtiff3.dll
+#BIN_INSTALLS_WIN32 += ../dll/SESWrapper.dll ../dll/SESInstrument.dll $(AREADETECTOR)/ADApp/tiffSupport/libtiff3.dll
 
 # We need to link this IOC Application against the EPICS Base libraries
 
 # install the areaDetector and dxp DLL libraries locally in our bin dir
 
-BIN_INSTALLS_WIN32 += $(wildcard $(AREA_DETECTOR)/bin/win32-x86/*.dll)
+BIN_INSTALLS_WIN32 += $(wildcard $(AREADETECTOR)/bin/win32-x86/*.dll)
 BIN_INSTALLS_WIN32 += $(wildcard $(FFMPEGSERVER)/bin/win32-x86/*.dll)
 
 # install caRepeater.exe in the bin dir so we dont depend on EPICS being preinstalled
@@ -85,6 +85,6 @@ BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe
 
 # Ensure all the common libraries used by areaDetector are included in the build
 # of both library and IOC executable.
-include $(AREA_DETECTOR)/ADApp/commonDriverMakefile
+include $(AREADETECTOR)/ADApp/commonDriverMakefile
 
 include $(TOP)/configure/RULES
