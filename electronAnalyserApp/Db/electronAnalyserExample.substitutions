@@ -5,7 +5,7 @@
 #  PORT     Asyn Port name
 #  TIMEOUT  Timeout
 #  ADDR     Asyn Port address
-file $(AREA_DETECTOR)/db/ADBase.template
+file $(AREADETECTOR)/db/ADBase.template
 {
 pattern { P, 			  R, 	   PORT, 	       TIMEOUT, ADDR }
     	{ "ELECTRON-ANALYSER-01", ":TEST:", "CCD.CAM", "1", 	"0"  }
@@ -20,7 +20,7 @@ pattern { P, 			  R, 	   PORT, 	       TIMEOUT, ADDR }
 #  NDARRAY_PORT  Input Array Port
 #  NDARRAY_ADDR  Input Array Address
 #  Enabled       Plugin Enabled at startup?
-file $(AREA_DETECTOR)/db/NDPluginBase.template
+file $(AREADETECTOR)/db/NDPluginBase.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR, NDARRAY_PORT, NDARRAY_ADDR, Enabled }
     	{ "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0", "CCD.CAM", "0", "0" }
@@ -37,7 +37,7 @@ pattern { P, R, PORT, TIMEOUT, ADDR, NDARRAY_PORT, NDARRAY_ADDR, Enabled }
 #  PORT     Asyn Port name
 #  TIMEOUT  Timeout
 #  ADDR     Asyn Port address
-file $(AREA_DETECTOR)/db/NDROI.template
+file $(AREADETECTOR)/db/NDROI.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR }
 	    { "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0" }
@@ -49,7 +49,7 @@ pattern { P, R, PORT, TIMEOUT, ADDR }
 #  PORT     Asyn Port name
 #  TIMEOUT  Timeout
 #  ADDR     Asyn Port address
-file $(AREA_DETECTOR)/db/NDFile.template
+file $(AREADETECTOR)/db/NDFile.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR }
     	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0" }
@@ -59,7 +59,7 @@ pattern { P, R, PORT, TIMEOUT, ADDR }
 #  P     Device Prefix
 #  R     Device Suffix
 #  PORT  Asyn Port name
-file $(AREA_DETECTOR)/db/NDFileHDF5.template
+file $(AREADETECTOR)/db/NDFileHDF5.template
 {
 pattern { P, R, PORT }
     	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF" }
@@ -74,7 +74,7 @@ pattern { P, R, PORT }
 #  TYPE       Asyn Type e.g. Int32
 #  FTVL       Format, e.g. Int
 #  NELEMENTS  Number of elements
-file $(AREA_DETECTOR)/db/NDStdArrays.template
+file $(AREADETECTOR)/db/NDStdArrays.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR, TYPE, FTVL, NELEMENTS }
     	{ "ELECTRON-ANALYSER-01", ":ARR:", "CCD.ARR", "1", "0", "Float64", "DOUBLE", "1024000" }
@@ -97,7 +97,7 @@ pattern { P, R, PORT, QUALITY }
 #  PORT     Asyn Port name
 #  TIMEOUT  Timeout
 #  ADDR     Asyn Port address
-file $(AREA_DETECTOR)/db/NDProcess.template
+file $(AREADETECTOR)/db/NDProcess.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR }
     	{ "ELECTRON-ANALYSER-01", ":PROC:", "CCD.PROC", "1", "0" }
@@ -112,7 +112,7 @@ pattern { P, R, PORT, TIMEOUT, ADDR }
 #  XSIZE      Maximum size of X histograms (e.g. 1024)
 #  YSIZE      Maximum size of Y histograms (e.g. 768)
 #  HIST_SIZE  Maximum size of Pixel binning histogram (e.g. 256 for Int8)
-file $(AREA_DETECTOR)/db/NDStats.template
+file $(AREADETECTOR)/db/NDStats.template
 {
 pattern { P, R, PORT, TIMEOUT, ADDR, XSIZE, YSIZE, HIST_SIZE }
     	{ "ELECTRON-ANALYSER-01", ":STAT:", "CCD.STAT", "1", "0", "1024", "1000", "256" }
