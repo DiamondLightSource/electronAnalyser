@@ -1005,17 +1005,17 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setIntegerParam(TotalPoints, 1 * MaxIterations);
 	}
 
-	/* Energy point wait timeout is set to the dwell time x 4 */
-	/* The problem always seems to be the initial data point collection */
-	/*waitTimeout = (analyzer.dwellTime_ * 4);*/
-	if(analyzer.dwellTime_ < 10000)
+	/* Timeout value is set to the dwell time plus 1 minute */
+	waitTimeout = analyzer.dwellTime_ + 60000;
+
+	/*if(analyzer.dwellTime_ < 10000)
 	{
 		waitTimeout = 10000;
 	}
 	else
 	{
 		waitTimeout = analyzer.dwellTime_ + 3000;
-	}
+	}*/
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
