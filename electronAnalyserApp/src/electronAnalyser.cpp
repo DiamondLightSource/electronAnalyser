@@ -673,7 +673,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(AlwaysDelayRegion, m_bAlwaysDelayRegion?1:0);
 	status |= setIntegerParam(AllowIOWithDetector, m_bAllowIOWithDetector?1:0);
 	status |= setIntegerParam(UseDetector, m_bUseDetector?1:0);
-	status |= setIntegerParam(UseDetector, m_bUseExternalIO?1:0);
+	status |= setIntegerParam(UseExternalIO, m_bUseExternalIO?1:0);
 	status |= setIntegerParam(DetectorSlices, 10);
 
 	/* Setting initial values for the progress statuses */
@@ -961,6 +961,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int StartingPoint = 0;
 	int whileLoops = 0;
 	double TotalAcqTime;
+	int check_var;
 
 	if (start() != asynSuccess)
 	{
@@ -1137,6 +1138,12 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 			}
 		}
+	/*	getIntegerParam(ADNumExposures, &check_var);
+		while(check_var < 3)
+		{
+			Sleep(50);
+		}*/
+	//	ses->continueAcquisition();
 
 		whileLoops = 0;
 
@@ -1181,6 +1188,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			this->unlock();
 		}
 
+		//this->getAcqSpectrum(this->spectrum, channels);
 		this->getAcqImage(this->acq_image,ImageSize);
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 
@@ -1191,6 +1199,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setStringParam(RegionName, regionnamestr);*/
 
 		this->lock();
+	//	status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
 		status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
 		callParamCallbacks();
@@ -1572,7 +1581,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		} else {
 			m_bUseDetector = false;
 		}
-		this->setUseExternalIO(&m_bUseDetector);
+		this->setUseDetector(&m_bUseDetector);
 	} else if (function == ResetDataBetweenIterations){
 		if (value) {
 			m_bResetDataBetweenIterations = true;
