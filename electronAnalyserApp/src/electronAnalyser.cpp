@@ -480,7 +480,6 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory = %s\n", driverName, functionName, pWorkingDirEnvVar);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Instrument file = %s\n", driverName, functionName, pInstrumentFileEnvVar);
 
-	//this->init_device(workingDir, instrumentFile);
 	this->init_device(pWorkingDirEnvVar, pInstrumentFileEnvVar);
 
 	createParam(LibDescriptionString, asynParamOctet, &LibDescription);
@@ -585,6 +584,40 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	getPassEnergyList(&m_PassEnergies);
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
+
+/*	size = MAX_MESSAGE_SIZE;
+	getElementSetCount(size);
+	int NumElements = size;
+
+	size = MAX_MESSAGE_SIZE;
+	getElementSet(-1, message, size);
+
+	std::string CurrentElement = message;
+	std::string ReadElement;
+
+	for(int ElementIndex = 0; ElementIndex < NumElements; ElementIndex++)
+	{
+		ReadElement = m_Elementsets.at(ElementIndex).c_str();
+		if (ReadElement.compare(CurrentElement) != 0)
+		{
+			printf("%d is no match\n", ElementIndex);
+		}
+		else
+		{
+			printf("%d is a match\n", ElementIndex);
+			//setIntegerParam(ElementSet, ElementIndex);
+		}
+	}
+
+	std:string combo = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+	const char *cstr = combo.c_str();
+
+	char dbserver[1000];
+	GetPrivateProfileString("Instrument Settings", "Element Set", "10", dbserver, sizeof(dbserver), cstr);
+	printf("Element Set in ini File = %s\n", dbserver);
+	int ElementIndex = atoi(dbserver);
+	//setIntegerParam(ElementSet, ElementIndex);*/
+
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, m_bUseExternalIO);
 	m_bUseExternalIO = true;
 	setUseExternalIO(&m_bUseExternalIO);
@@ -961,7 +994,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int StartingPoint = 0;
 	int whileLoops = 0;
 	double TotalAcqTime;
-	int check_var;
+//	int check_var;
 
 	if (start() != asynSuccess)
 	{
@@ -1176,6 +1209,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		if (analyzer.fixed_ == true)
 		{
+			this->getAcqSpectrum(this->spectrum, channels);
 			setIntegerParam(LeadingIn, 0);
 			/* Update progress bar */
 			PercentCompleteVal = (int)(((double)(i+1) / MaxIterations) * 100);
@@ -1184,11 +1218,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			setIntegerParam(NumChannels, 1);
 			setDoubleParam(TotalTimeLeft, ((TotalAcqTime * MaxIterations) - (((TotalAcqTime * MaxIterations) / 100) * PercentCompleteVal)));
 			this->lock();
+			status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 			callParamCallbacks();
 			this->unlock();
 		}
 
-		//this->getAcqSpectrum(this->spectrum, channels);
 		this->getAcqImage(this->acq_image,ImageSize);
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 
@@ -1199,7 +1233,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setStringParam(RegionName, regionnamestr);*/
 
 		this->lock();
-	//	status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
 		status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
 		callParamCallbacks();
@@ -1526,6 +1559,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			const char * elementSet = m_Elementsets.at(value).c_str();
 			// set element set to Library
 			this->setElementSet(elementSet);
+
+		/*	std:string combo = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+			const char *cstr = combo.c_str();
+
+			char myelement[1];
+			itoa(value, myelement, 10);
+
+			WritePrivateProfileString("Instrument Settings", "Element Set", myelement, cstr);*/
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
 		} else {
 			// out of index
