@@ -159,8 +159,6 @@ static const char *driverName = "electronAnalyser";
 class ElectronAnalyser: public ADDriver
 {
 	public:
-		/*ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-				int maxBuffers, size_t maxMemory, int priority, int stackSize);*/
 		ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize);
 		virtual ~ElectronAnalyser();
 		virtual asynStatus readEnum(asynUser *pasynUser, char *strings[], int values[], int severities[], size_t nElements, size_t *nIn);
@@ -270,12 +268,10 @@ class ElectronAnalyser: public ADDriver
 		SESWrapperNS::WDetectorRegion detector;
 		SESWrapperNS::WDetectorInfo detectorInfo;
 		asynStatus acquireData(void *pData, int NumSteps);
-		//asynStatus getDetectorTemperature(float *temperature);
 		virtual void init_device(const char *workingDir, const char *instrumentFile);
 		void delete_device();
 		virtual void updateStatus();
 
-		//*** Use pData instead of spectrum ***//
 		double *spectrum;
 		double *spectrumCopy;
 		double *acq_image;
@@ -397,12 +393,8 @@ class ElectronAnalyser: public ADDriver
 /* end of Electron Analyser class description */
 
 /** A bit of C glue to make the config function available in the startup script (ioc shell) */
-/*extern "C" int electronAnalyserConfig(const char *portName, const char *workingDir, const char *instrumentFile,
-		int maxBuffers, size_t maxMemory, int priority,	int stackSize)*/
 extern "C" int electronAnalyserConfig(const char *portName, int maxBuffers, size_t maxMemory, int priority,	int stackSize)
 {
-	/*new ElectronAnalyser(portName, workingDir, instrumentFile, maxBuffers, maxMemory,
-			priority, stackSize);*/
 	new ElectronAnalyser(portName, maxBuffers, maxMemory, priority, stackSize);
 	return asynSuccess;
 }
@@ -428,12 +420,6 @@ ElectronAnalyser::~ElectronAnalyser()
 }
 
 /* ElectronAnalyser constructor */
-/*ElectronAnalyser::ElectronAnalyser(const char *portName, const char *workingDir, const char *instrumentFile,
-		int maxBuffers, size_t maxMemory, int priority,	int stackSize) :
-	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynFloat64ArrayMask, asynFloat64ArrayMask , /* No interfaces beyond those set in ADDriver.cpp */
-	/*ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
-			priority, stackSize) // thread priority and stack size (0=default)*/
-
 ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t maxMemory, int priority, int stackSize) :
 	ADDriver(portName, 1, NUM_ELECTRONANALYZER_PARAMS, maxBuffers, maxMemory, asynEnumMask | asynFloat64ArrayMask, asynEnumMask | asynFloat64ArrayMask, /* No interfaces beyond those set in ADDriver.cpp */
 	ASYN_CANBLOCK, 1, //asynflags (CANBLOCK means separate thread for this driver)
@@ -1915,16 +1901,6 @@ void ElectronAnalyser::report(FILE *fp, int details)
 	/* Invoke the base class method */
 	ADDriver::report(fp, details);
 }
-
-//asynStatus ElectronAnalyser::getDetectorTemperature(float * temperature)
-//{
-//	int eaStatus = 0;
-//	asynStatus status = asynSuccess;
-//	const char * functionName = "getDetectorTemperature";
-//	//TODO  get temperature from analyser
-//	*temperature = 20.0;
-//	return status;
-//}
 
 /**
  * @brief check if call to instrument API return error.
