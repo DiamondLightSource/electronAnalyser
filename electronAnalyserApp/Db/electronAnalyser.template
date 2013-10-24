@@ -388,7 +388,8 @@ record(mbbo, "$(P)$(R)ELEMENT_SET")
   field(DESC, "Element Set")
   field(DTYP, "asynInt32")
   field(OUT,  "@asyn($(PORT) 0)ELEMENT_SETS")
-  field(PINI, "YES")
+# No need for pini as element set read from ini
+# field(PINI, "YES")
   field(VAL,  "0")
 }
 

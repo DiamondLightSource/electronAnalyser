@@ -571,38 +571,13 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 
-/*	size = MAX_MESSAGE_SIZE;
-	getElementSetCount(size);
-	int NumElements = size;
+	std:string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+	const char *iniLocationStr = iniLocation.c_str();
 
-	size = MAX_MESSAGE_SIZE;
-	getElementSet(-1, message, size);
-
-	std::string CurrentElement = message;
-	std::string ReadElement;
-
-	for(int ElementIndex = 0; ElementIndex < NumElements; ElementIndex++)
-	{
-		ReadElement = m_Elementsets.at(ElementIndex).c_str();
-		if (ReadElement.compare(CurrentElement) != 0)
-		{
-			printf("%d is no match\n", ElementIndex);
-		}
-		else
-		{
-			printf("%d is a match\n", ElementIndex);
-			//setIntegerParam(ElementSet, ElementIndex);
-		}
-	}
-
-	std:string combo = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
-	const char *cstr = combo.c_str();
-
-	char dbserver[1000];
-	GetPrivateProfileString("Instrument Settings", "Element Set", "10", dbserver, sizeof(dbserver), cstr);
-	printf("Element Set in ini File = %s\n", dbserver);
-	int ElementIndex = atoi(dbserver);
-	//setIntegerParam(ElementSet, ElementIndex);*/
+	char keyValue[2];
+	GetPrivateProfileString("Instrument Settings", "Element Set", "0", keyValue, sizeof(keyValue), iniLocationStr);
+	int ElementIndex = atoi(keyValue);
+	setIntegerParam(ElementSet, ElementIndex);
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, m_bUseExternalIO);
 	m_bUseExternalIO = true;
@@ -610,10 +585,6 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Use external IO = %d\n\n", driverName, functionName, m_bUseExternalIO);
 	getUseDetector(&m_bUseDetector);
 	getResetDataBetweenIterations(&m_bResetDataBetweenIterations);
-
-	/* The following are redundant when getDetectorInfo is used above */
-	/* int detector_info_size = sizeof(SESWrapperNS::WDetectorInfo);
-	   ses->getProperty("detector_info", 0, &detectorInfo, detector_info_size); */
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Timer Controlled = %d\n", driverName, functionName, detectorInfo.timerControlled_);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: ADC Present = %d\n", driverName, functionName, detectorInfo.adcPresent_);
@@ -1545,15 +1516,17 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			const char * elementSet = m_Elementsets.at(value).c_str();
 			// set element set to Library
 			this->setElementSet(elementSet);
-
-		/*	std:string combo = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
-			const char *cstr = combo.c_str();
-
-			char myelement[1];
-			itoa(value, myelement, 10);
-
-			WritePrivateProfileString("Instrument Settings", "Element Set", myelement, cstr);*/
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
+
+			// set element set to ini file
+			std:string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+			const char *iniLocationStr = iniLocation.c_str();
+
+			char keyValue[1];
+			itoa(value, keyValue, 10);
+
+			WritePrivateProfileString("Instrument Settings", "Element Set", keyValue, iniLocationStr);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Written element set to Ses.ini file\n", driverName, functionName);
 		} else {
 			// out of index
 			epicsSnprintf(message, sizeof(message), "Set 'Element_Set' failed, index must be between 0 and %d\n", size);
