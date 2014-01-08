@@ -390,7 +390,7 @@ record(mbbo, "$(P)$(R)ELEMENT_SET")
   field(OUT,  "@asyn($(PORT) 0)ELEMENT_SETS")
 # No need for pini as element set read from ini
 # field(PINI, "YES")
-  field(VAL,  "0")
+# field(VAL,  "0")
 }
 
 # Currently selected element set
