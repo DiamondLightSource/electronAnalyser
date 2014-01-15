@@ -67,6 +67,16 @@ record(longin, "$(P)$(R)BinY_RBV")
   field(DISA, "1")
 }
 
+record(ao, "$(P)$(R)Gain")
+{
+  field(DISA, "1")
+}
+
+record(ai, "$(P)$(R)Gain_RBV")
+{
+  field(DISA, "1")
+}
+
 ######################## Modes ########################### 
 
 # Selecr data acquisition mode
