@@ -45,6 +45,28 @@ record(longin, "$(P)$(R)SLICES_RBV")
   field(SCAN, "I/O Intr")
 }
 
+########## Disable Redundant areaDetector Fields #########
+
+record(longout, "$(P)$(R)BinX")
+{
+  field(DISA, "1")
+}
+
+record(longin, "$(P)$(R)BinX_RBV")
+{
+  field(DISA, "1")
+}
+
+record(longout, "$(P)$(R)BinY")
+{
+  field(DISA, "1")
+}
+
+record(longin, "$(P)$(R)BinY_RBV")
+{
+  field(DISA, "1")
+}
+
 ######################## Modes ########################### 
 
 # Selecr data acquisition mode
