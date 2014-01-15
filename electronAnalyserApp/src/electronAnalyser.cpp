@@ -571,7 +571,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 
-	std:string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+	std::string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
 	const char *iniLocationStr = iniLocation.c_str();
 
 	char keyValue[2];
@@ -636,16 +636,16 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(FrameRate, detectorInfo.frameRate_);
 
 	/* Readout panel parameters */
-	status |= setIntegerParam(ADMaxSizeX, detectorInfo.xChannels_);
-	status |= setIntegerParam(ADMaxSizeY, detectorInfo.yChannels_);
-	status |= setIntegerParam(ADMinX, detector.firstXChannel_ - 1);
-	status |= setIntegerParam(ADMinY, detector.firstYChannel_ - 1);
-	status |= setIntegerParam(ADSizeX, detector.lastXChannel_);
-	status |= setIntegerParam(ADSizeY, detector.lastYChannel_);
+	status |= setIntegerParam(ADMaxSizeX, detectorInfo.maxChannels_);
+	status |= setIntegerParam(ADMaxSizeY, detectorInfo.maxSlices_);
+	status |= setIntegerParam(ADMinX, detector.firstXChannel_);
+	status |= setIntegerParam(ADMinY, detector.firstYChannel_);
+	status |= setIntegerParam(ADSizeX, detector.lastXChannel_ - (detector.firstXChannel_ - 1));
+	status |= setIntegerParam(ADSizeY, detector.lastYChannel_ - (detector.firstYChannel_ - 1));
 
 	/* Set NDArray parameters */
-	status |= setIntegerParam(NDArraySizeX, detectorInfo.xChannels_);
-	status |= setIntegerParam(NDArraySizeY, detectorInfo.yChannels_);
+	status |= setIntegerParam(NDArraySizeX, detector.lastXChannel_ - (detector.firstXChannel_ - 1));
+	status |= setIntegerParam(NDArraySizeY, detector.lastYChannel_ - (detector.firstYChannel_ - 1));
 	status |= setIntegerParam(NDDataType, NDFloat64);
 
 	/* The Collect panel */
@@ -676,6 +676,16 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(CurrentPoint, 0);
 
 	updateStatus();
+
+	int mytemp;
+	getIntegerParam(NDArraySizeX, &mytemp);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: NDArraySizeX = %d\n", driverName, functionName, mytemp);
+	getIntegerParam(NDArraySizeY, &mytemp);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: NDArraySizeY = %d\n", driverName, functionName, mytemp);
 
 	if (status)
 	{
@@ -1358,73 +1368,47 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			/* Stop acquiring ( abort any hardware processings ) */
 			epicsEventSignal(this->stopEventId);
 		}
-	}else if (function == AlwaysDelayRegion) {
-		if (value) {
+	}
+	else if (function == AlwaysDelayRegion)
+	{
+		if (value)
+		{
 			m_bAlwaysDelayRegion = true;
-		} else {
+		}
+		else
+		{
 			m_bAlwaysDelayRegion = false;
 		}
 		this->setAlwaysDelayRegion(&m_bAlwaysDelayRegion);
-	} else if (function == AllowIOWithDetector){
+	}
+	else if (function == AllowIOWithDetector)
+	{
 		if (value)
 		{
 			m_bAllowIOWithDetector = true;
-		} else {
+		}
+		else
+		{
 			m_bAllowIOWithDetector = false;
 		}
 		this->setAllowIOWithDetector(&m_bAllowIOWithDetector);
 	}
-	/*else if (function == DetectorFirstXChannel) {
-		if (value < 0 || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
-			setStringParam(ADStatusMessage, message);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(ADMinX, OldValue);
-		} else {
-			detector.firstXChannel_=value;
-			setIntegerParam(ADMinX, detector.firstXChannel_);
-		}
-	} else if (function == DetectorLastXChannel){
-		if (value < detector.firstXChannel_ || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between %d and %d\n", detector.firstXChannel_,detectorInfo.xChannels_);
-			setStringParam(ADStatusMessage, message);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(ADSizeX, OldValue);
-		} else {
-			detector.lastXChannel_=value;
-			setIntegerParam(ADSizeX, detector.lastXChannel_- detector.firstXChannel_);
-		}
-	} else if (function == DetectorFirstYChannel){
-		if (value < 0 || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
-			setStringParam(ADStatusMessage, message);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(ADMinY, OldValue);
-		} else {
-			detector.firstYChannel_=value;
-			setIntegerParam(ADMinY,detector.firstYChannel_);
-		}
-	} else if (function == DetectorLastYChannel){
-		if (value < detector.firstYChannel_ || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between %d and %d\n", detector.firstYChannel_,detectorInfo.yChannels_);
-			setStringParam(ADStatusMessage, message);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
-			setIntegerParam(ADSizeY, OldValue);
-		} else {
-			detector.lastYChannel_=value;
-			setIntegerParam(ADSizeY, detector.lastYChannel_ - detector.firstYChannel_);
-		}
-	}*/
-	else if (function == DetectorSlices){
-		if (value < 1 || value > detectorInfo.maxSlices_) {
+	else if (function == DetectorSlices)
+	{
+		if (value < 1 || value > detectorInfo.maxSlices_)
+		{
 			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d\n", detectorInfo.maxSlices_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			detector.slices_ = OldValue;
-		} else {
+		}
+		else
+		{
 			detector.slices_ = value;
 		}
-	} else if (function == DetectorMode) {
+	}
+	else if (function == DetectorMode)
+	{
 		if (value)
 		{
 			// use Detector ADC mode
@@ -1448,19 +1432,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		 * data collected will be monochrome */
 		setIntegerParam(NDColorMode, NDColorModeMono);
 	}
-	else if (function == AnalyzerAcquisitionMode){
+	else if (function == AnalyzerAcquisitionMode)
+	{
 		if (value)
 		{
 			// use fixed mode
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting the acquisition mode = Fixed\n", driverName, functionName);
 			analyzer.fixed_ = true;
-			getIntegerParam(ADNumExposures, &MaxIterations);
-			setIntegerParam(TotalPoints, MaxIterations);
 			setIntegerParam(CurrentChannel, 0);
-			double AcquireTime;
-			getDoubleParam(ADAcquireTime, &AcquireTime);
-			setDoubleParam(TotalTime, AcquireTime);
-			setDoubleParam(TotalTimeLeft, AcquireTime*MaxIterations);
 		}
 		else
 		{
@@ -1471,7 +1450,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(CurrentPoint, 0);
 			// Should set total time and total time left here even though recalculated when mode changed (via template re-proc) ???
 		}
-	} else if (function == EnergyMode){
+	}
+	else if (function == EnergyMode)
+	{
 		if (value)
 		{
 			// use Kinetic energy scale
@@ -1486,27 +1467,37 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			BindingMode = true;
 			setUseBindingEnergy(0, &BindingMode);
 		}
-	} else if (function == AnalyzerDwellTime){
-		if (value <= 0) {
+	}
+	else if (function == AnalyzerDwellTime)
+	{
+		if (value <= 0)
+		{
 			epicsSnprintf(message, sizeof(message), "Analyzer dwell time must be > 0\n");
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADAcquireTime, OldValue);
-		} else {
+		}
+		else
+		{
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting step time to %d secs\n", driverName, functionName, value);
 			analyzer.dwellTime_ = (value*1000);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nSetting analyzer dwell time = %d (from added function)\n\n", driverName, functionName, analyzer.dwellTime_);
 			setDoubleParam(ADAcquireTime, value);
 		}
-	} else if (function == RunMode){  // driver parameters that determine how data to be saved into a file.
+	}
+	else if (function == RunMode)
+	{  // driver parameters that determine how data to be saved into a file.
 		if (value == 1)
 			m_RunMode = AddDimension;
 		else
 			m_RunMode = Normal;
-	} else if (function == ElementSet){ // need to map MEDM screen value to SES library values
+	}
+	else if (function == ElementSet)
+	{ // need to map MEDM screen value to SES library values
 		getElementSetCount(size);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d elements are available to use\n", driverName, functionName, size);
-		if (value < size) {
+		if (value < size)
+		{
 			const char * readElement;
 			for(int eli = 0; eli < size; eli++)
 			{
@@ -1519,7 +1510,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
 
 			// set element set to ini file
-			std:string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+			std::string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
 			const char *iniLocationStr = iniLocation.c_str();
 
 			char keyValue[1];
@@ -1527,117 +1518,179 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 
 			WritePrivateProfileString("Instrument Settings", "Element Set", keyValue, iniLocationStr);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Written element set to Ses.ini file\n", driverName, functionName);
-		} else {
+		}
+		else
+		{
 			// out of index
 			epicsSnprintf(message, sizeof(message), "Set 'Element_Set' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
 		getElementSet(-1, m_sCurrentElementSet, size);
-	} else if (function == LensMode){
+	}
+	else if (function == LensMode)
+	{
 		getLensModeCount(size);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %d lenses are available to use\n", driverName, functionName, size);
-		if (value <size){
+		if (value <size)
+		{
 			const char * lensMode = m_LensModes.at(value).c_str();
 			this->setLensMode(lensMode);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting lens mode to %s\n", driverName, functionName, lensMode);
-		} else {
+		}
+		else
+		{
 			epicsSnprintf(message, sizeof(message), "Set 'Lens_Mode' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
 		getLensMode(-1, m_sCurrentLensMode, size);
-	} else if (function == PassEnergy){
+	}
+	else if (function == PassEnergy)
+	{
 		getPassEnergyCount(size);
-		if (value < size) {
+		if (value < size)
+		{
 			const double passEnergy = m_PassEnergies.at(value);
 			this->setPassEnergy(&passEnergy);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting pass energy to %f eV\n", driverName, functionName, passEnergy);
-			/* Update total points at this point so the value is known to the user before an acquisition is started */
-			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
-			getIntegerParam(ADNumExposures, &MaxIterations);
-			setIntegerParam(TotalPointsIteration, steps);
-			setIntegerParam(TotalPoints, steps * MaxIterations);
-			setDoubleParam(TotalTime, dtime/1000.0);
-			setDoubleParam(RegionTimeLeft, dtime/1000.0);
-			setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
-		} else {
+		}
+		else
+		{
 			epicsSnprintf(message, sizeof(message), "Set 'Pass_Energy' failed, index must be between 0 and %d\n", size);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 		}
 		getPassEnergy(-1,m_dCurrentPassEnergy);
-	} else if (function == UseExternalIO){
-		if (value) {
+	}
+	else if (function == UseExternalIO)
+	{
+		if (value)
+		{
 			m_bUseExternalIO = true;
-		} else {
+		}
+		else
+		{
 			m_bUseExternalIO = false;
 		}
 		this->setUseExternalIO(&m_bUseExternalIO);
-	} else if (function == UseDetector){
-		if (value) {
+	}
+	else if (function == UseDetector)
+	{
+		if (value)
+		{
 			m_bUseDetector = true;
-		} else {
+		}
+		else
+		{
 			m_bUseDetector = false;
 		}
 		this->setUseDetector(&m_bUseDetector);
-	} else if (function == ResetDataBetweenIterations){
-		if (value) {
+	}
+	else if (function == ResetDataBetweenIterations)
+	{
+		if (value)
+		{
 			m_bResetDataBetweenIterations = true;
-		} else {
+		}
+		else
+		{
 			m_bResetDataBetweenIterations = false;
 		}
 		this->setResetDataBetweenIterations(&m_bResetDataBetweenIterations);
-	} else if (function == AcqSliceNumber){
+	}
+	else if (function == AcqSliceNumber)
+	{
 		// no action, value used by get slice function
-	} else if (function == AcqIOPortIndex){
+	}
+	else if (function == AcqIOPortIndex)
+	{
 		// no action, value used by get IO spectrum call and get port name call.
-	} else if (function == ADMinX){
-		if (value < 0 || value > detectorInfo.xChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.xChannels_);
+	}
+	else if (function == ADMinX)
+	{
+		if (value < 1 || value > detectorInfo.maxChannels_)
+		{
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", detectorInfo.maxChannels_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADMinX, OldValue);
-		} else {
-			detector.firstXChannel_=value;
-			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
-			setIntegerParam(NDArraySizeX, detector.lastXChannel_ - detector.firstXChannel_);
 		}
-	} else if (function == ADMinY){
-		if (value < 0 || value > detectorInfo.yChannels_) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 0 and %d\n", detectorInfo.yChannels_);
+		else
+		{
+			detector.firstXChannel_ = value;
+			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
+			int SizeX = 0;
+			getIntegerParam(ADSizeX, &SizeX);
+			if(value + SizeX > detectorInfo.maxChannels_)
+			{
+				SizeX = (detectorInfo.maxChannels_ - detector.firstXChannel_);
+				setIntegerParam(ADSizeX, SizeX);
+				setIntegerParam(NDArraySizeX, SizeX);
+			}
+			detector.lastXChannel_= (detector.firstXChannel_ + (SizeX - 1));
+			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
+		}
+	}
+	else if (function == ADMinY)
+	{
+		if (value < 1 || value > detectorInfo.maxSlices_)
+		{
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", detectorInfo.maxSlices_);
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADMinY, OldValue);
-		} else {
-			detector.firstYChannel_=value;
-			setIntegerParam(DetectorFirstYChannel,detector.firstYChannel_);
-			setIntegerParam(NDArraySizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
-	} else if (function == ADSizeX){
-		if (value > detectorInfo.xChannels_ - detector.firstXChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be =< %d\n", detectorInfo.xChannels_-detector.firstXChannel_);
+		else
+		{
+			detector.firstYChannel_ = value;
+			setIntegerParam(DetectorFirstYChannel, detector.firstYChannel_);
+			int SizeY = 0;
+			getIntegerParam(ADSizeY, &SizeY);
+			if(value + SizeY > detectorInfo.maxSlices_)
+			{
+				SizeY = (detectorInfo.maxSlices_ - detector.firstYChannel_);
+				setIntegerParam(ADSizeY, SizeY);
+				setIntegerParam(NDArraySizeY, SizeY);
+			}
+			detector.lastYChannel_= (detector.firstYChannel_ + (SizeY - 1));
+			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
+		}
+	}
+	else if (function == ADSizeX)
+	{
+		if (value < 1 || (value + detector.firstXChannel_) > detectorInfo.maxChannels_)
+		{
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", (detectorInfo.maxChannels_ - detector.firstXChannel_));
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeX, OldValue);
-		} else {
-			detector.lastXChannel_=value - detector.firstXChannel_;
-			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
-			setIntegerParam(NDArraySizeX, detector.lastXChannel_ - detector.firstXChannel_);
 		}
-	} else if (function == ADSizeY){
-		if (value > detectorInfo.yChannels_ - detector.firstYChannel_ ) {
-			epicsSnprintf(message, sizeof(message), "Set failed, value must be =< %d\n", detectorInfo.yChannels_ - detector.firstYChannel_);
+		else
+		{
+			detector.lastXChannel_= (detector.firstXChannel_ + (value - 1));
+			setIntegerParam(DetectorLastXChannel, detector.lastXChannel_);
+			setIntegerParam(NDArraySizeX, value);
+		}
+	}
+	else if (function == ADSizeY)
+	{
+		if (value < 1 || (value + detector.firstYChannel_) > detectorInfo.maxSlices_)
+		{
+			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", (detectorInfo.maxSlices_ - detector.firstYChannel_));
 			setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 			setIntegerParam(ADSizeY, OldValue);
-		} else {
-			detector.lastYChannel_=value - detector.firstYChannel_;
-			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
-			setIntegerParam(NDArraySizeY, detector.lastYChannel_ - detector.firstYChannel_);
 		}
-	} else if (function == ADNumExposures) {
+		else
+		{
+			detector.lastYChannel_= (detector.firstYChannel_ + (value - 1));
+			setIntegerParam(DetectorLastYChannel, detector.lastYChannel_);
+			setIntegerParam(NDArraySizeY, value);
+		}
+	}
+	else if (function == ADNumExposures)
+	{
 		if (value < 1 || value > 10000)
 		{
 			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and 10000\n");
@@ -1648,16 +1701,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		else
 		{
 			setIntegerParam(ADNumExposures, value);
-			this->setAnalyzerRegion(&analyzer);
-			ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
-			int MaxIterations = 1;
-			getIntegerParam(ADNumExposures, &MaxIterations);
-			setIntegerParam(TotalPointsIteration, steps);
-			setIntegerParam(TotalPoints, steps * MaxIterations);
-			setDoubleParam(TotalTime, dtime/1000.0);
-			setDoubleParam(RegionTimeLeft, dtime/1000.0);
-			setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
 		}
 	}
 	else if (function == ZeroSupplies)
@@ -1686,9 +1729,48 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			status = ADDriver::writeInt32(pasynUser, value);
 	}
 
+	int mytemp;
+	getIntegerParam(NDArraySizeX, &mytemp);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: NDArraySizeX = %d\n", driverName, functionName, mytemp);
+	getIntegerParam(NDArraySizeY, &mytemp);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: NDArraySizeY = %d\n", driverName, functionName, mytemp);
+
+	steps = 0;
+	dtime = 0;
+	minEnergyStep = 0;
+
+	/* Update total points at this point so the value is known to the user before an acquisition is started */
+	this->setAnalyzerRegion(&analyzer);
+	ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+	this->lock();
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Total steps  = %d		Dwell Time = %f\n\n", driverName, functionName, steps, dtime);
+
+	getIntegerParam(ADNumExposures, &MaxIterations);
+	if(analyzer.fixed_ == true)
+	{
+		setIntegerParam(TotalPoints, MaxIterations);
+		setIntegerParam(CurrentChannel, 0);
+		double AcquireTime;
+		getDoubleParam(ADAcquireTime, &AcquireTime);
+		setDoubleParam(TotalTime, AcquireTime);
+		setDoubleParam(TotalTimeLeft, AcquireTime*MaxIterations);
+	}
+	else
+	{
+		setIntegerParam(TotalPointsIteration, steps);
+		setIntegerParam(TotalPoints, steps * MaxIterations);
+		setDoubleParam(TotalTime, dtime/1000.0);
+		setDoubleParam(RegionTimeLeft, dtime/1000.0);
+		setDoubleParam(TotalTimeLeft, (dtime/1000.0)*MaxIterations);
+	}
+
 	/* Do callbacks so higher layers see any changes */
 	callParamCallbacks();
-
+	this->unlock();
 	if (status)
 	{
 		asynPrint(pasynUser, ASYN_TRACE_ERROR,"%s:%s: error, status=%d function=%d, value=%d\n",driverName, functionName, status, function, value);
