@@ -1622,9 +1622,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(DetectorFirstXChannel, detector.firstXChannel_);
 			int SizeX = 0;
 			getIntegerParam(ADSizeX, &SizeX);
-			if(value + SizeX > detectorInfo.maxChannels_)
+			if((value - 1) + SizeX > detectorInfo.maxChannels_)
 			{
-				SizeX = (detectorInfo.maxChannels_ - detector.firstXChannel_);
+				SizeX = (detectorInfo.maxChannels_ - detector.firstXChannel_) + 1;
 				setIntegerParam(ADSizeX, SizeX);
 				setIntegerParam(NDArraySizeX, SizeX);
 			}
@@ -1647,9 +1647,9 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			setIntegerParam(DetectorFirstYChannel, detector.firstYChannel_);
 			int SizeY = 0;
 			getIntegerParam(ADSizeY, &SizeY);
-			if(value + SizeY > detectorInfo.maxSlices_)
+			if((value - 1) + SizeY > detectorInfo.maxSlices_)
 			{
-				SizeY = (detectorInfo.maxSlices_ - detector.firstYChannel_);
+				SizeY = (detectorInfo.maxSlices_ - detector.firstYChannel_) + 1;
 				setIntegerParam(ADSizeY, SizeY);
 				setIntegerParam(NDArraySizeY, SizeY);
 			}
@@ -1659,7 +1659,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	}
 	else if (function == ADSizeX)
 	{
-		if (value < 1 || (value + detector.firstXChannel_) > detectorInfo.maxChannels_)
+		if (value < 1 || ((value - 1) + detector.firstXChannel_) > detectorInfo.maxChannels_)
 		{
 			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", (detectorInfo.maxChannels_ - detector.firstXChannel_));
 			setStringParam(ADStatusMessage, message);
@@ -1675,7 +1675,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 	}
 	else if (function == ADSizeY)
 	{
-		if (value < 1 || (value + detector.firstYChannel_) > detectorInfo.maxSlices_)
+		if (value < 1 || ((value - 1) + detector.firstYChannel_) > detectorInfo.maxSlices_)
 		{
 			epicsSnprintf(message, sizeof(message), "Set failed, value must be between 1 and %d", (detectorInfo.maxSlices_ - detector.firstYChannel_));
 			setStringParam(ADStatusMessage, message);
