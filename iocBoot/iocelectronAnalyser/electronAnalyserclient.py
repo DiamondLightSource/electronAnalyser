@@ -1,6 +1,6 @@
-#!/dls_sw/tools/bin/dls-python2.4
+#!/dls_sw/tools/bin/dls-python2.7
 from pkg_resources import require
-require('cothread')
+require('cothread==2.9')
 from cothread import *
 from cothread.catools import *
 nROIs = 8
