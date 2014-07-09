@@ -701,3 +701,42 @@ record(longout, "$(P)$(R)ZERO_SUPPLIES")
   field(DRVL, "0")
   field(DRVH, "1")
 }
+
+# Force zero set of supplies after end of acquisition
+#record(calcout, "$(P)$(R)CALC_FORCE_ZERO")
+#{
+#  field(DESC, "Force supplies to zero")
+#  field(CALC, "A=1?0:1")
+#  field(INPA, "$(P)$(R)DetectorState_RBV CP")
+#  field(OOPT, "Transition To Non-zero")
+#  field(OUT,  "$(P)$(R)SEQ_FORCE_ZERO.PROC PP")
+#}
+
+#record(seq, "$(P)$(R)SEQ_FORCE_ZERO")
+#{
+#  field(DESC, "Force supplies to zero")
+#  field(SELM, "All")
+#  field(DLY1, "2.0")
+#  field(DOL1, "1")
+#  field(LNK1,  "$(P)$(R)ZERO_SUPPLIES PP")
+#}
+
+# Pause or resume the acquisition
+record(longin, "$(P)$(R)PAUSE_RBV") 
+{
+  field(DESC, "Is the acquisition paused")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
+  field(SCAN, "I/O Intr")
+}
+
+record(longout, "$(P)$(R)PAUSE") 
+{
+  field(DESC, "Pause the acquisition")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
+  field(PINI, "NO")
+  field(VAL,  "0")
+  field(DRVL, "0")
+  field(DRVH, "1")
+}
