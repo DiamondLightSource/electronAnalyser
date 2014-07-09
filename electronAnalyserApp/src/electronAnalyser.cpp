@@ -149,6 +149,8 @@ static const char *driverName = "electronAnalyser";
 #define CurrentLeadPointString		"CURRENT_LEAD_POINT"
 #define TotalLeadPointsString		"TOTAL_LEAD_POINTS"
 #define LeadingInString				"LEADING_IN"
+/* Control of the detector */
+#define PauseAcquisitionString		"PAUSE_ACQUISITION"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -260,7 +262,9 @@ class ElectronAnalyser: public ADDriver
 		int TotalPoints;			/**< (asynInt32,    	r/w) total number of points to collect*/
 		int TotalPointsIteration;	/**< (asynInt32,    	r/w) total number of points within an iteration to collect*/
 		int ZeroSupplies;			/**< (asynInt32,    	r/w) reset the power supplies to zero*/
-		#define LAST_ELECTRONANALYZER_PARAM ZeroSupplies
+		/* Control of the detector */
+		int PauseAcquisition;		/**< (asynInt32,    	r/w) pause/resume the acquisition*/
+		#define LAST_ELECTRONANALYZER_PARAM PauseAcquisition
 
 	private:
 		WSESWrapperMain *ses;
@@ -557,6 +561,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(CurrentLeadPointString, asynParamInt32, &CurrentLeadPoint);
 	createParam(TotalLeadPointsString, asynParamInt32, &TotalLeadPoints);
 	createParam(LeadingInString, asynParamInt32, &LeadingIn);
+	/* Control of the detector */
+	createParam(PauseAcquisitionString, asynParamInt32, &PauseAcquisition);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -675,6 +681,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	status |= setIntegerParam(CurrentLeadPoint, 0);
 	status |= setIntegerParam(CurrentPoint, 0);
 
+	/* Set the initial pause state to zero */
+	status |= setIntegerParam(PauseAcquisition, 0);
+
 	updateStatus();
 
 	int mytemp;
@@ -738,6 +747,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* If we are not acquiring or encountered a problem then wait for a semaphore that is given when acquisition is started */
 		if (!acquire)
 		{
+			/* Reset the paused state in case the previous acquisition had been paused */
+			setIntegerParam(PauseAcquisition, 0);
 			/* Only set the status message if we didn't encounter a problem last time, so we don't overwrite the error mesage */
 			if(!status)
 			{
@@ -749,12 +760,15 @@ void ElectronAnalyser::electronAnalyserTask()
 			setIntegerParam(ADNumExposuresCounter, 0);
 			setIntegerParam(ADNumImagesCounter, 0);
 			callParamCallbacks();
+
 			/* Release the lock while we wait for an event that says acquire has started, then lock again */
 			this->unlock();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: waiting for acquire to start\n", driverName, functionName);
 			status = epicsEventWait(this->startEventId);
 			this->lock();
 			getIntegerParam(ADAcquire, &acquire);
+			/* Reset the paused state in case the previous acquisition had been paused */
+			setIntegerParam(PauseAcquisition, 0);
 		}
 		/* We are acquiring. */
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: We are acquiring\n", driverName, functionName);
@@ -797,6 +811,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			 * no rounding error in the number of channels calculation */
 			double epsilon = 0.000000001;
 			setIntegerParam(NumChannels, (int)(floor(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+ (double)(1.0)+epsilon)));
+			//setIntegerParam(NumChannels, (int)(floor((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_) + 0.5) + 1);
 			//getIntegerParam(NumChannels, &dims[0]);
 			getIntegerParam(NumChannels, &intdims[0]);
 			dims[0] = intdims[0];
@@ -874,7 +889,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* Get any attributes that have been defined for this driver */
 		this->getAttributes(pImage->pAttributeList);
 
-		pImage->report(2); // print debugging info
+		//pImage->report(2); // print debugging info
 
 		if (arrayCallbacks)
 		{
@@ -960,6 +975,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int lead_in_point = 1;
 	int StartingPoint = 0;
 	int whileLoops = 0;
+	int paused = 0;
 	double TotalAcqTime;
 //	int check_var;
 
@@ -1048,6 +1064,12 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
 
+		getIntegerParam(PauseAcquisition, &paused);
+		while (paused == 1){
+			epicsThreadSleep(0.1);
+			getIntegerParam(PauseAcquisition, &paused);
+		}
+
 		/* If in swept energy mode.... */
 		if (analyzer.fixed_ != true)
 		{
@@ -1055,6 +1077,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			for(j = 0; j < NumSteps; j++)
 			{
 				whileLoops = 0;
+				getIntegerParam(PauseAcquisition, &paused);
+				while (paused == 1){
+					epicsThreadSleep(0.1);
+					getIntegerParam(PauseAcquisition, &paused);
+				}
 
 				while(ses->waitForPointReady(50) == WError::ERR_TIMEOUT)
 				{
@@ -1077,9 +1104,24 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						status = asynError;
 						return status;
 					}
+					getIntegerParam(PauseAcquisition, &paused);
+					while (paused == 1){
+						epicsThreadSleep(0.1);
+						getIntegerParam(PauseAcquisition, &paused);
+					}
 				}
-				/* Data ready - do acquisition.... */
+				/* One last check for EPICS stop.... */
+				if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
+				{
+					/* EPICS Stop event */
+					asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+					setIntegerParam(ADStatus, ADStatusAborted);
+					ses->stopAcquisition();
+					status = asynError;
+					return status;
+				}
 
+				/* Data ready - do acquisition.... */
 				if(ses->waitForPointReady(waitTimeout) != WError::ERR_TIMEOUT)
 				{
 					/* No timeout */
@@ -1169,6 +1211,16 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 				status = asynError;
 				return status;
 			}
+		}
+		/* One last check for EPICS stop.... */
+		if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
+		{
+			/* EPICS Stop event */
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+			setIntegerParam(ADStatus, ADStatusAborted);
+			ses->stopAcquisition();
+			status = asynError;
+			return status;
 		}
 
 		/* Data ready - do acquisition.... */
@@ -1365,8 +1417,25 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		}
 		if (!value && (adstatus != ADStatusIdle))
 		{
+			/* Reset the paused state */
+			setIntegerParam(PauseAcquisition, 0);
 			/* Stop acquiring ( abort any hardware processings ) */
 			epicsEventSignal(this->stopEventId);
+		}
+		/* If we are asking to stop the acquisition then we need to zero the supplies */
+		if (!value)
+		{
+			int acqStatus = 0;
+			/* Now wait until we a sure the acquisition has stopped. */
+			/* Check for the acquisition status to be set to Idle */
+			getIntegerParam(ADStatus, &acqStatus);
+			while (acqStatus != ADStatusIdle){
+				this->unlock();
+				epicsThreadSleep(0.1);
+				this->lock();
+				getIntegerParam(ADStatus, &acqStatus);
+			}
+			zeroSupplies();
 		}
 	}
 	else if (function == AlwaysDelayRegion)
@@ -1708,6 +1777,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 		if (value == 1)
 		{
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Resetting power supplies....\n\n", driverName, functionName);
+			/* Reset the paused state */
+			setIntegerParam(PauseAcquisition, 0);
 
 			int AcquisitionState = 0;
 			getIntegerParam(ADAcquire, &AcquisitionState);
@@ -1716,10 +1787,41 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			/* If an acquisition is running, set the EPICS stopEvent to abort it first */
 			if(AcquisitionState == 1)
 			{
+				int acqStatus;
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Waiting for acquisition to finish...\n\n", driverName, functionName);
 				epicsEventSignal(this->stopEventId);
+				/* Now wait until we a sure the acquisition has stopped. */
+				/* Check for the acquisition status to be set to Idle */
+				getIntegerParam(ADStatus, &acqStatus);
+				while (acqStatus != ADStatusIdle){
+					this->unlock();
+					epicsThreadSleep(0.1);
+					this->lock();
+					getIntegerParam(ADStatus, &acqStatus);
+				}
 			}
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquisition finished, continue with reset\n\n", driverName, functionName);
 			setStringParam(ADStatusMessage, "Power supplies reset");
 			zeroSupplies();
+		}
+	}
+	else if (function == PauseAcquisition)
+	{
+		int AcquisitionState = 0;
+		getIntegerParam(ADAcquire, &AcquisitionState);
+		/* Pause/resume only makes sense during an acquisition */
+		if(AcquisitionState == 1)
+		{
+			if (value == 1)
+			{
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Paused acquisition.\n\n", driverName, functionName);
+				setStringParam(ADStatusMessage, "Acquisition paused....");
+			}
+			else
+			{
+				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Resuming acquisition.\n\n", driverName, functionName);
+				setStringParam(ADStatusMessage, "Acquiring....");
+			}
 		}
 	}
 	else
