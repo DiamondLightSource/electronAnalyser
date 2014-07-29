@@ -1064,11 +1064,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
 
-		getIntegerParam(PauseAcquisition, &paused);
-		while (paused == 1){
-			epicsThreadSleep(0.1);
-			getIntegerParam(PauseAcquisition, &paused);
-		}
+		//getIntegerParam(PauseAcquisition, &paused);
+		//while (paused == 1){
+		//	epicsThreadSleep(0.1);
+		//	getIntegerParam(PauseAcquisition, &paused);
+		//}
 
 		/* If in swept energy mode.... */
 		if (analyzer.fixed_ != true)
@@ -1077,11 +1077,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			for(j = 0; j < NumSteps; j++)
 			{
 				whileLoops = 0;
-				getIntegerParam(PauseAcquisition, &paused);
-				while (paused == 1){
-					epicsThreadSleep(0.1);
-					getIntegerParam(PauseAcquisition, &paused);
-				}
+				//getIntegerParam(PauseAcquisition, &paused);
+				//while (paused == 1){
+				//	epicsThreadSleep(0.1);
+				//	getIntegerParam(PauseAcquisition, &paused);
+				//}
 
 				while(ses->waitForPointReady(50) == WError::ERR_TIMEOUT)
 				{
@@ -1104,11 +1104,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						status = asynError;
 						return status;
 					}
-					getIntegerParam(PauseAcquisition, &paused);
-					while (paused == 1){
-						epicsThreadSleep(0.1);
-						getIntegerParam(PauseAcquisition, &paused);
-					}
+					//getIntegerParam(PauseAcquisition, &paused);
+					//while (paused == 1){
+					//	epicsThreadSleep(0.1);
+					//	getIntegerParam(PauseAcquisition, &paused);
+					//}
 				}
 				/* One last check for EPICS stop.... */
 				if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
@@ -1423,20 +1423,20 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			epicsEventSignal(this->stopEventId);
 		}
 		/* If we are asking to stop the acquisition then we need to zero the supplies */
-		if (!value)
-		{
-			int acqStatus = 0;
-			/* Now wait until we a sure the acquisition has stopped. */
-			/* Check for the acquisition status to be set to Idle */
-			getIntegerParam(ADStatus, &acqStatus);
-			while (acqStatus != ADStatusIdle){
-				this->unlock();
-				epicsThreadSleep(0.1);
-				this->lock();
-				getIntegerParam(ADStatus, &acqStatus);
-			}
-			zeroSupplies();
-		}
+		//if (!value)
+		//{
+		//	int acqStatus = 0;
+		//	/* Now wait until we a sure the acquisition has stopped. */
+		//	/* Check for the acquisition status to be set to Idle */
+		//	getIntegerParam(ADStatus, &acqStatus);
+		//	while (acqStatus != ADStatusIdle){
+		//		this->unlock();
+		//		epicsThreadSleep(0.1);
+		//		this->lock();
+		//		getIntegerParam(ADStatus, &acqStatus);
+		//	}
+		//	zeroSupplies();
+		//}
 	}
 	else if (function == AlwaysDelayRegion)
 	{
