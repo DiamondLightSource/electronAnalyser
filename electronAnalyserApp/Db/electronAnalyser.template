@@ -722,21 +722,21 @@ record(longout, "$(P)$(R)ZERO_SUPPLIES")
 #}
 
 # Pause or resume the acquisition
-record(longin, "$(P)$(R)PAUSE_RBV") 
-{
-  field(DESC, "Is the acquisition paused")
-  field(DTYP, "asynInt32")
-  field(INP,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
-  field(SCAN, "I/O Intr")
-}
+#record(longin, "$(P)$(R)PAUSE_RBV") 
+#{
+#  field(DESC, "Is the acquisition paused")
+#  field(DTYP, "asynInt32")
+#  field(INP,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
+#  field(SCAN, "I/O Intr")
+#}
 
-record(longout, "$(P)$(R)PAUSE") 
-{
-  field(DESC, "Pause the acquisition")
-  field(DTYP, "asynInt32")
-  field(OUT,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
-  field(PINI, "NO")
-  field(VAL,  "0")
-  field(DRVL, "0")
-  field(DRVH, "1")
-}
+#record(longout, "$(P)$(R)PAUSE") 
+#{
+#  field(DESC, "Pause the acquisition")
+#  field(DTYP, "asynInt32")
+#  field(OUT,  "@asyn($(PORT) 0)PAUSE_ACQUISITION")
+#  field(PINI, "NO")
+#  field(VAL,  "0")
+#  field(DRVL, "0")
+#  field(DRVH, "1")
+#}
