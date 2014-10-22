@@ -977,6 +977,8 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int whileLoops = 0;
 	int paused = 0;
 	double TotalAcqTime;
+	int extIOPorts = 0;
+	int extIOSize = 0;
 //	int check_var;
 
 	if (start() != asynSuccess)
@@ -987,9 +989,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	/* Find out how many channels to work with */
 	this->getAcqChannels(channels);
 
-	int ports = 0;
-	this->getAcqIOPorts(ports);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: There are %d ext io ports available\n\n", driverName, functionName, ports);
+	this->getAcqIOPorts(extIOPorts);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: There are %d external IO ports available\n\n", driverName, functionName, extIOPorts);
+
+	this->getAcqIOSize(extIOSize);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: External IO data size = %d\n", driverName, functionName, extIOSize);
 
 	bool use_extio = false;
 	this->getUseExternalIO(&use_extio);
@@ -1000,7 +1004,8 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	IOSize = 8 * sizeof(epicsFloat64);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Image Size = %d\n", driverName, functionName, ImageSize);
 	this->acq_image = (double *)calloc(ImageSize, sizeof(epicsFloat64));
-	this->acq_data = (double *)calloc(IOSize, sizeof(epicsFloat64));
+	//this->acq_data = (double *)calloc(IOSize, sizeof(epicsFloat64));
+	this->acq_data = (double *)calloc((extIOPorts * extIOSize), sizeof(epicsFloat64));
 	this->spectrum = (double *)calloc(channels, sizeof(epicsFloat64));
 
 	/* Find out how many iterations to work with */
@@ -1064,11 +1069,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
 
-		//getIntegerParam(PauseAcquisition, &paused);
-		//while (paused == 1){
-		//	epicsThreadSleep(0.1);
-		//	getIntegerParam(PauseAcquisition, &paused);
-		//}
+		getIntegerParam(PauseAcquisition, &paused);
+		while (paused == 1){
+			epicsThreadSleep(0.1);
+			getIntegerParam(PauseAcquisition, &paused);
+		}
 
 		/* If in swept energy mode.... */
 		if (analyzer.fixed_ != true)
@@ -1077,11 +1082,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			for(j = 0; j < NumSteps; j++)
 			{
 				whileLoops = 0;
-				//getIntegerParam(PauseAcquisition, &paused);
-				//while (paused == 1){
-				//	epicsThreadSleep(0.1);
-				//	getIntegerParam(PauseAcquisition, &paused);
-				//}
+				getIntegerParam(PauseAcquisition, &paused);
+				while (paused == 1){
+					epicsThreadSleep(0.1);
+					getIntegerParam(PauseAcquisition, &paused);
+				}
 
 				while(ses->waitForPointReady(50) == WError::ERR_TIMEOUT)
 				{
@@ -1104,11 +1109,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						status = asynError;
 						return status;
 					}
-					//getIntegerParam(PauseAcquisition, &paused);
-					//while (paused == 1){
-					//	epicsThreadSleep(0.1);
-					//	getIntegerParam(PauseAcquisition, &paused);
-					//}
+					getIntegerParam(PauseAcquisition, &paused);
+					while (paused == 1){
+						epicsThreadSleep(0.1);
+						getIntegerParam(PauseAcquisition, &paused);
+					}
 				}
 				/* One last check for EPICS stop.... */
 				if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
@@ -1143,12 +1148,17 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						real_point++;
 						this->getAcqSpectrum(this->spectrum, channels);
 						this->getAcqImage(this->acq_image, ImageSize);
-						this->getAcqIOData(this->acq_data, IOSize);
+						if ((extIOPorts > 0) && (extIOSize > 0)){
+							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquiring IO Data\n\n", driverName, functionName);
+							//this->getAcqIOData(this->acq_data, IOSize);
+						}
 
 						this->lock();
 						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 						status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-						status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
+						if ((extIOPorts > 0) && (extIOSize > 0)){
+							//status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
+						}
 						callParamCallbacks();
 						this->unlock();
 					}
@@ -1253,7 +1263,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		this->lock();
 		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-		status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
+		//status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
 		callParamCallbacks();
 		this->unlock();
 
@@ -1423,20 +1433,20 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			epicsEventSignal(this->stopEventId);
 		}
 		/* If we are asking to stop the acquisition then we need to zero the supplies */
-		//if (!value)
-		//{
-		//	int acqStatus = 0;
-		//	/* Now wait until we a sure the acquisition has stopped. */
-		//	/* Check for the acquisition status to be set to Idle */
-		//	getIntegerParam(ADStatus, &acqStatus);
-		//	while (acqStatus != ADStatusIdle){
-		//		this->unlock();
-		//		epicsThreadSleep(0.1);
-		//		this->lock();
-		//		getIntegerParam(ADStatus, &acqStatus);
-		//	}
-		//	zeroSupplies();
-		//}
+		if (!value)
+		{
+			int acqStatus = 0;
+			/* Now wait until we a sure the acquisition has stopped. */
+			/* Check for the acquisition status to be set to Idle */
+			getIntegerParam(ADStatus, &acqStatus);
+			while (acqStatus != ADStatusIdle){
+				this->unlock();
+				epicsThreadSleep(0.1);
+				this->lock();
+				getIntegerParam(ADStatus, &acqStatus);
+			}
+			zeroSupplies();
+		}
 	}
 	else if (function == AlwaysDelayRegion)
 	{
@@ -2093,7 +2103,8 @@ void ElectronAnalyser::delete_device()
 	if (ses)
 	{
 		ses->finalize();
-		delete ses;
+		ses->release();
+		ses = 0;
 	}
 	// delete all cached variables
 	if (!sesWorkingDirectory.empty())
@@ -2123,7 +2134,7 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
-	ses = new WSESWrapperMain(workingDir);
+	ses = WSESWrapperMain::instance(workingDir);
 	int err = ses->setProperty("lib_working_dir", 0, workingDir);
 	err |= ses->initialize(0);
 	if (err)
