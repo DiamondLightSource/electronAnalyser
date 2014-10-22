@@ -39,7 +39,7 @@ namespace SESWrapperNS
     int firstYChannel_; /*!< Specifies the first Y channel to be used on the detector (range: <code>[0...\ref WDetectorInfo::yChannels_-1]</code>. )*/
     int lastYChannel_; /*!< Specifies the last Y channel to be used on the detector. */
     int slices_; /*!< Specifies the current number of Y channels (slices). */
-    bool adcMode_; /*!< Specifies whether the detector is running in ADC mode, or Pulse Counting mode */
+    char adcMode_; /*!< Specifies whether the detector is running in ADC mode, or Pulse Counting mode */
   } DetectorRegion;
 
   /*! \brief Pointer to a DetectorRegion struct. */

@@ -11,13 +11,14 @@
 #include <sstream>
 #include <fstream>
 #include <algorithm>
-
+#include <limits>
 #include <ctime>
 
 using namespace SESWrapperNS;
 using namespace std;
 
 WSESWrapperMain *WSESWrapperMain::this_ = 0;
+int WSESWrapperMain::references_ = 0;
 
 /*! \class WSESWrapperMain
  *
@@ -26,17 +27,14 @@ WSESWrapperMain *WSESWrapperMain::this_ = 0;
  * All \ref exported_functions "exported functions" uses a global instance of WSESWrapperMain
  */
 
-
 /*!
  * Creates a WSESWrapperMain instance.
  *
  * \param[in] workingDir The current working directory
  */
 WSESWrapperMain::WSESWrapperMain(const char *workingDir)
-: WSESWrapperBase(workingDir), initialized_(false), currentStep_(0), currentPoint_(-999999)
+: WSESWrapperBase(workingDir), initialized_(false), currentStep_(0), currentPoint_(std::numeric_limits<int>::min()), sesSpectrum_(0), sesSignals_(0)
 {
-  this_ = this;
-
   // Create data parameter database
   dataParameters_.insert(DataParameterKeyValue("acq_channels", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqChannels, DataParameter::TYPE_INT32)));
   dataParameters_.insert(DataParameterKeyValue("acq_slices", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqSlices, DataParameter::TYPE_INT32)));
@@ -63,15 +61,6 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
   dataParameters_.insert(DataParameterKeyValue("acq_current_point", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqCurrentPoint, DataParameter::TYPE_INT32)));
   dataParameters_.insert(DataParameterKeyValue("acq_point_intensity", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqPointIntensity, DataParameter::TYPE_DOUBLE)));
   dataParameters_.insert(DataParameterKeyValue("acq_channel_intensity", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqChannelIntensity, DataParameter::TYPE_VECTOR_DOUBLE)));
-
-  if (!workingDir_.empty())
-  {
-    char *tmpDir = _getcwd(0, 0);
-    _chdir(workingDir_.c_str());
-    bool success = lib_->load("dll\\SESInstrument");
-    _chdir(tmpDir);
-    free(tmpDir);
-  }
 }
 
 /*!
@@ -83,8 +72,52 @@ WSESWrapperMain::WSESWrapperMain(const char *workingDir)
  */
 WSESWrapperMain::~WSESWrapperMain()
 {
+  abortAcquisitionEvent_.set();
   if (lib_->isLoaded())
+  {
+    if (initialized_)
+      lib_->GDS_Finalize();
     lib_->unload();
+  }
+}
+
+/*!
+ * Creates a WSESWrapperMain object or returns the existing one.
+ *
+ * \return Returns the WSESWrapperMain singleton object.
+ */
+WSESWrapperMain *WSESWrapperMain::instance(const char *workingDir)
+{
+  if (this_ == 0)
+  {
+    this_ = new WSESWrapperMain(workingDir);
+  }
+  references_++;
+  return this_;
+}
+
+/*!
+ * Releases a reference of the WSESWrapper object. This function must be called the same number of times the instance() function
+ * has been called. Note that this function is not a static function (like the instance() function is).
+ */
+void WSESWrapperMain::release()
+{
+  if (references_ == 1)
+  {
+    delete this_;
+    this_ = 0;
+    references_ = 0;
+  }
+  else if (references_ > 0)
+    references_--;
+}
+
+/*!
+ * \return Returns the number of references to the WSESWrapperMain instance.
+ */
+int WSESWrapperMain::references() const
+{
+  return references_;
 }
 
 /*!
@@ -110,7 +143,8 @@ bool WSESWrapperMain::isInitialized()
  *
  * \param[in,out] reserved This parameter is reserved for future use. It must be set to 0.
  *
- * \return WError::ERR_FAIL if initialization failed, otherwise WError::ERR_OK.
+ * \return Possible return codes: WError::ERR_OK on success, WError::ERR_LOAD_LIBRARY if the instrument library
+ *         could not be loaded, WError::ERR_INITIALIZE_FAIL if the initialization failed.
  *
  * \see finalize()
  */
@@ -124,13 +158,15 @@ int WSESWrapperMain::initialize(void *reserved)
   instrumentLoaded_ = false;
 
   char *tmpDir = _getcwd(0, 0);
-  _chdir(workingDir_.c_str());
+  
+  if (!workingDir_.empty())
+    _chdir(workingDir_.c_str());
 
-  if (!lib_->load("dll/SESInstrument.dll"))
-    errorCode = WError::ERR_FAIL;
+  if (!lib_->isLoaded() && !lib_->load(instrumentLibraryName_.c_str()))
+    errorCode = WError::ERR_LOAD_LIBRARY;
 
   if (errorCode == WError::ERR_OK && lib_->GDS_Initialize(errorNotify, reinterpret_cast<HWND>(reserved)) != 0)
-    errorCode = WError::ERR_FAIL;
+    errorCode = WError::ERR_INITIALIZE_FAIL;
 
   _chdir(tmpDir);
   free(tmpDir);
@@ -157,9 +193,7 @@ int WSESWrapperMain::finalize()
   initialized_ = false;
 
   abortAcquisitionEvent_.set();
-
-  abortAcquisitionEvent_.set();
-
+  
   if (lib_->isLoaded())
     lib_->GDS_Finalize();
   
@@ -191,7 +225,7 @@ int WSESWrapperMain::getProperty(const char *property, int index, void *value, i
 {
   PropertyMap::iterator it = properties_.find(property);
   if (it == properties_.end())
-    return WError::ERR_PARAMETER_NOT_FOUND;
+    return lib_->SC_GetProperty != 0 && lib_->SC_GetProperty(property, value, &size) == 0 ? WError::ERR_OK : WError::ERR_PARAMETER_NOT_FOUND;
   return it->second.get(index, value, size);
 }
 
@@ -211,21 +245,27 @@ int WSESWrapperMain::getProperty(const char *name, int index, void *value)
  * declared <code>const void *</code> in order to allow any type of property to be accessed.
  *
  * \param[in] property A string specifying the property that will be modified.
- * \param[in] reserved This parameter is currently not used, but is reserved for future implementations.
- *                     Always set this to 0.
+ * \param[in] size This parameter must specify the size (in bytes) of the \c value argument.
  * \param[in] value A pointer to the value of the property that will be modified.
  *
- * \return An error code, as defined by the corresponding setter. If the property is not found, a
- *         WError::ERR_PARAMETER_NOT_FOUND code is returned.
+ * \return An error code, as defined by the corresponding setter. If the property is not found and
+ *         SESInstrument does not expose generic property functions SC_SetProperty or SC_SetPropertyEx,
+ *         a WError::ERR_PARAMETER_NOT_FOUND code is returned.
  *
  * \see WSESWrapperBase, \ref variables_page
  */
-int WSESWrapperMain::setProperty(const char *property, int reserved, const void *value)
+int WSESWrapperMain::setProperty(const char *property, int size, const void *value)
 {
   PropertyMap::iterator it = properties_.find(property);
   if (it == properties_.end())
+  {
+    if (lib_->SC_SetPropertyEx != 0)
+      return lib_->SC_SetPropertyEx(property, value, size) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+    if (lib_->SC_SetProperty != 0)
+      return lib_->SC_SetProperty(property, value) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
     return WError::ERR_PARAMETER_NOT_FOUND;
-  return it->second.set(reserved, value);
+  }
+  return it->second.set(size, value);
 }
 
 /*!
@@ -327,6 +367,16 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
   if (!loadElementSets() || !loadLensModes() || (lensModes_.size() > 0 && !loadPassEnergies(lensModes_[0], passEnergies_)) || !loadElementNames())
     errorCode = WError::ERR_FAIL;
 
+  lib_->GDS_GetGlobalDetector(&sesDetectorRegion_);
+  sesRegion_.ADCMask = sesDetectorRegion_.ADCMask;
+  sesRegion_.ADCMode = sesDetectorRegion_.ADCMode;
+  sesRegion_.DiscLvl = sesDetectorRegion_.DiscLvl;
+  sesRegion_.FirstXChannel = sesDetectorRegion_.FirstXChannel;
+  sesRegion_.FirstYChannel = sesDetectorRegion_.FirstYChannel;
+  sesRegion_.LastXChannel = sesDetectorRegion_.LastXChannel;
+  sesRegion_.LastYChannel = sesDetectorRegion_.LastYChannel;
+  sesRegion_.Slices = sesDetectorRegion_.Slices;
+
   return errorCode;
 }
 
@@ -423,7 +473,6 @@ int WSESWrapperMain::getExcitationEnergy(double *excitationEnergy)
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
   return lib_->GDS_GetCurrExcitationEnergy(excitationEnergy) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 
@@ -547,15 +596,18 @@ int WSESWrapperMain::initAcquisition(const bool blockPointReady, const bool bloc
   iteration_ = 0;
   sesSpectrum_ = 0;
   currentStep_ = 0;
-  currentPoint_ = -999999;
+  currentPoint_ = std::numeric_limits<int>::min();
 
   int result = 0;
 
   if (tempFileName_.empty())
-    tempFileName_ = "seswrapper";
+    tempFileName_ = "work\\seswrapper";
+  DeleteFile(tempFileName_.c_str());
 
   if (lib_->GDS_InitAcquisition != 0)
+  {
     result = lib_->GDS_InitAcquisition(&sesRegion_, &sesSpectrum_, &sesSignals_, tempFileName_.c_str(), WSESWrapperMain::pointReady, WSESWrapperMain::regionReady);
+  }
 
   startTime_ = clock();
 
@@ -620,6 +672,7 @@ int WSESWrapperMain::startAcquisition()
     if (lib_->GDS_GetCurrSignals != 0)
       lib_->GDS_GetCurrSignals(&sesSignals_);
   }
+
 
   return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
@@ -778,8 +831,11 @@ int WSESWrapperMain::parameterType(const char *name)
  */
 int WSESWrapperMain::getAcqChannels(int index, void *data, int &size)
 {
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSpectrum_ != 0 ? sesSpectrum_->Channels : 0;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = readSpectrumObject() ? sesSpectrum_->Channels : 0;
+  }
 	return WError::ERR_OK;
 }
 
@@ -794,8 +850,11 @@ int WSESWrapperMain::getAcqChannels(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqSlices(int index, void *data, int &size)
 {
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSpectrum_ != 0 ? sesSpectrum_->Slices : 0;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = readSpectrumObject() ? sesSpectrum_->Slices : 0;
+  }
 	return WError::ERR_OK;
 }
 
@@ -813,8 +872,11 @@ int WSESWrapperMain::getAcqSlices(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIterations(int index, void *data, int &size)
 {
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSpectrum_ != 0 ? sesSpectrum_->Sweeps : 0;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = readSpectrumObject() ? sesSpectrum_->Sweeps : 0;
+  }
 	return WError::ERR_OK;
 }
 
@@ -831,12 +893,15 @@ int WSESWrapperMain::getAcqIterations(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIntensityUnit(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
-  char *strData = reinterpret_cast<char *>(data);
-  if (strData != 0)
+  if (data != 0)
+  {
+    char *strData = reinterpret_cast<char *>(data);
     strData[std::string(sesSpectrum_->CountUnit).copy(strData, size)] = 0;
+  }
+
   size = sizeof(sesSpectrum_->CountUnit);
 	return WError::ERR_OK;
 }
@@ -854,12 +919,15 @@ int WSESWrapperMain::getAcqIntensityUnit(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqChannelUnit(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
-  char *strData = reinterpret_cast<char *>(data);
-  if (strData != 0)
-    strData[std::string(sesSpectrum_->ChannelUnit).copy(strData, size)] = 0;
+  if (data != 0)
+  {
+    char *strData = reinterpret_cast<char *>(data);
+    if (strData != 0)
+      strData[std::string(sesSpectrum_->ChannelUnit).copy(strData, size)] = 0;
+  }
   size = sizeof(sesSpectrum_->ChannelUnit);
 	return WError::ERR_OK;
 }
@@ -877,12 +945,15 @@ int WSESWrapperMain::getAcqChannelUnit(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqSliceUnit(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
-  char *strData = reinterpret_cast<char *>(data);
-  if (strData != 0)
-    strData[std::string(sesSpectrum_->SliceUnit).copy(strData, size)] = 0;
+  if (data != 0)
+  {
+    char *strData = reinterpret_cast<char *>(data);
+    if (strData != 0)
+      strData[std::string(sesSpectrum_->SliceUnit).copy(strData, size)] = 0;
+  }
   size = sizeof(sesSpectrum_->SliceUnit);
 	return WError::ERR_OK;
 }
@@ -900,7 +971,7 @@ int WSESWrapperMain::getAcqSliceUnit(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqSpectrum(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
   if (data != 0)
@@ -919,15 +990,15 @@ int WSESWrapperMain::getAcqSpectrum(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqImage(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
-  double *doubleData = reinterpret_cast<double *>(data);
-  int sliceSize = sesSpectrum_->Channels * sizeof(double);
-  if (doubleData != 0)
+  if (data != 0)
   {
-    for (int slice = 0; slice < sesSpectrum_->Slices; slice++, doubleData += sesSpectrum_->Channels)
-      memcpy(doubleData, sesSpectrum_->Data[slice], sliceSize);
+    double *doubleData = reinterpret_cast<double *>(data);
+    int sliceSize = sesSpectrum_->Channels * sizeof(double);
+      for (int slice = 0; slice < sesSpectrum_->Slices; slice++, doubleData += sesSpectrum_->Channels)
+        memcpy(doubleData, sesSpectrum_->Data[slice], sliceSize);
   }
   size = sesSpectrum_->Channels * sesSpectrum_->Slices;
 	return WError::ERR_OK;
@@ -946,7 +1017,7 @@ int WSESWrapperMain::getAcqImage(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqSlice(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
   if (index < 0 || index >= sesSpectrum_->Slices)
@@ -972,7 +1043,7 @@ int WSESWrapperMain::getAcqSlice(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqChannelScale(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
   if (data != 0)
@@ -994,7 +1065,7 @@ int WSESWrapperMain::getAcqChannelScale(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqSliceScale(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
   if (data != 0)
@@ -1035,7 +1106,8 @@ int WSESWrapperMain::getAcqRawImage(int index, void *data, int &size)
   
   if (errorCode == WError::ERR_OK)
   {
-    errorCode = lib_->GDS_GetRawImage(uCharData, &width, &height, &byteSize) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+    if (data != 0)
+      errorCode = lib_->GDS_GetRawImage(uCharData, &width, &height, &byteSize) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
     size = width * height * byteSize;
   }
 	return errorCode;
@@ -1052,11 +1124,14 @@ int WSESWrapperMain::getAcqRawImage(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqCurrentStep(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_FAIL;
 
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = currentStep_;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = currentStep_;
+  }
 	return WError::ERR_OK;
 }
 
@@ -1073,8 +1148,11 @@ int WSESWrapperMain::getAcqCurrentStep(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqElapsedTime(int index, void *data, int &size)
 {
-  unsigned int *intData = reinterpret_cast<unsigned int *>(data);
-  *intData = clock() - startTime_;
+  if (data != 0)
+  {
+    unsigned int *intData = reinterpret_cast<unsigned int *>(data);
+    *intData = clock() - startTime_;
+  }
 	return WError::ERR_OK;
 }
 
@@ -1090,11 +1168,14 @@ int WSESWrapperMain::getAcqElapsedTime(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOPorts(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSignals_->Count;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = sesSignals_->Count;
+  }
 	return WError::ERR_OK;
 }
 
@@ -1111,11 +1192,14 @@ int WSESWrapperMain::getAcqIOPorts(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOSize(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSignals_->Steps;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = sesSignals_->Steps;
+  }
 	return WError::ERR_OK;
 }
 
@@ -1132,11 +1216,14 @@ int WSESWrapperMain::getAcqIOSize(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOIterations(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
-  int *intData = reinterpret_cast<int *>(data);
-  *intData = sesSignals_->Sweeps;
+  if (data != 0)
+  {
+    int *intData = reinterpret_cast<int *>(data);
+    *intData = sesSignals_->Sweeps;
+  }
 	return WError::ERR_OK;
 }
 
@@ -1154,7 +1241,7 @@ int WSESWrapperMain::getAcqIOIterations(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOUnit(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
   if (data != 0)
@@ -1177,7 +1264,7 @@ int WSESWrapperMain::getAcqIOUnit(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOScale(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
   
   if (data != 0)
@@ -1201,7 +1288,7 @@ int WSESWrapperMain::getAcqIOScale(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOSpectrum(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
   if (index < 0 || index >= sesSignals_->Count)
@@ -1227,15 +1314,15 @@ int WSESWrapperMain::getAcqIOSpectrum(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOData(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
 
-  double *doubleData = reinterpret_cast<double *>(data);
-  int channelSize = sesSignals_->Steps * sizeof(double);
-  if (doubleData != 0)
+  if (data != 0)
   {
-    for (int channel = 0; channel < sesSignals_->Count; channel++, doubleData += channelSize)
-      memcpy(doubleData, sesSignals_->Data[channel], channelSize);
+    double *doubleData = reinterpret_cast<double *>(data);
+    int channelSize = sesSignals_->Steps * sizeof(double);
+      for (int channel = 0; channel < sesSignals_->Count; channel++, doubleData += channelSize)
+        memcpy(doubleData, sesSignals_->Data[channel], channelSize);
   }
   size = sesSignals_->Count * sesSignals_->Steps;
   return WError::ERR_OK;
@@ -1255,16 +1342,16 @@ int WSESWrapperMain::getAcqIOData(int index, void *data, int &size)
  */
 int WSESWrapperMain::getAcqIOPortName(int index, void *data, int &size)
 {
-  if (sesSignals_ == 0)
+  if (!readSignalsObject())
     return WError::ERR_FAIL;
+  
   if (data != 0)
   {
     if (index < 0 || index >= sizeof(SesNS::Char32))
       return WError::ERR_INDEX;
-    memcpy(data, sesSignals_->Names[index], min(size, sizeof(SesNS::Char32)));
+    memcpy(data, sesSignals_->Names[index], std::min(size, (int)sizeof(SesNS::Char32)));
   }
-  else
-    size = strlen(sesSignals_->Names[index]);
+  size = strlen(sesSignals_->Names[index]);
 	return WError::ERR_OK;
 }
 
@@ -1274,86 +1361,89 @@ int WSESWrapperMain::getAcqIOPortName(int index, void *data, int &size)
  * waitForPointReady() function to make sure no data points are missed.
  *
  * \param[in] index Not used.
- * \param[out] value A pointer to a 32-bit unsigned integer that shows the latest step index during a swept mode acquisition.
+ * \param[out] data A pointer to a 32-bit unsigned integer that shows the latest step index during a swept mode acquisition.
  *                  This value is undefined until waitForPointReady() returns success, and remains negative until the acquisition
  *                  has reached a valid channel.
  * \param[in,out] size Not used.
  *
  * \return Always returns WError::ERR_OK.
  */
-int WSESWrapperMain::getAcqCurrentPoint(int index, void *value, int &size)
+int WSESWrapperMain::getAcqCurrentPoint(int index, void *data, int &size)
 {
-  *reinterpret_cast<int *>(value) = currentPoint_;
+  if (data != 0)
+    *reinterpret_cast<int *>(data) = currentPoint_;
   return WError::ERR_OK;
 }
 
 /*!
  * Getter for the \c acq_point_intensity variable. This extracts the intensity from channel \c index. If \c index is negative or
- * outside the energy range of the region, the function succeedes with \c value set to 0.
+ * outside the energy range of the region, the function succeedes with \c data set to 0.
  *
  * \param[in] index The point/channel to query. This can be negative or greater than the number of channels. An index of 0 corresponds to
  *                  the first spectrum channel.
- * \param[out] value A pointer to a double that will be modified to the number of millisecondes elapsed
+ * \param[out] data A pointer to a double that will be modified to the number of millisecondes elapsed
  *             since the last call of startAcquisition().
  * \param[in,out] size Not used.
  *
  * \return WError::ERR_OK on success,
  *         WError::ERR_NOT_INITIALIZED if no acquisition has been performed,
  */
-int WSESWrapperMain::getAcqPointIntensity(int index, void *value, int &size)
+int WSESWrapperMain::getAcqPointIntensity(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_NOT_INITIALIZED;
 
-  double *doubleValue = reinterpret_cast<double *>(value);
-
-  if (index < 0 || index >= sesSpectrum_->Channels)
+  if (data != 0)
   {
-    *doubleValue = 0;
-    return WError::ERR_OK;
-  }
+    double *doubleValue = reinterpret_cast<double *>(data);
+
+    if (index < 0 || index >= sesSpectrum_->Channels)
+    {
+      *doubleValue = 0;
+      return WError::ERR_OK;
+    }
   
-  *doubleValue = sesSpectrum_->SumData[index];
+    *doubleValue = sesSpectrum_->SumData[index];
+  }
   return WError::ERR_OK;
 }
 
 /*!
  * Getter for the \c acq_channel_intensity variable. This extracts the intensity from all slices of channel \c index.
- * If \c index is negative or outside the energy range of the region, the function succeedes with \c values set to 0.
+ * If \c index is negative or outside the energy range of the region, the function succeedes with \c data set to 0.
  *
  * \param[in] index The point/channel to query. This can be negative or greater than the number of channels. An index of 0 corresponds to
  *                  the first spectrum channel.
- * \param[out] value A pointer to a double array that will be modified to the number of millisecondes elapsed
+ * \param[out] data A pointer to a double array that will be modified to the number of millisecondes elapsed
  *             since the last call of startAcquisition(). The array should be large enough to contain \c acq_slices slices.
  * \param[in,out] size Modified to \c acq_slices.
  *
  * \return WError::ERR_OK on success,
  *         WError::ERR_NOT_INITIALIZED if no acquisition has been performed,
  */
-int WSESWrapperMain::getAcqChannelIntensity(int index, void *value, int &size)
+int WSESWrapperMain::getAcqChannelIntensity(int index, void *data, int &size)
 {
-  if (sesSpectrum_ == 0)
+  if (!readSpectrumObject())
     return WError::ERR_NOT_INITIALIZED;
 
+  if (data != 0)
+  {
+    double *doubleVector = reinterpret_cast<double *>(data);
+    double *p = doubleVector;
+
+    if (index < 0 || index >= sesSpectrum_->Channels)
+    {
+      for (int r = 0; r < sesSpectrum_->Slices; r++)
+        *p++ = 0;
+    }
+    else
+    {
+      for (int r = 0; r < sesSpectrum_->Slices; r++)
+        *p++ = sesSpectrum_->Data[r][index];
+    }
+  }
+
   size = sesSpectrum_->Slices;
-
-  if (value == 0)
-    return WError::ERR_OK;
-
-  double *doubleVector = reinterpret_cast<double *>(value);
-  double *p = doubleVector;
-
-  if (index < 0 || index >= sesSpectrum_->Channels)
-  {
-    for (int r = 0; r < sesSpectrum_->Slices; r++)
-      *p++ = 0;
-  }
-  else
-  {
-    for (int r = 0; r < sesSpectrum_->Slices; r++)
-      *p++ = sesSpectrum_->Data[r][index];
-  }
-
   return WError::ERR_OK;
 }
 
@@ -1367,7 +1457,15 @@ int WSESWrapperMain::getAcqChannelIntensity(int index, void *value, int &size)
  */
 void __stdcall WSESWrapperMain::errorNotify(int errorCode)
 {
-  const char *buffer = this_->lib_->GDS_GetLastErrorString();
+  this_->errorNotifyHandler(errorCode);
+}
+
+/*!
+ * This is the member function called by the static errorNotify() callback.
+ */
+void WSESWrapperMain::errorNotifyHandler(int errorCode)
+{
+  const char *buffer = lib_->GDS_GetLastErrorString();
   std::ofstream oFile("seswrapper.log", std::ios::out | std::ios::app);
   time_t t = time(0);
   std::string tStr = ctime(&t);
@@ -1382,24 +1480,29 @@ void __stdcall WSESWrapperMain::errorNotify(int errorCode)
  * mode acquisition. If \p blockPointReady is set to \c true, this function will block execution of the
  * current thread until continueAcquisition() or stopAcquisition() has been called.
  *
- * \param[in] index The index of the just finished step. This value can be negative.
+ * \param[in] point The index of the just finished step. This value can be negative.
  *
  * \see initAcquisition()
  */
-void __stdcall WSESWrapperMain::pointReady(int index)
+void __stdcall WSESWrapperMain::pointReady(int point)
 {
-  if (this_ == 0)
-    return;
+  this_->pointReadyHandler(point);
+}
 
-  this_->pointReadyEvent_.set();
-  this_->currentStep_++;
-  this_->currentPoint_ = index;
+/*!
+ * This is the member function called by the static pointReady() callback.
+ */
+void WSESWrapperMain::pointReadyHandler(int point)
+{
+  currentStep_++;
+  currentPoint_ = point;
+  pointReadyEvent_.set();
 
-  if (this_->blockPointReady_)
+  if (blockPointReady_)
   {
-    HANDLE handles[] = {this_->continueAcquisitionEvent_.handle(), this_->abortAcquisitionEvent_.handle()};
+    HANDLE handles[] = {continueAcquisitionEvent_.handle(), abortAcquisitionEvent_.handle()};
     WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-    this_->continueAcquisitionEvent_.reset();
+    continueAcquisitionEvent_.reset();
   }
 }
 
@@ -1412,14 +1515,49 @@ void __stdcall WSESWrapperMain::pointReady(int index)
  */
 void __stdcall WSESWrapperMain::regionReady()
 {
-  if (this_ == 0)
-    return;
+  this_->regionReadyHandler();
+}
 
-  this_->regionReadyEvent_.set();
-  if (this_->blockRegionReady_)
+/*!
+ * This is the member function called by the static regionReady() callback.
+ */
+void WSESWrapperMain::regionReadyHandler()
+{
+  regionReadyEvent_.set();
+  if (blockRegionReady_)
   {
-    HANDLE handles[] = {this_->continueAcquisitionEvent_.handle(), this_->abortAcquisitionEvent_.handle()};
+    HANDLE handles[] = {continueAcquisitionEvent_.handle(), abortAcquisitionEvent_.handle()};
     WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-    this_->continueAcquisitionEvent_.reset();
+    continueAcquisitionEvent_.reset();
   }
+}
+
+/*!
+ * Attempts to populate the sesSpectrum_ object.
+ *
+ * \return Returns \c true if successful.
+ */
+bool WSESWrapperMain::readSpectrumObject()
+{
+  SesNS::WSpectrum *tmpSpectrum = sesSpectrum_;
+  if (lib_->GDS_GetCurrSpectrum != 0)
+    lib_->GDS_GetCurrSpectrum(&tmpSpectrum);
+  if (tmpSpectrum != 0)
+    sesSpectrum_ = tmpSpectrum;
+  return (sesSpectrum_ != 0);
+}
+
+/*!
+ * Attempts to populate the sesSignals_ object.
+ *
+ * \return Returns \c true if successful.
+ */
+bool WSESWrapperMain::readSignalsObject()
+{
+  SesNS::WSignals *tmpSignals = sesSignals_;
+  if (lib_->GDS_GetCurrSignals != 0)
+    lib_->GDS_GetCurrSignals(&tmpSignals);
+  if (tmpSignals != 0)
+    sesSignals_ = tmpSignals;
+  return (sesSignals_ != 0);
 }

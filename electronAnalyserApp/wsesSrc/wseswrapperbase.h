@@ -29,6 +29,7 @@ protected:
   int getLibVersion(int index, void *value, int &size);
   int getLibError(int index, void *value, int &size);
   int getLibWorkingDir(int index, void *value, int &size);
+  int getInstrumentLibrary(int index, void *value, int &size);
   int getInstrumentStatus(int index, void *value, int &size);
   int getAlwaysDelayRegion(int index, void *value, int &size);
   int getAllowIOWithDetector(int index, void *value, int &size);
@@ -56,6 +57,7 @@ protected:
   // Property setters
   int readOnlyStub(int index, const void *value);
   int setLibWorkingDir(int index, const void *value);
+  int setInstrumentLibrary(int index, const void *value);
   int setAlwaysDelayRegion(int index, const void *value);
   int setAllowIOWithDetector(int index, const void *value);
   int setDetectorRegion(int index, const void *value);
@@ -84,12 +86,11 @@ protected:
 
   bool instrumentLoaded_;
   std::string workingDir_;
+  std::string instrumentLibraryName_;
   SesNS::WInstrumentInfo sesInstrumentInfo_;
   SesNS::WDetectorInfo sesDetectorInfo_;
   SesNS::WDetector sesDetectorRegion_;
   SesNS::WRegion sesRegion_;
-  SesNS::WSpectrum *sesSpectrum_;
-  SesNS::WSignals *sesSignals_;
   std::string tempFileName_;
   unsigned short activeDetectors_;
 

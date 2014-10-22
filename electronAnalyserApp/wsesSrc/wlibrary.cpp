@@ -1,6 +1,7 @@
 #include "wlibrary.h"
 #include "common.hpp"
 
+#define NOMINMAX
 #include <windows.h>
 #include <string>
 

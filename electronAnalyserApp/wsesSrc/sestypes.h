@@ -1,7 +1,9 @@
 #ifndef __SESWRAPPER_SESTYPES_H__
 #define __SESWRAPPER_SESTYPES_H__
 
+#include "c_function.hpp"
 #include "types.h"
+
 #include <memory.h>
 
 /*! \namespace SesNS
@@ -15,10 +17,10 @@ namespace SesNS
   typedef Vector *Matrix;
 
   /* C callbacks */
-  typedef void (__stdcall *FnErrorNotify)(int ErrorCode);
-  typedef void (__stdcall *FnPointReady)(int Index);
-  typedef void (__stdcall *FnRegionReady)();
-  typedef void (__stdcall *FnOffsetReady)(double *Offset, bool *Finished);
+  typedef C_Function<void, int /* Error Code */>::Pointer ErrorNotify;
+  typedef C_Function<void, int /* Point Index */>::Pointer PointReady;
+  typedef C_Function<>::Pointer RegionReady;
+  typedef C_Function<void, double * /* Offset */, bool * /* Finished */>::Pointer OffsetReady;
 
   /* Enumerations */
   enum InstrumentOptions
@@ -90,7 +92,7 @@ namespace SesNS
     int FirstYChannel;
     int LastYChannel;
     int Slices;
-    bool ADCMode;
+    char ADCMode;
     int ADCMask;
     int DiscLvl;
   };
@@ -102,7 +104,7 @@ namespace SesNS
       memset(this, 0, sizeof(WRegion));
       Kinetic = true;
       Fixed = true;
-      UseRegionDetector = false;
+      UseRegionDetector = true;
       ADCMode = true;
     }
     Char32 Name;
@@ -121,7 +123,7 @@ namespace SesNS
     int FirstYChannel;
     int LastYChannel;
     int Slices;
-    bool ADCMode;
+    char ADCMode;
     int ADCMask;
     int DiscLvl;
     // End of Detector DetectorRegion
@@ -168,57 +170,6 @@ namespace SesNS
     Char32 *Names;
     Matrix Data;
   };
-
-  typedef void (__stdcall *VoidNoArg)();
-  typedef int (__stdcall *IntNoArg)();
-  typedef const char *(__stdcall *StringNoArg)();
-  typedef bool (__stdcall *BoolNoArg)();
-
-  typedef int (__stdcall *FnGDS_Initialize)(FnErrorNotify errorNotify, void *mainWindow);
-  typedef int (__stdcall *FnGDS_LoadInstrument)(const char *fileName);
-  typedef int (__stdcall *FnGDS_SaveInstrument)(const char *fileName);
-  typedef int (__stdcall *FnGDS_LoadRunVar)(const char *fileName);
-  typedef int (__stdcall *FnGDS_SaveRunVar)(const char *fileName);
-  typedef int (__stdcall *FnGDS_GetOption)(int Option, void *value);
-  typedef int (__stdcall *FnGDS_SetOption)(int Option, const void *value);
-  typedef int (__stdcall *FnGDS_GetInstrumentInfo)(const WInstrumentInfo *instrumentInfo);
-  typedef int (__stdcall *FnGDS_GetDetectorInfo)(const WDetectorInfo *detectorInfo);
-  typedef int (__stdcall *FnGDS_GetElementSets)(const char *elementSets, int *len);
-  typedef int (__stdcall *FnGDS_GetElements)(const char *elementNames, int *len);
-  typedef int (__stdcall *FnGDS_GetLensModes)(const char *lensModes, int *len);
-  typedef int (__stdcall *FnGDS_GetPassEnergies)(const char *lensMode, char *passEnergies, int *len);
-  typedef int (__stdcall *FnGDS_GetCurrElementSet)(char *elementSet, int *len);
-  typedef int (__stdcall *FnGDS_GetCurrLensMode)(char *lensMode, int *len);
-  typedef int (__stdcall *FnGDS_GetCurrPassEnergy)(double *passEnergy);
-  typedef int (__stdcall *FnGDS_GetCurrKineticEnergy)(double *kineticEnergy);
-  typedef int (__stdcall *FnGDS_GetCurrExcitationEnergy)(double *excitationEnergy);
-  typedef int (__stdcall *FnGDS_GetCurrBindingEnergy)(double *bindingEnergy);
-  typedef int (__stdcall *FnGDS_GetGlobalDetector)(WDetector *detectorRegion);
-  typedef int (__stdcall *FnGDS_GetElement)(const char *elementName, double *voltage);
-  typedef int (__stdcall *FnGDS_SetElementSet)(const char *elementSet);
-  typedef int (__stdcall *FnGDS_SetLensMode)(const char *lensMode);
-  typedef int (__stdcall *FnGDS_SetPassEnergy)(double passEnergy);
-  typedef int (__stdcall *FnGDS_SetKineticEnergy)(double kineticEnergy);
-  typedef int (__stdcall *FnGDS_SetExcitationEnergy)(double excitationEnergy);
-  typedef int (__stdcall *FnGDS_SetBindingEnergy)(double bindingEnergy);
-  typedef int (__stdcall *FnGDS_SetGlobalDetector)(WDetector *detectorRegion);
-  typedef int (__stdcall *FnGDS_SetElement)(const char *elementName, double voltage);
-  typedef int (__stdcall *FnGDS_CheckRegion)(WRegion *region, int *steps, double *time, double *energyStep);
-  typedef int (__stdcall *FnGDS_Start)(WRegion *region, WSpectrum **spectrum, const char *tempFile,
-                        int sweepNumber, FnPointReady pointReady, FnRegionReady regionReady);
-  typedef int (__stdcall *FnGDS_GetStatus)(int *status);
-  typedef int (__stdcall *FnGDS_GetDrift)(double *totalDrift, double *deltaDrift);
-  typedef int (__stdcall *FnGDS_CalibrateOffset)(WRegion *region, WSpectrum **spectrum,
-                                  FnOffsetReady offsetReady, FnRegionReady regionReady);
-  typedef int (__stdcall *FnGDS_GetOffset)(double *offset);
-  typedef int (__stdcall *FnGDS_UseDetector)(bool useDetector);
-  typedef int (__stdcall *FnGDS_UseSignals)(bool useSignals);
-  typedef int (__stdcall *FnGDS_GetCurrSpectrum)(WSpectrum **spectrum);
-  typedef int (__stdcall *FnGDS_GetCurrSignals)(WSignals **signals);
-  typedef int (__stdcall *FnGDS_SetupDetector)(WDetector *detectorRegion);
-  typedef int (__stdcall *FnGDS_GetRawImage)(unsigned char *data, int *width, int *height, int *byteSize);
-  typedef int (__stdcall *FnGDS_InitAcquisition)(WRegion *region, WSpectrum **spectrum, WSignals **signals, const char *tempFile, FnPointReady pointReady, FnRegionReady regionReady);
-  typedef int (__stdcall *FnGDS_StartAcquisition)(int sweepNumber);
 }
 
 #endif

@@ -3,48 +3,51 @@
 #include "sestypes.h"
 #include "werror.h"
 
+#define NOMINMAX
 #define _WIN32_WINNT 0x0502
 #include <windows.h>
 
-WSESWrapperMain *gMain = 0;
-int gAttachedThreads = 0;
+namespace
+{
+  WSESWrapperMain *gMain = 0;
+  int gAttachedThreads = 0;
+}
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID)
 {
   BOOL result = TRUE;
   switch( dwReason ) 
   { 
-      case DLL_PROCESS_ATTACH:
-        if (gMain == 0)
-        {
-          char buffer[512];
-          int size = 512;
-          ::GetModuleFileName(hInstance, buffer, size);
-          std::string path = buffer;
-          int pos = path.find_last_of('/');
-          if (pos == path.npos)
-            pos = path.find_last_of('\\');
-          path = path.substr(0, pos + 1) + "..";
-          gMain = new WSESWrapperMain(path.c_str());
-          DWORD errorCode = GetLastError();
-        }
-        break;
+  case DLL_PROCESS_ATTACH:
+    {
+      std::string path;
+      path.resize(1024);
+      ::GetModuleFileName(hInstance, const_cast<char *>(path.c_str()), path.size());
+      int pos = path.find_last_of('/');
+      if (pos == path.npos)
+        pos = path.find_last_of('\\');
+      path = path.substr(0, pos + 1) + "..";
+      gMain = WSESWrapperMain::instance(path.c_str());
+      break;
+    }
+  case DLL_THREAD_ATTACH:
+    {
+      gAttachedThreads++;
+      break;
+    }
+  case DLL_THREAD_DETACH:
+    {
+      gAttachedThreads--;
+      break;
+    }
 
-      case DLL_THREAD_ATTACH:
-        gAttachedThreads++;
-          break;
-
-      case DLL_THREAD_DETACH:
-        gAttachedThreads--;
-          break;
-
-      case DLL_PROCESS_DETACH:
-        if (gMain != 0 && !gMain->isInitialized())
-        {
-          delete gMain;
-          gMain = 0;
-        }
-        break;
+  case DLL_PROCESS_DETACH:
+    {
+      if (gMain != 0)
+        gMain->release();
+      gMain = 0;
+      break;
+    }
   }
   return result;
 }
@@ -158,23 +161,32 @@ int __stdcall WRP_GetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion
 }
 
 /*!
+ * Exported function that wraps the WSESWrapperMain::getProperty() member function for the \c analyzer_region property.
+ */
+int __stdcall WRP_GetAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion)
+{
+  int size = sizeof(SESWrapperNS::AnalyzerRegion);
+  return gMain->getProperty("analyzer_region", 0, analyzerRegion, size);
+}
+
+/*!
  * Exported function that wraps the WSESWrapperMain::setProperty() member function. Does not verify the
  * type of \p value.
  */
-int __stdcall WRP_SetProperty(const char *property, int reserved, const void *value)
+int __stdcall WRP_SetProperty(const char *property, int size, const void *value)
 {
-  return gMain->setProperty(property, reserved, value);
+  return gMain->setProperty(property, size, value);
 }
 
 /*!
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_BOOL.
  */
-int __stdcall WRP_SetPropertyBool(const char *property, int reserved, const bool *value)
+int __stdcall WRP_SetPropertyBool(const char *property, int /* size */, const bool *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_BOOL)
-    error = gMain->setProperty(property, reserved, value);
+    error = gMain->setProperty(property, sizeof(bool), value);
   return error;
 }
 
@@ -182,11 +194,11 @@ int __stdcall WRP_SetPropertyBool(const char *property, int reserved, const bool
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_INT32.
  */
-int __stdcall WRP_SetPropertyInteger(const char *property, int reserved, const int *value)
+int __stdcall WRP_SetPropertyInteger(const char *property, int /* size */, const int *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_INT32)
-    error = gMain->setProperty(property, reserved, value);
+    error = gMain->setProperty(property, sizeof(int), value);
   return error;
 }
 
@@ -194,11 +206,11 @@ int __stdcall WRP_SetPropertyInteger(const char *property, int reserved, const i
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_DOUBLE.
  */
-int __stdcall WRP_SetPropertyDouble(const char *property, int reserved, const double *value)
+int __stdcall WRP_SetPropertyDouble(const char *property, int /* size  */, const double *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_DOUBLE)
-    error = gMain->setProperty(property, reserved, value);
+    error = gMain->setProperty(property, sizeof(double), value);
   return error;
 }
 
@@ -206,11 +218,11 @@ int __stdcall WRP_SetPropertyDouble(const char *property, int reserved, const do
  * Exported function that wraps the WSESWrapperMain::setProperty() member function for properties of type
  * TYPE_STRING.
  */
-int __stdcall WRP_SetPropertyString(const char *property, int reserved, const char *value)
+int __stdcall WRP_SetPropertyString(const char *property, int /* size */, const char *value)
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_STRING)
-    error = gMain->setProperty(property, reserved, value);
+    error = gMain->setProperty(property, strlen(value), value);
   return error;
 }
 
@@ -220,7 +232,7 @@ int __stdcall WRP_SetPropertyString(const char *property, int reserved, const ch
  */
 int __stdcall WRP_SetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion)
 {
-  return gMain->setProperty("detector_region", 0, detectorRegion);
+  return gMain->setProperty("detector_region", sizeof(SESWrapperNS::WDetectorRegion), detectorRegion);
 }
 
 /*!
@@ -229,7 +241,7 @@ int __stdcall WRP_SetDetectorRegion(SESWrapperNS::PDetectorRegion detectorRegion
  */
 int __stdcall WRP_SetAnalyzerRegion(SESWrapperNS::PAnalyzerRegion analyzerRegion)
 {
-  return gMain->setProperty("analyzer_region", 0, analyzerRegion);
+  return gMain->setProperty("analyzer_region", sizeof(SESWrapperNS::WAnalyzerRegion), analyzerRegion);
 }
 
 /*!

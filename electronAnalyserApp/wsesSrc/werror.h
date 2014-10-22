@@ -35,8 +35,11 @@ public:
     ERR_INCORRECT_ANALYZER_REGION = -10, /*!< Error in analyzer region settings */
     ERR_INCORRECT_DETECTOR_REGION = -11, /*!< Error in detector region settings */
     ERR_READONLY = -12, /*!< Attempted to access a read-only variable or data parameter */
-    ERR_NO_INSTRUMENT = -13, /*!< No instrument is loaded (see \ref WRP_LoadInstrument). */
+    ERR_NO_INSTRUMENT = -13, /*!< No instrument is loaded (see \ref WRP_LoadInstrument) */
     ERR_ACQUIRING = -14, /*!< Acquisition in progress */
+    ERR_INITIALIZE_FAIL = -15, /*!< Error in call to function GDS_Initialize() */
+    ERR_LOAD_LIBRARY = -16, /*!< Could not load the instrument library */
+    ERR_OPEN_INSTRUMENT = -17, /*!< Could not open the instrument configuration file */
     ERR_TIMEOUT = 8, /*!< Operation timed out */
     ERR_NOT_IMPLEMENTED = 9 /*!< Function has not been implemented */
   };

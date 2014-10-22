@@ -1,6 +1,9 @@
 #include "wsesinstrument.h"
 #include "common.hpp"
 
+#define NOMINMAX
+#include <Windows.h>
+
 #include <sstream>
 
 using namespace SesNS;
@@ -18,6 +21,7 @@ using namespace CommonNS;
  */
 WSESInstrument::WSESInstrument()
 {
+  resetFunctions();
 }
 
 /*!
@@ -36,78 +40,86 @@ WSESInstrument::~WSESInstrument()
  */
 bool WSESInstrument::load(const char *fileName)
 {
-  bool success = true;
-
-  if (!isLoaded() && !WLibrary::load(fileName))
+  if (!WLibrary::load(fileName))
     return false;
 
-  success = ::import(*this, "GDS_GetLastError", GDS_GetLastError);
-  success = ::import(*this, "GDS_GetLastErrorString", GDS_GetLastErrorString) && success;
-  success = ::import(*this, "GDS_Initialize", GDS_Initialize) && success;
-  success = ::import(*this, "GDS_Finalize", GDS_Finalize) && success;
-  success = ::import(*this, "GDS_LoadInstrument", GDS_LoadInstrument) && success;
-  success = ::import(*this, "GDS_SaveInstrument", GDS_SaveInstrument) && success;
-  success = ::import(*this, "GDS_NewInstrument", GDS_NewInstrument) && success;
-  success = ::import(*this, "GDS_LoadRunVar", GDS_LoadRunVar) && success;
-  success = ::import(*this, "GDS_SaveRunVar", GDS_SaveRunVar) && success;
-  success = ::import(*this, "GDS_ResetInstrument", GDS_ResetInstrument) && success;
-  success = ::import(*this, "GDS_ZeroSupplies", GDS_ZeroSupplies) && success;
-  success = ::import(*this, "GDS_TestCommunication", GDS_TestCommunication) && success;
-  success = ::import(*this, "GDS_GetOption", GDS_GetOption) && success;
-  success = ::import(*this, "GDS_SetOption", GDS_SetOption) && success;
-  success = ::import(*this, "GDS_GetInstrumentInfo", GDS_GetInstrumentInfo) && success;
-  success = ::import(*this, "GDS_GetDetectorInfo", GDS_GetDetectorInfo) && success;
-  ::import(*this, "GDS_HasSupplyLib", GDS_HasSupplyLib);
-  ::import(*this, "GDS_HasDetectorLib", GDS_HasDetectorLib);
-  ::import(*this, "GDS_HasSignalsLib", GDS_HasSignalsLib);
-  success = ::import(*this, "GDS_GetElementSets", GDS_GetElementSets) && success;
-  success = ::import(*this, "GDS_GetLensModes", GDS_GetLensModes) && success;
-  success = ::import(*this, "GDS_GetPassEnergies", GDS_GetPassEnergies) && success;
-  success = ::import(*this, "GDS_GetCurrElementSet", GDS_GetCurrElementSet) && success;
-  success = ::import(*this, "GDS_GetCurrLensMode", GDS_GetCurrLensMode) && success;
-  success = ::import(*this, "GDS_GetCurrPassEnergy", GDS_GetCurrPassEnergy) && success;
-  success = ::import(*this, "GDS_GetCurrKineticEnergy", GDS_GetCurrKineticEnergy) && success;
-  success = ::import(*this, "GDS_GetCurrExcitationEnergy", GDS_GetCurrExcitationEnergy) && success;
-  success = ::import(*this, "GDS_GetCurrBindingEnergy", GDS_GetCurrBindingEnergy) && success;
-  success = ::import(*this, "GDS_GetGlobalDetector", GDS_GetGlobalDetector) && success;
-  success = ::import(*this, "GDS_GetElement", GDS_GetElement) && success;
-  ::import(*this, "GDS_GetElements", GDS_GetElements);
-  success = ::import(*this, "GDS_SetElementSet", GDS_SetElementSet) && success;
-  success = ::import(*this, "GDS_SetLensMode", GDS_SetLensMode) && success;
-  success = ::import(*this, "GDS_SetPassEnergy", GDS_SetPassEnergy) && success;
-  success = ::import(*this, "GDS_SetKineticEnergy", GDS_SetKineticEnergy) && success;
-  success = ::import(*this, "GDS_SetExcitationEnergy", GDS_SetExcitationEnergy) && success;
-  success = ::import(*this, "GDS_SetBindingEnergy", GDS_SetBindingEnergy) && success;
-  success = ::import(*this, "GDS_SetGlobalDetector", GDS_SetGlobalDetector) && success;
-  success = ::import(*this, "GDS_SetElement", GDS_SetElement) && success;
-  success = ::import(*this, "GDS_CheckRegion", GDS_CheckRegion) && success;
-  success = ::import(*this, "GDS_Start", GDS_Start) && success;
-  success = ::import(*this, "GDS_Stop", GDS_Stop) && success;
-  success = ::import(*this, "GDS_GetStatus", GDS_GetStatus) && success;
-  success = ::import(*this, "GDS_GetDrift", GDS_GetDrift) && success;
-  success = ::import(*this, "GDS_CalibrateOffset", GDS_CalibrateOffset) && success;
-  success = ::import(*this, "GDS_GetOffset", GDS_GetOffset) && success;
-  ::import(*this, "GDS_UseDetector", GDS_UseDetector);
-  ::import(*this, "GDS_UseSignals", GDS_UseSignals);
-  ::import(*this, "GDS_GetCurrSpectrum", GDS_GetCurrSpectrum);
-  ::import(*this, "GDS_GetCurrSignals", GDS_GetCurrSignals);
-  success = ::import(*this, "GDS_InstallInstrument", GDS_InstallInstrument) && success;
-  success = ::import(*this, "GDS_InstallSupplies", GDS_InstallSupplies) && success;
-  success = ::import(*this, "GDS_InstallElements", GDS_InstallElements) && success;
-  success = ::import(*this, "GDS_InstallLensModes", GDS_InstallLensModes) && success;
-  success = ::import(*this, "GDS_SetupDetector", GDS_SetupDetector) && success;
-  ::import(*this, "GDS_SetupSignals", GDS_SetupSignals);
-  success = ::import(*this, "GDS_CalibrateVoltages", GDS_CalibrateVoltages) && success;
-  success = ::import(*this, "GDS_CalibrateDetector", GDS_CalibrateDetector) && success;
-  success = ::import(*this, "GDS_ControlSupplies", GDS_ControlSupplies) && success;
-  success = ::import(*this, "GDS_SupplyInfo", GDS_SupplyInfo) && success;
-  success = ::import(*this, "GDS_DetectorInfo", GDS_DetectorInfo) && success;
-  ::import(*this, "GDS_GetRawImage", GDS_GetRawImage);
-  success = ::import(*this, "GDS_InitAcquisition", GDS_InitAcquisition) && success;
-  //success = ::import(*this, "GDS_StartAcquisition", GDS_StartAcquisition) && success;
-  GDS_StartAcquisition = 0;
-success = true;
-  return success;
+  resetFunctions();
+
+  try
+  {
+    ::import(*this, "GDS_GetLastError", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetLastError);
+    ::import(*this, "GDS_GetLastErrorString", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetLastErrorString);
+    ::import(*this, "GDS_Initialize", SESWrapperNS::FUNCTION_REQUIRED, GDS_Initialize);
+    ::import(*this, "GDS_Finalize", SESWrapperNS::FUNCTION_REQUIRED, GDS_Finalize);
+    ::import(*this, "GDS_LoadInstrument", SESWrapperNS::FUNCTION_REQUIRED, GDS_LoadInstrument);
+    ::import(*this, "GDS_SaveInstrument", SESWrapperNS::FUNCTION_REQUIRED, GDS_SaveInstrument);
+    ::import(*this, "GDS_NewInstrument", SESWrapperNS::FUNCTION_REQUIRED, GDS_NewInstrument);
+    ::import(*this, "GDS_ResetInstrument", SESWrapperNS::FUNCTION_REQUIRED, GDS_ResetInstrument);
+    ::import(*this, "GDS_ZeroSupplies", SESWrapperNS::FUNCTION_REQUIRED, GDS_ZeroSupplies);
+    ::import(*this, "GDS_TestCommunication", SESWrapperNS::FUNCTION_REQUIRED, GDS_TestCommunication);
+    ::import(*this, "GDS_GetOption", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetOption);
+    ::import(*this, "GDS_SetOption", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetOption);
+    ::import(*this, "GDS_GetInstrumentInfo", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetInstrumentInfo);
+    ::import(*this, "GDS_GetDetectorInfo", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetDetectorInfo);
+    ::import(*this, "GDS_HasSupplyLib", SESWrapperNS::FUNCTION_OPTIONAL, GDS_HasSupplyLib);
+    ::import(*this, "GDS_HasDetectorLib", SESWrapperNS::FUNCTION_OPTIONAL, GDS_HasDetectorLib);
+    ::import(*this, "GDS_HasSignalsLib", SESWrapperNS::FUNCTION_OPTIONAL, GDS_HasSignalsLib);
+    ::import(*this, "GDS_GetElementSets", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetElementSets);
+    ::import(*this, "GDS_GetLensModes", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetLensModes);
+    ::import(*this, "GDS_GetPassEnergies", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetPassEnergies);
+    ::import(*this, "GDS_GetCurrElementSet", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrElementSet);
+    ::import(*this, "GDS_GetCurrLensMode", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrLensMode);
+    ::import(*this, "GDS_GetCurrPassEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrPassEnergy);
+    ::import(*this, "GDS_GetCurrKineticEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrKineticEnergy);
+    ::import(*this, "GDS_GetCurrExcitationEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrExcitationEnergy);
+    ::import(*this, "GDS_GetCurrBindingEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetCurrBindingEnergy);
+    ::import(*this, "GDS_GetGlobalDetector", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetGlobalDetector);
+    ::import(*this, "GDS_GetElement", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetElement);
+    ::import(*this, "GDS_GetElements", SESWrapperNS::FUNCTION_OPTIONAL, GDS_GetElements);
+    ::import(*this, "GDS_SetElementSet", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetElementSet);
+    ::import(*this, "GDS_SetLensMode", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetLensMode);
+    ::import(*this, "GDS_SetPassEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetPassEnergy);
+    ::import(*this, "GDS_SetKineticEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetKineticEnergy);
+    ::import(*this, "GDS_SetExcitationEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetExcitationEnergy);
+    ::import(*this, "GDS_SetBindingEnergy", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetBindingEnergy);
+    ::import(*this, "GDS_SetGlobalDetector", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetGlobalDetector);
+    ::import(*this, "GDS_SetElement", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetElement);
+    ::import(*this, "GDS_CheckRegion", SESWrapperNS::FUNCTION_REQUIRED, GDS_CheckRegion);
+    ::import(*this, "GDS_Start", SESWrapperNS::FUNCTION_REQUIRED, GDS_Start);
+    ::import(*this, "GDS_Stop", SESWrapperNS::FUNCTION_REQUIRED, GDS_Stop);
+    ::import(*this, "GDS_GetStatus", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetStatus);
+    ::import(*this, "GDS_GetDrift", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetDrift);
+    ::import(*this, "GDS_CalibrateOffset", SESWrapperNS::FUNCTION_REQUIRED, GDS_CalibrateOffset);
+    ::import(*this, "GDS_GetOffset", SESWrapperNS::FUNCTION_REQUIRED, GDS_GetOffset);
+    ::import(*this, "GDS_UseDetector", SESWrapperNS::FUNCTION_OPTIONAL, GDS_UseDetector);
+    ::import(*this, "GDS_UseSignals", SESWrapperNS::FUNCTION_OPTIONAL, GDS_UseSignals);
+    ::import(*this, "GDS_GetCurrSpectrum", SESWrapperNS::FUNCTION_OPTIONAL, GDS_GetCurrSpectrum);
+    ::import(*this, "GDS_GetCurrSignals", SESWrapperNS::FUNCTION_OPTIONAL, GDS_GetCurrSignals);
+    ::import(*this, "GDS_InstallInstrument", SESWrapperNS::FUNCTION_REQUIRED, GDS_InstallInstrument);
+    ::import(*this, "GDS_InstallSupplies", SESWrapperNS::FUNCTION_REQUIRED, GDS_InstallSupplies);
+    ::import(*this, "GDS_InstallElements", SESWrapperNS::FUNCTION_REQUIRED, GDS_InstallElements);
+    ::import(*this, "GDS_InstallLensModes", SESWrapperNS::FUNCTION_REQUIRED, GDS_InstallLensModes);
+    ::import(*this, "GDS_SetupDetector", SESWrapperNS::FUNCTION_REQUIRED, GDS_SetupDetector);
+    ::import(*this, "GDS_SetupSignals", SESWrapperNS::FUNCTION_OPTIONAL, GDS_SetupSignals);
+    ::import(*this, "GDS_CalibrateVoltages", SESWrapperNS::FUNCTION_REQUIRED, GDS_CalibrateVoltages);
+    ::import(*this, "GDS_CalibrateDetector", SESWrapperNS::FUNCTION_REQUIRED, GDS_CalibrateDetector);
+    ::import(*this, "GDS_ControlSupplies", SESWrapperNS::FUNCTION_REQUIRED, GDS_ControlSupplies);
+    ::import(*this, "GDS_SupplyInfo", SESWrapperNS::FUNCTION_REQUIRED, GDS_SupplyInfo);
+    ::import(*this, "GDS_DetectorInfo", SESWrapperNS::FUNCTION_REQUIRED, GDS_DetectorInfo);
+    ::import(*this, "GDS_GetRawImage", SESWrapperNS::FUNCTION_OPTIONAL, GDS_GetRawImage);
+    ::import(*this, "GDS_InitAcquisition", SESWrapperNS::FUNCTION_REQUIRED, GDS_InitAcquisition);
+    ::import(*this, "GDS_StartAcquisition", SESWrapperNS::FUNCTION_REQUIRED, GDS_StartAcquisition);
+    ::import(*this, "SC_GetProperty", SESWrapperNS::FUNCTION_OPTIONAL, SC_GetProperty);
+    ::import(*this, "SC_SetProperty", SESWrapperNS::FUNCTION_OPTIONAL, SC_SetProperty);
+    ::import(*this, "SC_SetPropertyEx", SESWrapperNS::FUNCTION_OPTIONAL, SC_SetProperty);
+  }
+  catch (WFunctionException &)
+  {
+    unload();
+    return false;
+  }
+
+  return true;
 }
 
 /*!
@@ -117,7 +129,11 @@ success = true;
 void WSESInstrument::unload()
 {
   WLibrary::unload();
+  resetFunctions();
+}
 
+void WSESInstrument::resetFunctions()
+{
   GDS_GetLastError = 0;
   GDS_GetLastErrorString = 0;
   GDS_Initialize = 0;
@@ -125,8 +141,6 @@ void WSESInstrument::unload()
   GDS_LoadInstrument = 0;
   GDS_SaveInstrument = 0;
   GDS_NewInstrument = 0;
-  GDS_LoadRunVar = 0;
-  GDS_SaveRunVar = 0;
   GDS_ResetInstrument = 0;
   GDS_ZeroSupplies = 0;
   GDS_TestCommunication = 0;
@@ -182,4 +196,7 @@ void WSESInstrument::unload()
   GDS_GetRawImage = 0;
   GDS_InitAcquisition = 0;
   GDS_StartAcquisition = 0;
+  SC_GetProperty = 0;
+  SC_SetProperty = 0;
+  SC_SetPropertyEx = 0;
 }

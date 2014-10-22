@@ -6,6 +6,7 @@
 #include "common.hpp"
 #include "constants.h"
 
+#define NOMINMAX
 #include <windows.h>
 
 #include <iostream>
@@ -32,7 +33,7 @@ using namespace SESWrapperNS;
  * \param[in] workingDir The current working directory.
  */
 WSESWrapperBase::WSESWrapperBase(const char *workingDir)
-: lib_(new WSESInstrument), instrumentLoaded_(false), workingDir_(workingDir), sesSpectrum_(0), sesSignals_(0),
+: lib_(new WSESInstrument), instrumentLoaded_(false), workingDir_(workingDir), instrumentLibraryName_("dll\\SESInstrument"),
   activeDetectors_(0x0001), iteration_(0), startTime_(0),
   blockPointReady_(false), blockRegionReady_(false), resetDataBetweenIterations_(false)
 {
@@ -46,6 +47,7 @@ WSESWrapperBase::WSESWrapperBase(const char *workingDir)
   properties_.insert(PropertyKeyValue("lib_version", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getLibVersion, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("lib_error", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getLibError, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("lib_working_dir", Property(this, &WSESWrapperBase::setLibWorkingDir, &WSESWrapperBase::getLibWorkingDir, Property::TYPE_STRING)));
+  properties_.insert(PropertyKeyValue("instrument_library", Property(this, &WSESWrapperBase::setInstrumentLibrary, &WSESWrapperBase::getInstrumentLibrary, Property::TYPE_STRING)));
   properties_.insert(PropertyKeyValue("instrument_status", Property(this, &WSESWrapperBase::readOnlyStub, &WSESWrapperBase::getInstrumentStatus, Property::TYPE_INT32)));
   properties_.insert(PropertyKeyValue("always_delay_region", Property(this, &WSESWrapperBase::setAlwaysDelayRegion, &WSESWrapperBase::getAlwaysDelayRegion, Property::TYPE_BOOL)));
   properties_.insert(PropertyKeyValue("allow_io_with_detector", Property(this, &WSESWrapperBase::setAllowIOWithDetector, &WSESWrapperBase::getAllowIOWithDetector, Property::TYPE_BOOL)));
@@ -79,6 +81,26 @@ WSESWrapperBase::~WSESWrapperBase()
 {
   delete lib_;
   errors_->release();
+}
+
+/*!
+ * Getter for the \c instrument_library property. If the \p value parameter is 0, \p size will be 
+ * modified to return the required buffer length for the description.
+ *
+ * \param[in] index Not used.
+ * \param[out] value A \c char* buffer to be filled with the instrument library file name. Can be 0 (NULL).
+ * \param[in,out] size If \p value is non-null, this parameter is assumed to contain the maximum number of elements in the
+ *             buffer. After completion, \p size is always modified to contain the length of the resulting array.
+ *
+ * \return Always returns WError::ERR_OK.
+ */
+int WSESWrapperBase::getInstrumentLibrary(int index, void *value, int &size)
+{
+  char *strValue = reinterpret_cast<char *>(value);
+  if (strValue != 0)
+    strValue[std::string(SESWrapperNS::gLibraryName).copy(strValue, size)] = 0;
+  size = strlen(SESWrapperNS::gLibraryName);
+  return WError::ERR_OK;
 }
 
 /*!
@@ -325,14 +347,12 @@ int WSESWrapperBase::getDetectorRegion(int index, void *value, int &size)
 
   if (detectorRegion != 0)
   {
-    SesNS::WDetector detector;
-    lib_->GDS_GetGlobalDetector(&detector);
-    detectorRegion->adcMode_ = detector.ADCMode;
-    detectorRegion->firstXChannel_ = detector.FirstXChannel;
-    detectorRegion->firstYChannel_ = detector.FirstYChannel;
-    detectorRegion->lastXChannel_ = detector.LastXChannel;
-    detectorRegion->lastYChannel_ = detector.LastYChannel;
-    detectorRegion->slices_ = detector.Slices;
+    detectorRegion->adcMode_ = sesRegion_.ADCMode;
+    detectorRegion->firstXChannel_ = sesRegion_.FirstXChannel;
+    detectorRegion->firstYChannel_ = sesRegion_.FirstYChannel;
+    detectorRegion->lastXChannel_ = sesRegion_.LastXChannel;
+    detectorRegion->lastYChannel_ = sesRegion_.LastYChannel;
+    detectorRegion->slices_ = sesRegion_.Slices;
   }
 
   return WError::ERR_OK;
@@ -807,6 +827,28 @@ int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 }
 
 /*!
+ * Setter for the \c instrument_library property. Always unloads the current library and opens the new one if it has been specified. A NULL string simply unloads the current library.
+ * This function does not call GDS_Finalize() before unloading. That responsibility falls on the calling application.
+ *
+ * \param[in] index Not used.
+ * \param[in] value A null-terminated C string that contains the name of the instrument library.
+ *
+ * \return Returns WError::ERR_OK if successfull, otherwise WError::ERR_LOAD_LIBRARY.
+ */
+int WSESWrapperBase::setInstrumentLibrary(int index, const void *value)
+{
+  const char *strValue = reinterpret_cast<const char *>(value);
+  lib_->unload();
+  if (strValue != 0)
+  {
+    instrumentLibraryName_ = strValue;
+    if (!lib_->load(strValue))
+      return WError::ERR_LOAD_LIBRARY;
+  }
+	return WError::ERR_OK;
+}
+
+/*!
  * Setter for the \c always_delay_region property. If \c true (1), a delay will be made before starting
  * the acquisition of a region.
  *
@@ -849,53 +891,34 @@ int WSESWrapperBase::setAllowIOWithDetector(int index, const void *value)
  * \param[in] index Not used.
  * \param[in] value A pointer to a SESWrapperNS::DetectorRegion structure.
  *
- * \return WError::ERR_NO_INSTRUMENT if WSESWrapper::loadInstrument() has not been called, WError::ERR_INCORRECT_DETECTOR_REGION
- *         is an error was detected in the detector region, otherwise WError::ERR_OK.
+ * \return Allways returns WError::ERR_OK.
  */
 int WSESWrapperBase::setDetectorRegion(int index, const void *value)
 {
-  if (!instrumentLoaded_)
-    return WError::ERR_NO_INSTRUMENT;
-
-  int status = SesNS::NonOperational;
-  lib_->GDS_GetStatus(&status);
-  if (status == SesNS::Running)
-    return WError::ERR_ACQUIRING;
-
   const DetectorRegion *detectorRegion = reinterpret_cast<const SESWrapperNS::DetectorRegion *>(value);
-  SesNS::WRegion region;
-  char buffer[256];
-  int size = 256;
-  double passEnergy = 0;
-  lib_->GDS_GetCurrLensMode(buffer, &size);
-  lib_->GDS_GetCurrPassEnergy(&passEnergy);
-  memmove(&region, &sesRegion_, sizeof(SesNS::WRegion));
-  std::copy(buffer, buffer + strlen(buffer), region.LensMode);
-  region.PassEnergy = passEnergy;
-  region.ADCMask = 0;
-  region.ADCMode = detectorRegion->adcMode_;
-  region.DiscLvl = 0;
-  region.FirstXChannel = detectorRegion->firstXChannel_;
-  region.FirstYChannel = detectorRegion->firstYChannel_;
-  region.LastXChannel = detectorRegion->lastXChannel_;
-  region.LastYChannel = detectorRegion->lastYChannel_;
-  region.Slices = detectorRegion->slices_;
-  region.UseRegionDetector = true;
-  int tmp1 = 0;
-  double tmp2 = 0;
-  double tmp3 = 0;
-  lib_->GDS_CheckRegion(&region, &tmp1, &tmp2, &tmp3);
+  if (detectorRegion != 0)
+  {
+    sesRegion_.ADCMode = detectorRegion->adcMode_;
+    sesRegion_.FirstXChannel = detectorRegion->firstXChannel_;
+    sesRegion_.LastXChannel = detectorRegion->lastXChannel_;
+    sesRegion_.FirstYChannel = detectorRegion->firstYChannel_;
+    sesRegion_.LastYChannel = detectorRegion->lastYChannel_;
+    sesRegion_.Slices = detectorRegion->slices_;
 
-  SesNS::WDetector detector;
-  detector.ADCMask = region.ADCMask;
-  detector.ADCMode = region.ADCMode;
-  detector.DiscLvl = region.DiscLvl;
-  detector.FirstXChannel = region.FirstXChannel;
-  detector.FirstYChannel = region.FirstYChannel;
-  detector.LastXChannel = region.LastXChannel;
-  detector.LastYChannel = region.LastYChannel;
-  detector.Slices = region.Slices;
-  return lib_->GDS_SetGlobalDetector(&detector) == 0 ? WError::ERR_OK : WError::ERR_INCORRECT_DETECTOR_REGION;
+    if (lib_->GDS_SetGlobalDetector != 0)
+    {
+      sesDetectorRegion_.ADCMask = sesRegion_.ADCMask;
+      sesDetectorRegion_.ADCMode = detectorRegion->adcMode_;
+      sesDetectorRegion_.DiscLvl = sesRegion_.DiscLvl;
+      sesDetectorRegion_.FirstXChannel = detectorRegion->firstXChannel_;
+      sesDetectorRegion_.LastXChannel = detectorRegion->lastXChannel_;
+      sesDetectorRegion_.FirstYChannel = detectorRegion->firstYChannel_;
+      sesDetectorRegion_.LastYChannel = detectorRegion->lastYChannel_;
+      sesDetectorRegion_.Slices = detectorRegion->slices_;
+      lib_->GDS_SetGlobalDetector(&sesDetectorRegion_);
+    }
+  }
+  return WError::ERR_OK;
 }
 
 /*!
@@ -911,9 +934,6 @@ int WSESWrapperBase::setElementSet(int index, const void *value)
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
-  if (index != -1)
-    return WError::ERR_NOT_APPLICABLE;
 
   const char *strValue = reinterpret_cast<const char *>(value);
   return lib_->GDS_SetElementSet(strValue) == 0 ? WError::ERR_OK : WError::ERR_INCORRECT_ELEMENT_SET;
@@ -933,9 +953,6 @@ int WSESWrapperBase::setLensMode(int index, const void *value)
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
-  if (index != -1)
-    return WError::ERR_NOT_APPLICABLE;
 
   const std::string strValue = reinterpret_cast<const char *>(value);
   int errorCode = lib_->GDS_SetLensMode(strValue.c_str()) == 0 ? WError::ERR_OK : WError::ERR_INCORRECT_LENS_MODE;
@@ -958,9 +975,6 @@ int WSESWrapperBase::setPassEnergy(int index, const void *value)
 {
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
-
-  if (index != -1)
-    return WError::ERR_NOT_APPLICABLE;
 
   double doubleValue = *reinterpret_cast<const double *>(value);
   int errorCode = lib_->GDS_SetPassEnergy(doubleValue) == 0 ? WError::ERR_OK : WError::ERR_INCORRECT_PASS_ENERGY;
@@ -989,18 +1003,16 @@ int WSESWrapperBase::setAnalyzerRegion(int index, const void *value)
   {
     sesRegion_.DriftRegion = false;
     sesRegion_.EnergyStep = analyzerRegion->energyStep_;
-//  sesRegion_.ExcEnergy = 0;		This is controlled by the setExcitationEnergy function
     sesRegion_.Fixed = analyzerRegion->fixed_;
     sesRegion_.FixEnergy = analyzerRegion->centerEnergy_;
     sesRegion_.Grating = 0;
     sesRegion_.HighEnergy = analyzerRegion->highEnergy_;
     sesRegion_.Illumination = 0;
-//  sesRegion_.Kinetic = true;		This is controlled by the use_binding_energy property
     sesRegion_.LowEnergy = analyzerRegion->lowEnergy_;
     sesRegion_.Order = 0;
     sesRegion_.Slit = 0;
     sesRegion_.StepTime = analyzerRegion->dwellTime_;
-    sesRegion_.UseRegionDetector = false;
+    sesRegion_.UseRegionDetector = true;
   }
   return WError::ERR_OK;
 }
@@ -1040,7 +1052,6 @@ int WSESWrapperBase::setUseSpin(int index, const void *value)
 
   int count = 0;
   lib_->GDS_GetOption(SesNS::DetectorCount, &count);
-  ++index;
 
   if (count < 3)
     return WError::ERR_NOT_APPLICABLE;
@@ -1149,13 +1160,11 @@ bool WSESWrapperBase::loadElementSets()
   char *buffer = 0;
   int bufferSize = 0;
   
-  bool success = false;
-  if (lib_->GDS_GetElementSets(buffer, &bufferSize) == 0)
+  bool success = (lib_->GDS_GetElementSets(buffer, &bufferSize) == 0);
+  if (success)
   {
     buffer = new char[bufferSize];
-    if (lib_->GDS_GetElementSets(buffer, &bufferSize) == 0)
-      success = true;
-
+    success = (lib_->GDS_GetElementSets(buffer, &bufferSize) == 0);
     splitSESList(buffer, bufferSize, elementSets_);
     delete[] buffer;
   }
@@ -1178,13 +1187,11 @@ bool WSESWrapperBase::loadLensModes()
   char *buffer = 0;
   int bufferSize = 0;
   
-  bool success = false;
-  if (lib_->GDS_GetLensModes(buffer, &bufferSize) == 0)
+  bool success = (lib_->GDS_GetLensModes(buffer, &bufferSize) == 0);
+  if (success)
   {
     buffer = new char[bufferSize];
-    if (lib_->GDS_GetLensModes(buffer, &bufferSize) == 0)
-      success = true;
-
+    success = (lib_->GDS_GetLensModes(buffer, &bufferSize) == 0);
     splitSESList(buffer, bufferSize, lensModes_);
     delete[] buffer;
   }
@@ -1206,16 +1213,16 @@ bool WSESWrapperBase::loadPassEnergies(const std::string &lensMode, DoubleVector
 
   char *buffer = 0;
   int bufferSize = 0;
-  bool success = false;
 
   result.clear();
-  if (lib_->GDS_GetPassEnergies(lensMode.c_str(), buffer, &bufferSize) == 0)
+  bool success = (lib_->GDS_GetPassEnergies(lensMode.c_str(), buffer, &bufferSize) == 0);
+
+  if (success)
   {
     buffer = new char[bufferSize];
-    if (lib_->GDS_GetPassEnergies(lensMode.c_str(), buffer, &bufferSize) == 0 && buffer[0] != 0)
+    success = (lib_->GDS_GetPassEnergies(lensMode.c_str(), buffer, &bufferSize) == 0 && buffer[0] != 0);
+    if (success)
     {
-      success = true;
-
       NameVector strResult;
       splitSESList(buffer, bufferSize, strResult);
       for (int i = 0; i < int(strResult.size()); i++)

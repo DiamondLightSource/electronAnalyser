@@ -8,34 +8,27 @@
 
 class WSESWrapperMain : public WSESWrapperBase
 {
+  WSESWrapperMain(const char *workingDir);
+  ~WSESWrapperMain();
+
 public:
   typedef WVariable<WSESWrapperMain> DataParameter;
   typedef std::pair<std::string, DataParameter> DataParameterKeyValue;
   typedef std::map<std::string, DataParameter> DataParameterMap;
 
-  WSESWrapperMain(const char *workingDir);
-  ~WSESWrapperMain();
-
-  // Standard Library functions
+  static WSESWrapperMain *instance(const char *workingDir);
+  void release();
+  int references() const;
 
   bool isInitialized();
   int initialize(void *);
   int finalize();
-
   int getProperty(const char *name, int index, void *value, int &size);
   int getProperty(const char *name, int index, void *value);
-
   int setProperty(const char *name, int index, const void *value);
-
   int validate(const char *elementSet, const char *lensMode, double passEnergy, double kineticEnergy);
-
-  // HW specific functions
-
   int resetHW();
   int testHW();
-
-  // Analyzer specific members
-
   int loadInstrument(const char *fileName);
   int zeroSupplies();
   int getBindingEnergy(double *bindingEnergy);
@@ -46,9 +39,6 @@ public:
   int setExcitationEnergy(const double excitationEnergy);
   int getElementVoltage(const char *elementName, double *voltage);
   int setElementVoltage(const char *element, const double voltage);
-
-  // Acquisition specific members
-
   int checkAnalyzerRegion(SESWrapperNS::AnalyzerRegion *analyzerRegion, int *steps, double *time_ms, double *minEnergyStep_eV);
   int initAcquisition(const bool blockPointReady, const bool blockRegionReady);
   int startAcquisition();
@@ -88,19 +78,21 @@ public:
 
 private:
   static void __stdcall errorNotify(int errorCode);
-  static void __stdcall pointReady(int channel);
+  static void __stdcall pointReady(int point);
   static void __stdcall regionReady();
+  void errorNotifyHandler(int errorCode);
+  void pointReadyHandler(int point);
+  void regionReadyHandler();
+  bool readSpectrumObject();
+  bool readSignalsObject();
 
-  bool refreshElementSets();
-  bool refreshLensModes();
-  bool refreshPassEnergies();
-  bool refreshDetector();
-  int run();
-
-  static WSESWrapperMain *this_; // For use by the callbacks, allowing only one instance of this class
+  static WSESWrapperMain *this_;
+  static int references_;
   bool initialized_;
   int currentStep_;
   int currentPoint_;
+  SesNS::WSpectrum *sesSpectrum_;
+  SesNS::WSignals *sesSignals_;
 
   DataParameterMap dataParameters_;
 
