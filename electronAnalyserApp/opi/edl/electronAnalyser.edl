@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 582
-y 109
+x 580
+y 83
 w 390
 h 820
 font "arial-bold-r-12.0"
@@ -98,7 +98,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 185
 y 475
 w 53
@@ -133,7 +133,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 5
 y 625
 w 41
@@ -173,7 +173,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 500
 w 29
@@ -213,7 +213,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 190
 y 545
 w 80
@@ -232,7 +232,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 190
 y 520
 w 80
@@ -291,7 +291,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 190
 y 495
 w 80
@@ -350,7 +350,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 670
 w 80
@@ -406,7 +406,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 210
 y 675
 w 56
@@ -446,7 +446,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 190
 y 600
 w 48
@@ -466,7 +466,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 210
 y 650
 w 37
@@ -523,7 +523,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 190
 y 575
 w 48
@@ -563,7 +563,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 5
 y 475
 w 81
@@ -598,7 +598,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 5
 y 725
 w 66
@@ -618,7 +618,7 @@ object activeBarClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 90
 y 795
 w 215
@@ -676,7 +676,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 650
 w 45
@@ -709,7 +709,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 550
 w 37
@@ -808,7 +808,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 780
 w 43
@@ -862,7 +862,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 575
 w 37
@@ -931,7 +931,7 @@ object activeBarClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 90
 y 760
 w 215
@@ -1001,7 +1001,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 745
 w 42
@@ -1060,7 +1060,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 695
 w 80
@@ -1092,7 +1092,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 600
 w 60
@@ -1193,7 +1193,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 550
 w 29
@@ -1250,7 +1250,7 @@ object activeXTextClass
 beginObjectProperties
 major 4
 minor 1
-release 1
+release 0
 x 10
 y 525
 w 28
@@ -1270,5 +1270,90 @@ endGroup
 visPv "$(P)$(R)ACQ_MODE_RBV"
 visMin "0"
 visMax "1"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 260
+y 695
+w 50
+h 20
+fgColor index 20
+onColor index 3
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "$(P)$(R)PAUSE"
+pressValue "1"
+releaseValue "1"
+onLabel "Pause"
+offLabel "Pause"
+3d
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 310
+y 695
+w 50
+h 20
+fgColor index 19
+onColor index 3
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "$(P)$(R)PAUSE"
+pressValue "0"
+releaseValue "0"
+onLabel "Resume"
+offLabel "Resume"
+3d
+font "arial-bold-r-12.0"
+endObjectProperties
+
+# (Byte)
+object ByteClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 360
+y 695
+w 20
+h 20
+controlPv "$(P)$(R)PAUSE_RBV"
+lineColor index 14
+onColor index 20
+offColor index 24
+lineWidth 2
+numBits 1
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 210
+y 695
+w 80
+h 20
+font "arial-bold-r-12.0"
+fgColor index 14
+bgColor index 3
+useDisplayBg
+value {
+  "Pause"
+}
 endObjectProperties
 
