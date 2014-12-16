@@ -1,0 +1,69 @@
+
+#% macro, P, Device Prefix
+#% macro, R, Device Suffix
+#% macro, PORT, Asyn Port name
+
+# This associates the template with an edm screen
+# % gui, $(PORT), edmtab, electronAnalyserViewer.edl, P=$(P),R=$(R)
+
+########## Viewer specific Fields #########
+
+record(stringout, "$(P)$(R)CONNECTION")
+{
+  field(DESC, "Network connection string")
+  field(DTYP, "asynOctetWrite")
+  field(OUT,  "@asyn($(PORT) 0)SES_CONNECTION")
+}
+
+record(stringin, "$(P)$(R)CONNECTION_RBV")
+{
+  field(DESC, "Network connection string")
+  field(DTYP, "asynOctetRead")
+  field(INP,  "@asyn($(PORT) 0)SES_CONNECTION")
+  field(SCAN, "I/O Intr")
+}
+
+
+########## Disable Redundant areaDetector Fields #########
+
+record(longout, "$(P)$(R)BinX")
+{
+  field(DISA, "1")
+}
+
+record(longin, "$(P)$(R)BinX_RBV")
+{
+  field(DISA, "1")
+}
+
+record(longout, "$(P)$(R)BinY")
+{
+  field(DISA, "1")
+}
+
+record(longin, "$(P)$(R)BinY_RBV")
+{
+  field(DISA, "1")
+}
+
+record(ao, "$(P)$(R)Gain")
+{
+  field(DISA, "1")
+}
+
+record(ai, "$(P)$(R)Gain_RBV")
+{
+  field(DISA, "1")
+}
+
+record(bo, "$(P)$(R)ReverseX")
+{
+  field(DISA, "1")
+}
+
+record(bo, "$(P)$(R)ReverseY")
+{
+  field(DISA, "1")
+}
+
+
