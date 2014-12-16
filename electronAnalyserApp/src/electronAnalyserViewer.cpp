@@ -36,6 +36,7 @@
 #undef max
 
 #define SesVersionString "SES_VERSION"
+#define SesConnectionString "SES_CONNECTION"
 
 static const char *driverName = "electronAnalyserViewer";
 
@@ -57,7 +58,8 @@ class ElectronAnalyserViewer : public ADDriver
   protected:
     int SesVersion;
     #define FIRST_EEVIEWER_PARAM SesVersion
-    #define LAST_EEVIEWER_PARAM SesVersion
+    int SesConnection;
+    #define LAST_EEVIEWER_PARAM SesConnection
 
   private:
     epicsEventId startEventId;
@@ -142,6 +144,7 @@ ElectronAnalyserViewer::ElectronAnalyserViewer(const char *portName,
   if (status == asynSuccess){
     // Create version string
     status |= createParam(SesVersionString, asynParamOctet, &SesVersion);
+    status |= createParam(SesConnectionString, asynParamOctet, &SesConnection);
 
     // Setup values for the collect panel
     status |= setDoubleParam(ADAcquireTime, 0.0);
@@ -195,6 +198,7 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
   NDArray *pImage;
   size_t dims[2];
   NDDataType_t dataType;
+  char connectionString[128];
   zmq::context_t *ctx;
   zmq::socket_t *frameSocket = 0;
   zmq::pollitem_t *items = 0;
@@ -235,10 +239,12 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
         // The acquisition has started, create the new zmq context
         ctx = new zmq::context_t;
         frameSocket = new zmq::socket_t(*ctx, ZMQ_SUB);
-        std::string address = "tcp://172.23.12.96:55555";
+        // Readout the connection string
+        getStringParam(SesConnection, sizeof(connectionString), connectionString);
+        //std::string address = "tcp://172.23.12.96:55555";
         try
         {
-          frameSocket->connect(address.c_str());
+          frameSocket->connect(connectionString);
           frameSocket->setsockopt(ZMQ_SUBSCRIBE, "", 0);
           items = (zmq::pollitem_t *)malloc(sizeof(zmq::pollitem_t));
           items[0].socket = *frameSocket;
@@ -327,7 +333,7 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
       }
       while (p > 0){
         //printf("Processing...\n");
-        p = zmq::poll(items, 1, waitMsec);
+        p = zmq::poll(items, 1, 0);
         if (p > 0){
           if (items[0].revents == ZMQ_POLLIN){
             frameSocket->recv(&msgHeader, ZMQ_RCVMORE);

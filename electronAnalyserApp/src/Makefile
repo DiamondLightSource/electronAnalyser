@@ -32,6 +32,43 @@ USR_LIBS_WIN32 +=
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
 electronAnalyserSupport_SRCS += electronAnalyser.cpp
 
+# -------------------------------
+# Build an Diamond Support Module
+# -------------------------------
+
+#define the library name
+LIBRARY_IOC += electronAnalyserViewerSupport
+
+# The following are compiled and added to the support library
+electronAnalyserViewerSupport_SRCS += drvElectronAnalyserViewerRegistrar.c
+electronAnalyserViewerSupport_SRCS += electronAnalyserViewer.cpp
+electronAnalyserViewerSupport_SRCS += dgframe.pb.cc
+electronAnalyserViewerSupport_LIBS += zmq
+electronAnalyserViewerSupport_LIBS += protobuf
+
+zmq_DIR = $(ZMQ)/lib
+protobuf_DIR = $(PROTOBUF)/lib
+
+DBD += electronAnalyserViewerSupport.dbd
+
+# ----------------------------------------
+# Build a basic test application
+#-----------------------------------------
+PROD_IOC += test
+test_SRCS += test.cpp
+test_SRCS += dgframe.pb.cc
+test_SRCS += wframeloader.cpp
+test_LIBS += zmq
+test_LIBS += protobuf
+#test_LDFLAGS += -L/home/gnx91527/applications/zeromq-4.1.0/bin/lib
+#test_LDFLAGS += -L/home/gnx91527/applications/protobuf-2.6.0/bin/lib
+
+#BIN_INSTALLS += $(wildcard /dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix/lib/*.so*)
+#BIN_INSTALLS += $(wildcard /home/gnx91527/applications/protobuf-2.6.0/bin/lib/*.so*)
+
+
+USR_INCLUDES += -I/home/gnx91527/applications/zeromq-4.1.0/bin/include
+USR_INCLUDES += -I$(PROTOBUF)/include
 # ------------------------
 # Build an IOC Application
 # ------------------------
