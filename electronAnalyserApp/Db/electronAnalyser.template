@@ -358,14 +358,35 @@ record(ai, "$(P)$(R)STEP_SIZE_RBV")
 }
 
 # User enters desired number of frames
-record(ao, "$(P)$(R)FRAMES") 
+#record(ao, "$(P)$(R)FRAMES") 
+#{
+#  field(DESC, "Frames Demand")
+#  field(OUT,  "$(P)$(R)FRAMES_CALC PP")
+#  field(DRVL, "1")
+#  field(DRVH, "100000")
+#  field(PINI, "YES")
+#  field(VAL,  "15")
+#}
+
+# User enters desired number of frames
+record(longout, "$(P)$(R)FRAMES") 
 {
   field(DESC, "Frames Demand")
-  field(OUT,  "$(P)$(R)FRAMES_CALC PP")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT) 0)FRAMES")
   field(DRVL, "1")
   field(DRVH, "100000")
   field(PINI, "YES")
-  field(VAL,  "15")
+  field(VAL,  "1")
+}
+
+# User enters desired number of frames
+record(longin, "$(P)$(R)FRAMES_RBV") 
+{
+  field(DESC, "Frames Demand Readback")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)FRAMES")
+  field(SCAN, "I/O Intr")
 }
 
 # Report back the maximum camera frame rate
@@ -378,49 +399,49 @@ record(longin, "$(P)$(R)MAX_FRAMES_RBV")
 }
 
 # Calculate time from frame rate
-record(calcout, "$(P)$(R)FRAMES_CALC")
-{
-  field(DESC, "Calculate time from frames")
-  # Condition set in calc to avoid initialisation with zero
-  field(CALC, "A/((B=0)?30.0:B)")
-  field(INPA, "$(P)$(R)FRAMES")
-  field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
-# field(OUT,  "$(P)$(R)STEP_TIME PP")
-  field(OUT,  "$(P)$(R)AcquireTime PP")
-}
+#record(calcout, "$(P)$(R)FRAMES_CALC")
+#{
+#  field(DESC, "Calculate time from frames")
+#  # Condition set in calc to avoid initialisation with zero
+#  field(CALC, "A/((B=0)?30.0:B)")
+#  field(INPA, "$(P)$(R)FRAMES")
+#  field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
+## field(OUT,  "$(P)$(R)STEP_TIME PP")
+#  field(OUT,  "$(P)$(R)AcquireTime PP")
+#}
 
-# User enters desired step time
+## User enters desired step time
 record(ao, "$(P)$(R)STEP_TIME")
 {
   field(DESC, "Step time demand")
-  field(OUT,  "$(P)$(R)STEP_TIME_SET PP")
+  field(OUT,  "$(P)$(R)AcquireTime PP")
   field(PINI, "YES")
   field(DRVL, "0.0333333")
   field(DRVH, "333.333")
-  field(FLNK, "$(P)$(R)STEP_TIME_CALC")
+#  field(FLNK, "$(P)$(R)STEP_TIME_CALC")
   field(PREC, "5")
 }
 
-# Calculate frames from step time
-record(calcout, "$(P)$(R)STEP_TIME_CALC")
-{
-  field(DESC, "Calculate frames")
-  # Condition set in calc to avoid initialisation with zero
-  field(CALC, "A*((B=0)?30.0:B)")
-# field(INPA, "$(P)$(R)STEP_TIME")
-  field(INPA, "$(P)$(R)AcquireTime CP")
-  field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
-  field(OUT,  "$(P)$(R)FRAMES PP")
-}
+## Calculate frames from step time
+#record(calcout, "$(P)$(R)STEP_TIME_CALC")
+#{
+#  field(DESC, "Calculate frames")
+#  # Condition set in calc to avoid initialisation with zero
+#  field(CALC, "A*((B=0)?30.0:B)")
+## field(INPA, "$(P)$(R)STEP_TIME")
+#  field(INPA, "$(P)$(R)AcquireTime CP")
+#  field(INPB, "$(P)$(R)MAX_FRAMES_RBV")
+#  field(OUT,  "$(P)$(R)FRAMES PP")
+#}
 
-record(calcout, "$(P)$(R)STEP_TIME_SET") 
-{
-  field(DESC, "Set time")
-  field(CALC, "A")
-  field(OUT,  "$(P)$(R)AcquireTime PP")
-  field(INPA, "$(P)$(R)STEP_TIME")
-  field(FLNK, "$(P)$(R)STEP_TIME_CALC")
-}
+#record(calcout, "$(P)$(R)STEP_TIME_SET") 
+#{
+#  field(DESC, "Set time")
+#  field(CALC, "A")
+#  field(OUT,  "$(P)$(R)AcquireTime PP")
+#  field(INPA, "$(P)$(R)STEP_TIME")
+#  field(FLNK, "$(P)$(R)STEP_TIME_CALC")
+#}
 
 ################## Element Sets ####################
 

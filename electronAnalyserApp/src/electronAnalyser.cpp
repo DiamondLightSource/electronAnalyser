@@ -75,6 +75,7 @@ static const char *driverName = "electronAnalyser";
 #define MaxSlicesString 			"MAX_SLICES"
 #define MaxChannelsString 			"MAX_CHANNELS"
 #define FrameRateString 			"FRAME_RATE"
+#define FramesString 				"FRAMES"
 #define ADCPresentString 			"ADC_PRESENT"
 #define DiscPresentString 			"DISC_PRESENT"
 /* Detector Region */
@@ -186,7 +187,8 @@ class ElectronAnalyser: public ADDriver
 		int YChannels;				/**< (asynInt32,    	r/o) Specifies the number of Y channels (slices) currently shown on the detector.*/
 		int MaxSlices;				/**< (asynInt32,    	r/o) Specifies the maximum number of Y channels (slices).*/
 		int MaxChannels;			/**< (asynInt32,    	r/o) Specifies the maximum number of X channels.*/
-		int FrameRate;				/**< (asynInt32,    	r/o) Specifies the frame rate (frames/s).*/
+		int FrameRate;				/**< (asynInt32,    	r/o) Specifies the max frame rate (frames/s).*/
+		int Frames;					/**< (asynInt32,    	r/o) Specifies the current frame rate (frames/s).*/
 		int ADCPresent;				/**< (asynInt32,    	r/o) Specifies whether the detector contains an ADC (0=No, 1=YES).*/
 		int DiscPresent;			/**< (asynInt32,    	r/o) Specifies whether the detector contains a discriminator (0=No, 1=YES).*/
 		/* Detector Region */
@@ -486,6 +488,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(MaxSlicesString, asynParamInt32, &MaxSlices);
 	createParam(MaxChannelsString, asynParamInt32, &MaxChannels);
 	createParam(FrameRateString, asynParamInt32, &FrameRate);
+	createParam(FramesString, asynParamInt32, &Frames);
 	createParam(ADCPresentString, asynParamInt32, &ADCPresent);
 	createParam(DiscPresentString, asynParamInt32, &DiscPresent);
 	/* Detector Region */
@@ -1486,6 +1489,13 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			detector.slices_ = value;
 		}
 	}
+	else if (function == Frames)
+	{
+		double time = (double)value / (double)detectorInfo.frameRate_;
+		setDoubleParam(ADAcquireTime, time);
+		analyzer.dwellTime_ = int(time * 1000);
+		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
+	}
 	else if (function == DetectorMode)
 	{
 		if (value)
@@ -1927,6 +1937,9 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		analyzer.energyStep_ = value;
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting energy step size to %f meV\n", driverName, functionName, value);
 	} else if (function == ADAcquireTime){
+		// Calculate the frames from the time value
+		int frames = (int)(floor(((double)detectorInfo.frameRate_ * value) + 0.5));
+		setIntegerParam(Frames, frames);
 		analyzer.dwellTime_ = int(value * 1000);
 		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nanalyzer dwell time = %d\n\n", driverName, functionName, analyzer.dwellTime_);
@@ -2371,6 +2384,10 @@ asynStatus ElectronAnalyser::start()
 	/* Leave second parameter set to false. Can still call waitForRegionReady and avoids race condition */
 	/* initAcquisition(blockPointReady Flag, blockRegionReady Flag) */
 	err = ses->initAcquisition(!analyzer.fixed_, false);
+    if (err != 0){
+    	// Try one more time
+    	err = ses->initAcquisition(!analyzer.fixed_, false);
+    }
 
 	if (isError(err, functionName)) {
 		return asynError;
