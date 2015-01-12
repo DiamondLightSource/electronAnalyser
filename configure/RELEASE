@@ -9,6 +9,7 @@
 # module defined in the RELEASE file is rebuilt.
 
 SUPPORT=/dls_sw/prod/R3.14.12.3/support
+WORK=/dls_sw/work/R3.14.12.3/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
@@ -28,9 +29,13 @@ BUSY=$(SUPPORT)/busy/1-4dls1
 #AUTOSAVE is needed for save_restore
 #AUTOSAVE=$(SUPPORT)/autosave/4-6dls5
 
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-16-1
+#FFMPEGSERVER=$(SUPPORT)/ffmpegServer/1-16-1
+#FFMPEGSERVER=$(SUPPORT)/ffmpegServer/2-1-1dls12
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/2-1-1dls13
 
-AREADETECTOR=$(SUPPORT)/areaDetector/1-9dls1
+#AREADETECTOR=$(SUPPORT)/areaDetector/1-9dls1
+#AREADETECTOR=$(SUPPORT)/areaDetector/1-9dls15
+AREADETECTOR=$(SUPPORT)/areaDetector/1-9dls16
 
 # EPICS_BASE usually appears last so other apps can override stuff:
 EPICS_BASE=/dls_sw/epics/R3.14.12.3/base
