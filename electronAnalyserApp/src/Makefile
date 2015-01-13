@@ -37,22 +37,22 @@ electronAnalyserSupport_SRCS += electronAnalyser.cpp
 # -------------------------------
 
 #define the library name
-#LIBRARY_IOC += electronAnalyserViewerSupport
+LIBRARY_IOC_Linux += electronAnalyserViewerSupport
 
 # The following are compiled and added to the support library
-#electronAnalyserViewerSupport_SRCS += drvElectronAnalyserViewerRegistrar.c
-#electronAnalyserViewerSupport_SRCS += electronAnalyserViewer.cpp
-#electronAnalyserViewerSupport_SRCS += dgframe.pb.cc
-#electronAnalyserViewerSupport_LIBS += zmq
-#electronAnalyserViewerSupport_LIBS += protobuf
+electronAnalyserViewerSupport_SRCS += drvElectronAnalyserViewerRegistrar.c
+electronAnalyserViewerSupport_SRCS += electronAnalyserViewer.cpp
+electronAnalyserViewerSupport_SRCS += dgframe.pb.cc
+electronAnalyserViewerSupport_LIBS += zmq
+electronAnalyserViewerSupport_LIBS += protobuf
 
-#zmq_DIR = $(ZMQ)/lib
-#protobuf_DIR = $(PROTOBUF)/lib
+zmq_DIR = $(ZMQ)/lib
+protobuf_DIR = $(PROTOBUF)/lib
 
-#DBD += electronAnalyserViewerSupport.dbd
+DBD += electronAnalyserViewerSupport.dbd
 
-#USR_INCLUDES += -I$(ZMQ)/include
-#USR_INCLUDES += -I$(PROTOBUF)/include
+USR_INCLUDES += -I$(ZMQ)/include
+USR_INCLUDES += -I$(PROTOBUF)/include
 # ------------------------
 # Build an IOC Application
 # ------------------------
