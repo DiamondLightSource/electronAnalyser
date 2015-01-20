@@ -153,6 +153,8 @@ ElectronAnalyserViewer::ElectronAnalyserViewer(const char *portName,
     status |= setIntegerParam(ADNumExposures, 1);
     status |= setIntegerParam(ADImageMode, ADImageSingle);
     status |= setIntegerParam(ADTriggerMode, ADTriggerInternal);
+    status |= setStringParam(ADManufacturer, "VG Scienta");
+    status |= setStringParam(ADModel, "Live Viewer");
     //status |= setStringParam(ADStatusMessage, message);
     status |= setIntegerParam(NDAutoIncrement, 1);
   }
@@ -236,6 +238,9 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
       this->lock();
       getIntegerParam(ADAcquire, &acquire);
       if (acquire){
+        setStringParam(ADStatusMessage, "Waiting for header information");
+        setIntegerParam(ADStatus, ADStatusInitializing);
+        callParamCallbacks();
         // The acquisition has started, create the new zmq context
         ctx = new zmq::context_t;
         frameSocket = new zmq::socket_t(*ctx, ZMQ_SUB);
@@ -256,14 +261,14 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
           this->lock();
           if (p > 0){
             if (items[0].revents == ZMQ_POLLIN){
-              printf("Received test frame for header information\n");
+              //printf("Received test frame for header information\n");
               if (frameSocket->recv(&msgHeader, ZMQ_RCVMORE) && frameSocket->recv(&msgData)){
                 dgframe::Frame frame;
                 frame.ParseFromArray(msgHeader.data(), msgHeader.size());
-                printf("  width:  %d\n", frame.width());
-                printf("  height: %d\n", frame.height());
-                printf("  length: %d\n", frame.length());
-                printf("  code:   %d\n", frame.code());
+                //printf("  width:  %d\n", frame.width());
+                //printf("  height: %d\n", frame.height());
+                //printf("  length: %d\n", frame.length());
+                //printf("  code:   %d\n", frame.code());
                 dims[0] = frame.width();
                 dims[1] = frame.height();
                 nbytes = frame.length();
@@ -273,156 +278,177 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
                 setIntegerParam(ADMinY, 0);
                 setIntegerParam(ADSizeX, frame.width());
                 setIntegerParam(ADSizeY, frame.height());
+                setIntegerParam(NDArraySizeX, frame.width());
+                setIntegerParam(NDArraySizeY, frame.height());
+                setIntegerParam(NDArraySize, (frame.height()*frame.width()));
                 callParamCallbacks();
               } else {
-                printf("Need to abort 3!!\n");
+                acquire = 0;
+                status = 1;
+                setIntegerParam(ADAcquire, 0);
+                setIntegerParam(ADStatus, ADStatusError);
+                setStringParam(ADStatusMessage, "Error retrieving header information");
               }
             } else {
-              printf("Need to abort 1!!\n");
+              acquire = 0;
+              status = 1;
+              setIntegerParam(ADAcquire, 0);
+              setIntegerParam(ADStatus, ADStatusError);
+              setStringParam(ADStatusMessage, "Error retrieving header information");
             }
           } else {
-            printf("Need to abort 2!!\n");
+            acquire = 0;
+            status = 1;
+            setIntegerParam(ADAcquire, 0);
+            setIntegerParam(ADStatus, ADStatusError);
+            setStringParam(ADStatusMessage, "Error retrieving header information");
           }
         }  catch (zmq::error_t &e)
         {
-          printf("Caught error!!!\n");
+          acquire = 0;
+          status = 1;
+          setIntegerParam(ADAcquire, 0);
+          setIntegerParam(ADStatus, ADStatusError);
+          setStringParam(ADStatusMessage, "Error retrieving header information");
         }
       }
     }
-    // We are acquiring.
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: We are acquiring\n", driverName, functionName);
+    callParamCallbacks();
+    
+    if (acquire){
+      // We are acquiring.
+      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: We are acquiring\n", driverName, functionName);
 
-    epicsTimeGetCurrent(&startTime);
+      epicsTimeGetCurrent(&startTime);
 
-    // Get the exposure parameters
-    getDoubleParam(ADAcquireTime, &acquireTime);
-    getDoubleParam(ADAcquirePeriod, &acquirePeriod);
+      // Get the exposure parameters
+      getDoubleParam(ADAcquireTime, &acquireTime);
+      getDoubleParam(ADAcquirePeriod, &acquirePeriod);
 
-    // Get the acquisition parameters
-    getIntegerParam(ADNumImages, &numImages);
+      // Get the acquisition parameters
+      getIntegerParam(ADNumImages, &numImages);
 
-    setIntegerParam(ADStatus, ADStatusAcquire);
+      setIntegerParam(ADStatus, ADStatusAcquire);
+      setStringParam(ADStatusMessage, "Acquiring images");
 
-    // Get data type
-    getIntegerParam(NDDataType, (int *) &dataType);
-    //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
+      // Get data type
+      getIntegerParam(NDDataType, (int *) &dataType);
+      //asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 
-    // Allocate memory suitable for 2D data
-    pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
+      // Allocate memory suitable for 2D data
+      pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
 
-    // We release the mutex when acquire image, because this may take a long time and
-    // we need to allow abort operations to get through
-    this->unlock();
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Collecting data from electron analyser....\n", driverName, functionName);
-    //status = this->acquireData(pImage->pData, steps);
+      // We release the mutex when acquire image, because this may take a long time and
+      // we need to allow abort operations to get through
+      this->unlock();
+      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Collecting data from electron analyser....\n", driverName, functionName);
+      //status = this->acquireData(pImage->pData, steps);
 
-
-
-
-    try
-    {
-      int p = 0;
-      while (p == 0){
-        p = zmq::poll(items, 1, waitMsec);
-      }
-      if (p > 0){
-        if (items[0].revents == ZMQ_POLLIN){
-          frameSocket->recv(&msgHeader, ZMQ_RCVMORE);
-          frameSocket->recv(&msgData);
+      try
+      {
+        int p = 0;
+        while (p == 0){
+          p = zmq::poll(items, 1, waitMsec);
         }
-      }
-      while (p > 0){
-        //printf("Processing...\n");
-        p = zmq::poll(items, 1, 0);
         if (p > 0){
           if (items[0].revents == ZMQ_POLLIN){
             frameSocket->recv(&msgHeader, ZMQ_RCVMORE);
             frameSocket->recv(&msgData);
           }
         }
-      }
-      dgframe::Frame frame;
-      frame.ParseFromArray(msgHeader.data(), msgHeader.size());
-      memcpy(pImage->pData, msgData.data(), frame.length());
-    }  catch (zmq::error_t &e)
-    {
-      printf("Caught error!!!\n");
-    }
-
-
-
-
-
-
-    this->lock();
-    // If there was an error jump to bottom of the loop
-    if (status){
-      // Find out why there was a problem acquiring data
-      int ErrorStatus;
-      getIntegerParam(ADStatus, &ErrorStatus);
-      // User aborted acquisition
-      if(ErrorStatus == ADStatusAborted){
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was aborted by the user\n",driverName, functionName);
-        setStringParam(ADStatusMessage, "Acquisition was aborted by the user");
+        while (p > 0){
+          //printf("Processing...\n");
+          p = zmq::poll(items, 1, 0);
+          if (p > 0){
+            if (items[0].revents == ZMQ_POLLIN){
+              frameSocket->recv(&msgHeader, ZMQ_RCVMORE);
+              frameSocket->recv(&msgData);
+            }
+          }
+        }
+        dgframe::Frame frame;
+        frame.ParseFromArray(msgHeader.data(), msgHeader.size());
+        memcpy(pImage->pData, msgData.data(), frame.length());
+      }  catch (zmq::error_t &e)
+      {
         acquire = 0;
-        setIntegerParam(ADAcquire, acquire);
-      } else {
-        // The acquisition timed out
-        asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition timed out\n",driverName, functionName);
-        setStringParam(ADStatusMessage,"Acquisition timed out");
+        status = 1;
+        setIntegerParam(ADAcquire, 0);
         setIntegerParam(ADStatus, ADStatusError);
-        // Reset both acquire and ADAcquire back to zero
-        acquire = 0;
-        setIntegerParam(ADAcquire, acquire);
-        pImage->release();
-        continue;
+        setStringParam(ADStatusMessage, "Error during acquisition, aborted");
       }
-    }
 
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, (int)dims[0]);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[1] = %d\n", driverName, functionName, (int)dims[1]);
-    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of bytes of NDArray = %d\n", driverName, functionName, nbytes);
-
-    pImage->dims[0].size = dims[0];
-    pImage->dims[1].size = dims[1];
-
-    // Set a bit of areadetector image/frame statistics...
-    getIntegerParam(ADNumImages, &numImages);
-    getIntegerParam(ADImageMode, &imageMode);
-    getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
-    getIntegerParam(NDArrayCounter, &imageCounter);
-    getIntegerParam(ADNumImagesCounter, &numImagesCounter);
-    imageCounter++;
-    numImagesCounter++;
-    setIntegerParam(NDArrayCounter, imageCounter);
-    setIntegerParam(ADNumImagesCounter, numImagesCounter);
-
-    pImage->uniqueId = imageCounter;
-    pImage->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
-
-    // Get any attributes that have been defined for this driver
-    this->getAttributes(pImage->pAttributeList);
-
-    if (arrayCallbacks){
-      // Must release the lock here, or we can get into a deadlock, because we can
-      // block on the plugin lock, and the plugin can be calling us
-      this->unlock();
-      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,"%s:%s: calling NDArray callback\n", driverName, functionName);
-      doCallbacksGenericPointer(pImage, NDArrayData, 0);
       this->lock();
-    }
+      // If there was an error jump to bottom of the loop
+      if (status){
+        // Find out why there was a problem acquiring data
+        int ErrorStatus;
+        getIntegerParam(ADStatus, &ErrorStatus);
+        // User aborted acquisition
+        if(ErrorStatus == ADStatusAborted){
+          asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition was aborted by the user\n",driverName, functionName);
+          setStringParam(ADStatusMessage, "Acquisition was aborted by the user");
+          acquire = 0;
+          setIntegerParam(ADAcquire, acquire);
+        } else {
+          // The acquisition timed out
+          asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Acquisition timed out\n",driverName, functionName);
+          setStringParam(ADStatusMessage,"Acquisition timed out");
+          setIntegerParam(ADStatus, ADStatusError);
+          // Reset both acquire and ADAcquire back to zero
+          acquire = 0;
+          setIntegerParam(ADAcquire, acquire);
+          pImage->release();
+          continue;
+        }
+      }
 
-    // Free the image buffers
-    pImage->release();
+      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d\n", driverName, functionName, (int)dims[0]);
+      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[1] = %d\n", driverName, functionName, (int)dims[1]);
+      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Number of bytes of NDArray = %d\n", driverName, functionName, nbytes);
 
-    // Check to see if acquisition is complete
-    if ((imageMode == ADImageSingle) || ((imageMode == ADImageMultiple)&& (numImagesCounter >= numImages))){
-      setIntegerParam(ADAcquire, 0);
-      asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition completed\n", driverName, functionName);
+      pImage->dims[0].size = dims[0];
+      pImage->dims[1].size = dims[1];
+
+      // Set a bit of areadetector image/frame statistics...
+      getIntegerParam(ADNumImages, &numImages);
+      getIntegerParam(ADImageMode, &imageMode);
+      getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
+      getIntegerParam(NDArrayCounter, &imageCounter);
+      getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+      imageCounter++;
+      numImagesCounter++;
+      setIntegerParam(NDArrayCounter, imageCounter);
+      setIntegerParam(ADNumImagesCounter, numImagesCounter);
+
+      pImage->uniqueId = imageCounter;
+      pImage->timeStamp = startTime.secPastEpoch + startTime.nsec / 1.e9;
+
+      // Get any attributes that have been defined for this driver
+      this->getAttributes(pImage->pAttributeList);
+
+      if (arrayCallbacks){
+        // Must release the lock here, or we can get into a deadlock, because we can
+        // block on the plugin lock, and the plugin can be calling us
+        this->unlock();
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,"%s:%s: calling NDArray callback\n", driverName, functionName);
+        doCallbacksGenericPointer(pImage, NDArrayData, 0);
+        this->lock();
+      }
+
+      // Free the image buffers
+      pImage->release();
+
+      // Check to see if acquisition is complete
+      if ((imageMode == ADImageSingle) || ((imageMode == ADImageMultiple)&& (numImagesCounter >= numImages))){
+        setIntegerParam(ADAcquire, 0);
+        asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition completed\n", driverName, functionName);
+      }
+      // Call the callbacks to update any changes
+      callParamCallbacks();
+      getIntegerParam(ADAcquire, &acquire);
+
     }
-    // Call the callbacks to update any changes
-    callParamCallbacks();
-    getIntegerParam(ADAcquire, &acquire);
 
     // If we are acquiring then sleep for the acquire period minus elapsed time.
     if (acquire){
