@@ -20,7 +20,7 @@ public:
   typedef std::vector<std::string> NameVector;
   typedef std::vector<double> DoubleVector;
 
-  WSESWrapperBase(const char *workingDir);
+  WSESWrapperBase();
   ~WSESWrapperBase();
 
 protected:
@@ -85,7 +85,6 @@ protected:
   WSESInstrument *lib_;
 
   bool instrumentLoaded_;
-  std::string workingDir_;
   std::string instrumentLibraryName_;
   SesNS::WInstrumentInfo sesInstrumentInfo_;
   SesNS::WDetectorInfo sesDetectorInfo_;

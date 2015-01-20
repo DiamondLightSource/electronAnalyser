@@ -2147,8 +2147,8 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
-	ses = WSESWrapperMain::instance(workingDir);
-	int err = ses->setProperty("lib_working_dir", 0, workingDir);
+	ses = WSESWrapperMain::instance();
+	int err = ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
 	err |= ses->initialize(0);
 	if (err)
 	{
