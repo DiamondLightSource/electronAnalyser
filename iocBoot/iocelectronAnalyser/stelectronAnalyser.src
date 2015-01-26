@@ -4,7 +4,7 @@
 cd "$(INSTALL)"
 
 # Register all support components
-dbLoadDatabase("$(INSTALL)/dbd/electronAnalyser.dbd")
+dbLoadDatabase("dbd/electronAnalyser.dbd")
 electronAnalyser_registerRecordDeviceDriver(pdbbase)
 
 # Configure electron analyser driver plugin. Runs the electron analyser constructor.
@@ -41,8 +41,8 @@ NDStatsConfigure("CCD.STAT", 16, 0, "CCD.CAM", 0, 50, -1)
 asynSetTraceMask("CCD.CAM", 0, 0x1)
 #asynSetTraceMask("electronAnalyser", 0, 0x1)
 
-dbLoadRecords("$(INSTALL)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=CCD.CAM")
-dbLoadRecords("$(INSTALL)/db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
+dbLoadRecords("db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=CCD.CAM")
+dbLoadRecords("db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
 
 iocInit()
 #asynSetTraceMask("electronAnalyser", 0, 0x11)
