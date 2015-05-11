@@ -3,10 +3,6 @@
 #include "sestypes.h"
 #include "werror.h"
 
-#include <list>
-#include <string>
-#include <sstream>
-
 #define NOMINMAX
 #define _WIN32_WINNT 0x0502
 #include <windows.h>
@@ -15,42 +11,6 @@ namespace
 {
   WSESWrapperMain *gMain = 0;
   int gAttachedThreads = 0;
-  typedef std::list<std::string> StdStringList;
-}
-
-void subDirectories(const std::string &rootDir, StdStringList &dirs)
-{
-  DWORD attributes = ::GetFileAttributes(rootDir.c_str());
-  if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) == FILE_ATTRIBUTE_DIRECTORY)
-  {
-    dirs.push_front(rootDir);
-
-    std::string currentFile = rootDir + "\\*";
-    std::string dot = ".";
-    std::string dotdot = "..";
-
-    WIN32_FIND_DATA fileData;
-    HANDLE dirPos = ::FindFirstFile(currentFile.c_str(), &fileData);
-    if (dirPos == INVALID_HANDLE_VALUE)
-      return;
-
-    if (fileData.cFileName != dot && fileData.cFileName != dotdot)
-    {
-      currentFile = rootDir + "\\";
-      currentFile.append(fileData.cFileName);
-      subDirectories(currentFile, dirs);
-    }
-
-    while (::FindNextFile(dirPos, &fileData) == TRUE)
-    {
-      if (fileData.cFileName != dot && fileData.cFileName != dotdot)
-      {
-        currentFile = rootDir + "\\";
-        currentFile.append(fileData.cFileName);
-        subDirectories(currentFile, dirs);
-      }
-    }
-  }
 }
 
 BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID)
@@ -60,31 +20,14 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID)
   { 
   case DLL_PROCESS_ATTACH:
     {
-      StdStringList dirs;
       std::string path;
       path.resize(1024);
       ::GetModuleFileName(hInstance, const_cast<char *>(path.c_str()), path.size());
       int pos = path.find_last_of('/');
       if (pos == path.npos)
         pos = path.find_last_of('\\');
-      path = path.substr(0, pos);
-      subDirectories(path, dirs);
-      path.append("\\..\\");
-      dirs.push_front(path);
-      std::string buffer;
-      buffer.resize(4096);
-      DWORD newSize = ::GetEnvironmentVariable("PATH", const_cast<char *>(buffer.c_str()), buffer.size());
-      buffer.resize(newSize);
-      std::ostringstream ostr;
-      for (StdStringList::iterator it = dirs.begin(); it != dirs.end(); it++)
-      {
-        if (buffer.find(*it) == buffer.npos)
-          ostr << *it << ";";
-      }
-      ostr << buffer;
-      ::SetEnvironmentVariable("PATH", ostr.str().c_str());
-      ::SetEnvironmentVariable("SES_BASE_DIR", path.c_str());
-      gMain = WSESWrapperMain::instance();
+      path = path.substr(0, pos + 1) + "..";
+      gMain = WSESWrapperMain::instance(path.c_str());
       break;
     }
   case DLL_THREAD_ATTACH:
