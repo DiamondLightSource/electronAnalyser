@@ -7,6 +7,5 @@ echo EPICS_CA_REPEATER_PORT=%EPICS_CA_REPEATER_PORT%
 set  EPICS_CA_MAX_ARRAY_BYTES=100000000
 echo EPICS_CA_MAX_ARRAY_BYTES=%EPICS_CA_MAX_ARRAY_BYTES%
 
-REM W:\work\R3.14.11\support\electronAnalyser\bin\win32-x86\electronAnalyser.exe W:\work\R3.14.11\support\electronAnalyser\bin\win32-x86\stelectronAnalyser.boot
-C:\Projects\electronAnalyser\bin\win32-x86\electronAnalyser.exe C:\Projects\electronAnalyser\bin\win32-x86\stelectronAnalyser.boot
-
+REM C:\Projects\electronAnalyser\bin\win32-x86\electronAnalyser.exe C:\Projects\electronAnalyser\bin\win32-x86\stelectronAnalyser.boot
+W:\work\R3.14.12.3\support\electronAnalyser\bin\win32-x86\electronAnalyser.exe W:\work\R3.14.12.3\support\electronAnalyser\bin\win32-x86\stelectronAnalyser.boot
