@@ -1448,7 +1448,8 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 				this->lock();
 				getIntegerParam(ADStatus, &acqStatus);
 			}
-			zeroSupplies();
+			/* Recommendation is to leave power supplies on */
+			/*zeroSupplies(); */
 		}
 	}
 	else if (function == AlwaysDelayRegion)
@@ -2147,8 +2148,8 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
-	ses = WSESWrapperMain::instance();
-	int err = ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
+	ses = WSESWrapperMain::instance(workingDir);
+	int err = ses->setProperty("lib_working_dir", 0, workingDir);
 	err |= ses->initialize(0);
 	if (err)
 	{
