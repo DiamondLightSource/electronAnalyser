@@ -1,7 +1,9 @@
 
 #!$(INSTALL)/bin/$(ARCH)/example
 
-cd "$(INSTALL)"
+< envPath
+
+cd "$(TOP)"
 
 # Register all support components
 dbLoadDatabase("dbd/electronAnalyser.dbd")
@@ -40,6 +42,8 @@ NDStatsConfigure("CCD.STAT", 16, 0, "CCD.CAM", 0, 50, -1)
 
 asynSetTraceMask("CCD.CAM", 0, 0x1)
 #asynSetTraceMask("electronAnalyser", 0, 0x1)
+
+cd "$(TOP)"
 
 dbLoadRecords("db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=CCD.CAM")
 dbLoadRecords("db/electronAnalyserExample.db","P=ELECTRON-ANALYSER-01,R=:TEST")
