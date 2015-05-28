@@ -32,8 +32,8 @@ int WSESWrapperMain::references_ = 0;
  *
  * \param[in] workingDir The current working directory
  */
-WSESWrapperMain::WSESWrapperMain(const char *workingDir)
-: WSESWrapperBase(workingDir), initialized_(false), currentStep_(0), currentPoint_(std::numeric_limits<int>::min()), sesSpectrum_(0), sesSignals_(0)
+WSESWrapperMain::WSESWrapperMain()
+: initialized_(false), currentStep_(0), currentPoint_(std::numeric_limits<int>::min()), sesSpectrum_(0), sesSignals_(0)
 {
   // Create data parameter database
   dataParameters_.insert(DataParameterKeyValue("acq_channels", DataParameter(this, &WSESWrapperMain::readOnlyStub, &WSESWrapperMain::getAcqChannels, DataParameter::TYPE_INT32)));
@@ -86,11 +86,11 @@ WSESWrapperMain::~WSESWrapperMain()
  *
  * \return Returns the WSESWrapperMain singleton object.
  */
-WSESWrapperMain *WSESWrapperMain::instance(const char *workingDir)
+WSESWrapperMain *WSESWrapperMain::instance()
 {
   if (this_ == 0)
   {
-    this_ = new WSESWrapperMain(workingDir);
+    this_ = new WSESWrapperMain;
   }
   references_++;
   return this_;
@@ -156,20 +156,11 @@ int WSESWrapperMain::initialize(void *reserved)
     return WError::ERR_OK;
 
   instrumentLoaded_ = false;
-
-  char *tmpDir = _getcwd(0, 0);
-  
-  if (!workingDir_.empty())
-    _chdir(workingDir_.c_str());
-
   if (!lib_->isLoaded() && !lib_->load(instrumentLibraryName_.c_str()))
     errorCode = WError::ERR_LOAD_LIBRARY;
 
-  if (errorCode == WError::ERR_OK && lib_->GDS_Initialize(errorNotify, reinterpret_cast<HWND>(reserved)) != 0)
+  if (errorCode == WError::ERR_OK && lib_->GDS_Initialize(errorNotify, 0) != 0)
     errorCode = WError::ERR_INITIALIZE_FAIL;
-
-  _chdir(tmpDir);
-  free(tmpDir);
 
   initialized_ = (errorCode == WError::ERR_OK);
 
@@ -225,7 +216,7 @@ int WSESWrapperMain::getProperty(const char *property, int index, void *value, i
 {
   PropertyMap::iterator it = properties_.find(property);
   if (it == properties_.end())
-    return lib_->SC_GetProperty != 0 && lib_->SC_GetProperty(property, value, &size) == 0 ? WError::ERR_OK : WError::ERR_PARAMETER_NOT_FOUND;
+    return (lib_->SC_GetProperty != 0 && lib_->SC_GetProperty(property, value, &size) == 0) ? WError::ERR_OK : WError::ERR_PARAMETER_NOT_FOUND;
   return it->second.get(index, value, size);
 }
 
@@ -334,8 +325,8 @@ int WSESWrapperMain::testHW()
  *
  * \param[in] fileName The name of the configuration file. It is possible to use an absolute or relative path.
  *
- * \return WError::ERR_NOT_INITIALIZED if initialize() has not been called, WError::ERR_FAIL if
- *         the file could not be loaded, otherwise WError::ERR_OK.
+ * \return WError::ERR_NOT_INITIALIZED if initialize() has not been called, WError::ERR_OPEN_INSTRUMENT if
+ *         the file could not be opened, WError::ERR_FAIL if the instrument configuration is corrupted, otherwise WError::ERR_OK.
  */
 int WSESWrapperMain::loadInstrument(const char *fileName)
 {
@@ -360,12 +351,21 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
     memcpy(sesInstrumentInfo_.SerialNo, sesInstrumentInfo_.SerialNo + 1, length);
     sesInstrumentInfo_.SerialNo[length] = 0;
     instrumentLoaded_ = true;
+
+    loadElementSets();
+    loadLensModes();
+    if (lensModes_.size() > 0)
+      loadPassEnergies(lensModes_[0], passEnergies_);
+    loadElementNames();
+    if (elementNames_.size() == 0)
+    {
+      errorCode = WError::ERR_FAIL;
+    }
   }
   else
-    errorCode = WError::ERR_FAIL;
-
-  if (!loadElementSets() || !loadLensModes() || (lensModes_.size() > 0 && !loadPassEnergies(lensModes_[0], passEnergies_)) || !loadElementNames())
-    errorCode = WError::ERR_FAIL;
+  {
+    errorCode = WError::ERR_OPEN_INSTRUMENT;
+  }
 
   lib_->GDS_GetGlobalDetector(&sesDetectorRegion_);
   sesRegion_.ADCMask = sesDetectorRegion_.ADCMask;

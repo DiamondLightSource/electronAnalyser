@@ -381,6 +381,7 @@ class ElectronAnalyser: public ADDriver
 		WError *werror;
 		string sesWorkingDirectory;
 		string instrumentFilePath;
+		string instrumentDLLPath;
 
 		float m_dTemperature;
 		bool m_bAllowIOWithDetector;
@@ -423,6 +424,7 @@ ElectronAnalyser::~ElectronAnalyser()
 	free(acq_image);
 	free(acq_data);
 	free(acq_data_copy);
+	this->delete_device();
 }
 
 /* ElectronAnalyser constructor */
@@ -1229,7 +1231,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		if (epicsEventTryWait(this->stopEventId) == epicsEventWaitOK)
 		{
 			/* EPICS Stop event */
-			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForPointReady\n", driverName, functionName);
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
 			setIntegerParam(ADStatus, ADStatusAborted);
 			ses->stopAcquisition();
 			status = asynError;
@@ -1448,8 +1450,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 				this->lock();
 				getIntegerParam(ADStatus, &acqStatus);
 			}
-			/* Recommendation is to leave power supplies on */
-			/*zeroSupplies(); */
+			zeroSupplies();
 		}
 	}
 	else if (function == AlwaysDelayRegion)
@@ -2129,6 +2130,11 @@ void ElectronAnalyser::delete_device()
 	{
 		instrumentFilePath.clear();
 	}
+	if (!instrumentDLLPath.empty())
+	{
+		instrumentDLLPath.clear();
+	}
+
 	if (werror != NULL) {
 		werror->release();
 	}
@@ -2144,12 +2150,18 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: create device\n", driverName, functionName);
 	// Initialise variables to default values
 	sesWorkingDirectory = workingDir;
+
+	const char *pSESInstrumentEnvVar = getenv("SES_INSTRUMENT_DLL");
+	instrumentDLLPath = pSESInstrumentEnvVar;
+
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory: %s\n", driverName, functionName, sesWorkingDirectory);
-	instrumentFilePath = sesWorkingDirectory.append("\\data\\").append(instrumentFile);
+	instrumentFilePath = sesWorkingDirectory.append(instrumentFile);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
-	ses = WSESWrapperMain::instance(workingDir);
-	int err = ses->setProperty("lib_working_dir", 0, workingDir);
+	ses = WSESWrapperMain::instance();
+	
+	ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
+	int err |= ses->setProperty("instrument_library", strlen(pSESInstrumentEnvVar), pSESInstrumentEnvVar);
 	err |= ses->initialize(0);
 	if (err)
 	{
@@ -2165,7 +2177,7 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 		if (err)
 		{
 			this->setIntegerParam(ADStatus, ADStatusError);
-			epicsSnprintf(message, sizeof(message), "LoadInstrument file: %s failed; %s\n", instrumentFilePath, werror->message(err));
+			epicsSnprintf(message, sizeof(message), "Load Instrument file: %s failed; %s\n", instrumentFilePath, werror->message(err));
 			this->setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s. \n", driverName, functionName, message);
 		}

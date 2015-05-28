@@ -3,6 +3,10 @@
 #include "sestypes.h"
 #include "werror.h"
 
+#include <list>
+#include <string>
+#include <sstream>
+
 #define NOMINMAX
 #define _WIN32_WINNT 0x0502
 #include <windows.h>
@@ -20,14 +24,16 @@ BOOL WINAPI DllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID)
   { 
   case DLL_PROCESS_ATTACH:
     {
-      std::string path;
-      path.resize(1024);
-      ::GetModuleFileName(hInstance, const_cast<char *>(path.c_str()), path.size());
-      int pos = path.find_last_of('/');
-      if (pos == path.npos)
-        pos = path.find_last_of('\\');
-      path = path.substr(0, pos + 1) + "..";
-      gMain = WSESWrapperMain::instance(path.c_str());
+      std::string baseDir;
+      baseDir.resize(1024);
+      ::GetModuleFileName(hInstance, const_cast<char *>(baseDir.c_str()), baseDir.size());
+      int pos = baseDir.find_last_of('/');
+      if (pos == baseDir.npos)
+        pos = baseDir.find_last_of('\\');
+      baseDir = baseDir.substr(0, pos);
+      baseDir.append("\\..\\");
+      ::_putenv_s("SES_BASE_DIR", baseDir.c_str());
+      gMain = WSESWrapperMain::instance();
       break;
     }
   case DLL_THREAD_ATTACH:

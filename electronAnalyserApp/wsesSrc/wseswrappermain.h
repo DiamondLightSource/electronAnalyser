@@ -8,7 +8,7 @@
 
 class WSESWrapperMain : public WSESWrapperBase
 {
-  WSESWrapperMain(const char *workingDir);
+  WSESWrapperMain();
   ~WSESWrapperMain();
 
 public:
@@ -16,7 +16,7 @@ public:
   typedef std::pair<std::string, DataParameter> DataParameterKeyValue;
   typedef std::map<std::string, DataParameter> DataParameterMap;
 
-  static WSESWrapperMain *instance(const char *workingDir);
+  static WSESWrapperMain *instance();
   void release();
   int references() const;
 

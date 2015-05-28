@@ -32,12 +32,18 @@ using namespace SESWrapperNS;
  *
  * \param[in] workingDir The current working directory.
  */
-WSESWrapperBase::WSESWrapperBase(const char *workingDir)
-: lib_(new WSESInstrument), instrumentLoaded_(false), workingDir_(workingDir), instrumentLibraryName_("dll\\SESInstrument"),
+WSESWrapperBase::WSESWrapperBase()
+: lib_(new WSESInstrument), instrumentLoaded_(false),
   activeDetectors_(0x0001), iteration_(0), startTime_(0),
   blockPointReady_(false), blockRegionReady_(false), resetDataBetweenIterations_(false)
-{
+{ 
   errors_ = WError::instance();
+  
+  std::string baseDir = ::getenv("SES_BASE_DIR");
+  if (baseDir.empty())
+    instrumentLibraryName_ = "dll\\SESInstrument.dll";
+  else
+    instrumentLibraryName_ = baseDir + "\\dll\\SESInstrument.dll";
 
   *sesInstrumentInfo_.Model = 0;
   *sesInstrumentInfo_.SerialNo = 0;
@@ -817,12 +823,8 @@ int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 {
   const char *strValue = reinterpret_cast<const char *>(value);
   if (strValue != 0)
-  {
     _chdir(strValue);
-    char *buffer = getcwd(0, 0);
-    workingDir_ = buffer;
-    free(buffer);
-  }
+
 	return WError::ERR_OK;
 }
 
@@ -860,7 +862,7 @@ int WSESWrapperBase::setInstrumentLibrary(int index, const void *value)
 int WSESWrapperBase::setAlwaysDelayRegion(int index, const void *value)
 {
   const bool *boolValue = reinterpret_cast<const bool *>(value);
-  if (!lib_->GDS_SetOption == 0)
+  if (lib_->GDS_SetOption == 0)
     return WError::ERR_NOT_INITIALIZED;
   lib_->GDS_SetOption(SesNS::AlwaysDelayRegion, boolValue);
 	return WError::ERR_OK;
@@ -878,7 +880,7 @@ int WSESWrapperBase::setAlwaysDelayRegion(int index, const void *value)
 int WSESWrapperBase::setAllowIOWithDetector(int index, const void *value)
 {
   const bool *boolValue = reinterpret_cast<const bool *>(value);
-  if (!lib_->GDS_SetOption == 0)
+  if (lib_->GDS_SetOption == 0)
     return WError::ERR_NOT_INITIALIZED;
   lib_->GDS_SetOption(SesNS::AllowSignalsWithDetector, boolValue);
 	return WError::ERR_OK;
