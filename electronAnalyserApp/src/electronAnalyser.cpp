@@ -468,7 +468,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 
 	/* Find out the location and name of the instrument file from environment variables */
 	/* This used to be passed in as a parameter to the electronAnalyzer config call */
-	pWorkingDirEnvVar = getenv("SES_WORKING_DIR");
+	pWorkingDirEnvVar = getenv("SES_BASE_DIR");
 	pInstrumentFileEnvVar = getenv("SES_INSTRUMENT_FILE");
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory = %s\n", driverName, functionName, pWorkingDirEnvVar);
@@ -582,7 +582,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	getPassEnergy(-1,m_dCurrentPassEnergy);
 	getUseExternalIO(&m_bUseExternalIO);
 
-	std::string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+	std::string iniLocation = std::string(getenv("SES_BASE_DIR")) + std::string("/ini/Ses.ini");
 	const char *iniLocationStr = iniLocation.c_str();
 
 	char keyValue[2];
@@ -1450,7 +1450,6 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 				this->lock();
 				getIntegerParam(ADStatus, &acqStatus);
 			}
-			zeroSupplies();
 		}
 	}
 	else if (function == AlwaysDelayRegion)
@@ -1601,7 +1600,7 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting element set to %s\n", driverName, functionName, elementSet);
 
 			// set element set to ini file
-			std::string iniLocation = std::string(getenv("SES_WORKING_DIR")) + std::string("/ini/Ses.ini");
+			std::string iniLocation = std::string(getenv("SES_BASE_DIR")) + std::string("/ini/Ses.ini");
 			const char *iniLocationStr = iniLocation.c_str();
 
 			char keyValue[1];
@@ -2161,7 +2160,7 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	ses = WSESWrapperMain::instance();
 	
 	ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
-	int err |= ses->setProperty("instrument_library", strlen(pSESInstrumentEnvVar), pSESInstrumentEnvVar);
+	int err = ses->setProperty("instrument_library", strlen(pSESInstrumentEnvVar), pSESInstrumentEnvVar);
 	err |= ses->initialize(0);
 	if (err)
 	{
