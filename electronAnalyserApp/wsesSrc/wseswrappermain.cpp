@@ -156,6 +156,7 @@ int WSESWrapperMain::initialize(void *reserved)
     return WError::ERR_OK;
 
   instrumentLoaded_ = false;
+
   if (!lib_->isLoaded() && !lib_->load(instrumentLibraryName_.c_str()))
     errorCode = WError::ERR_LOAD_LIBRARY;
 
@@ -358,14 +359,10 @@ int WSESWrapperMain::loadInstrument(const char *fileName)
       loadPassEnergies(lensModes_[0], passEnergies_);
     loadElementNames();
     if (elementNames_.size() == 0)
-    {
       errorCode = WError::ERR_FAIL;
-    }
   }
   else
-  {
     errorCode = WError::ERR_OPEN_INSTRUMENT;
-  }
 
   lib_->GDS_GetGlobalDetector(&sesDetectorRegion_);
   sesRegion_.ADCMask = sesDetectorRegion_.ADCMask;
@@ -661,18 +658,10 @@ int WSESWrapperMain::startAcquisition()
   else
     iteration_++;
 
-  if (lib_->GDS_StartAcquisition)
-  {
-    result = lib_->GDS_StartAcquisition(iteration_);
-  }
-  else
-  {
-    result = lib_->GDS_Start(&sesRegion_, &sesSpectrum_, tempFileName_.c_str(), iteration_, WSESWrapperMain::pointReady, WSESWrapperMain::regionReady);
+  result = lib_->GDS_Start(&sesRegion_, &sesSpectrum_, tempFileName_.c_str(), iteration_, WSESWrapperMain::pointReady, WSESWrapperMain::regionReady);
 
-    if (lib_->GDS_GetCurrSignals != 0)
-      lib_->GDS_GetCurrSignals(&sesSignals_);
-  }
-
+  if (lib_->GDS_GetCurrSignals != 0)
+    lib_->GDS_GetCurrSignals(&sesSignals_);
 
   return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
@@ -1524,12 +1513,6 @@ void __stdcall WSESWrapperMain::regionReady()
 void WSESWrapperMain::regionReadyHandler()
 {
   regionReadyEvent_.set();
-  if (blockRegionReady_)
-  {
-    HANDLE handles[] = {continueAcquisitionEvent_.handle(), abortAcquisitionEvent_.handle()};
-    WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-    continueAcquisitionEvent_.reset();
-  }
 }
 
 /*!
