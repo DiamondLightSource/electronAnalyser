@@ -6,6 +6,8 @@
 # This associates the template with an edm screen
 # % gui, $(PORT), edmtab, electronAnalyser.edl, P=$(P),R=$(R)
 
+include "ADBase.template"
+
 # Units used on x axis of collected data
 record(stringin, "$(P)$(R)X_UNITS_RBV")
 {
