@@ -34,7 +34,7 @@ class electronAnalyser(AsynPort):
     DbdFileList = []
     SysLibFileList = []
     MakefileStringList = []
-    if Architecture() == "win32-x86":
+    if Architecture() == "win32-x86" or Architecture() == "windows-x64":
         # Device attributes
         LibFileList += ['electronAnalyserSupport', 'wses']
         SysLibFileList += ['nafxcw']
