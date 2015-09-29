@@ -9,7 +9,7 @@
 # module defined in the RELEASE file is rebuilt.
 
 SUPPORT=/dls_sw/prod/R3.14.12.3/support
-WORK=/dls_sw/work/R3.14.12.3/support
+#WORK=/dls_sw/work/R3.14.12.3/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
@@ -31,10 +31,10 @@ AUTOSAVE=$(SUPPORT)/autosave/5-0dls3
 
 #DEVIOCSTATS=$(SUPPORT)/devIocStats/3-1-5dls7
 
-FFMPEGSERVER=$(WORK)/mapping/ffmpegServer
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-2
 
-AREADETECTOR=$(WORK)/mapping/ADCore
-ADBINARIES=$(WORK)/mapping/ADBinaries
+AREADETECTOR=$(SUPPORT)/ADCore/2-3dls1
+ADBINARIES=$(SUPPORT)/ADBinaries/2-2dls2
 
 ZMQ       = /dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix/
 PROTOBUF  = /dls_sw/prod/tools/RHEL6-x86_64/protobuf/2-6-0/prefix/
