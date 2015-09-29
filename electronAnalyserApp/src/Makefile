@@ -57,7 +57,7 @@ USR_INCLUDES += -I$(PROTOBUF)/include
 # Build an IOC Application
 # ------------------------
 
-PROD_IOC_WIN32 += electronAnalyser
+#PROD_IOC_WIN32 += electronAnalyser
 
 # electronAnalyser.dbd will be installed into <top>/dbd
 # <name>.dbd will be created from <name>Include.dbd
