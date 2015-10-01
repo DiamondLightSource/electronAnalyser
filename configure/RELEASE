@@ -31,9 +31,9 @@ AUTOSAVE=$(SUPPORT)/autosave/5-0dls3
 
 #DEVIOCSTATS=$(SUPPORT)/devIocStats/3-1-5dls7
 
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-2
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-3
 
-AREADETECTOR=$(SUPPORT)/ADCore/2-3dls1
+AREADETECTOR=$(SUPPORT)/ADCore/2-3dls3
 ADBINARIES=$(SUPPORT)/ADBinaries/2-2dls2
 
 ZMQ       = /dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix/
