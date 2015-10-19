@@ -20,9 +20,38 @@ record(stringin, "$(P)$(R)Y_UNITS_RBV")
 {
   field(DESC, "Y Axis Units")
   field(DTYP, "asynOctetRead")
+  field(INP,  "@asyn($(PORT) 0)ACQ_SLICE_UNIT")
+  field(SCAN, "I/O Intr")
+}
+
+record(stringin, "$(P)$(R)I_UNITS_RBV")
+{
+  field(DESC, "Intensity Units")
+  field(DTYP, "asynOctetRead")
   field(INP,  "@asyn($(PORT) 0)ACQ_INTENSITY_UNIT")
   field(SCAN, "I/O Intr")
 }
+
+record(waveform, "$(P)$(R)X_SCALE_RBV")
+{
+  field(DESC, "Energy Scale")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn($(PORT) 0)ACQ_CHANNEL_SCALE")
+  field(SCAN, "I/O Intr")
+  field(FTVL, "DOUBLE")
+  field(NELM, "100000")
+}
+
+record(waveform, "$(P)$(R)Y_SCALE_RBV")
+{
+  field(DESC, "Energy Scale")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn($(PORT) 0)ACQ_SLICE_SCALE")
+  field(SCAN, "I/O Intr")
+  field(FTVL, "DOUBLE")
+  field(NELM, "1000")
+}
+
 
 # User enters desired number of slices
 record(longout, "$(P)$(R)SLICES") 
@@ -475,7 +504,7 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "5000000")
+  field(NELM, "100000")
 }
 
 # Acquired integrated spectrum copy of data
@@ -486,7 +515,7 @@ record(waveform, "$(P)$(R)INT_SPECTRUM_COPY")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM_COPY")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "5000000")
+  field(NELM, "100000")
 }
 
 # Acquired image of data
@@ -497,7 +526,7 @@ record(waveform, "$(P)$(R)IMAGE")
   field(INP,  "@asyn($(PORT) 0)ACQ_IMAGE")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "5000000")
+  field(NELM, "2000000")
 }
 
 # Acquired external IO data
@@ -508,7 +537,7 @@ record(waveform, "$(P)$(R)EXTIO")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "5000000")
+  field(NELM, "800000")
 }
 
 # Acquired external IO data copy
@@ -519,7 +548,7 @@ record(waveform, "$(P)$(R)EXTIO_COPY")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA_COPY")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "5000000")
+  field(NELM, "800000")
 }
 
 ################## Region Name #####################
