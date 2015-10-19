@@ -32,9 +32,17 @@ LIBRARY_IOC_WIN32 += wses
 # Any specific external resources (not epics) that we need to link to
 USR_CFLAGS +=   -DWIN32
 USR_CXXFLAGS += -DWIN32
-USR_CFLAGS_WIN32 += 
+USR_CFLAGS_WIN32 += -DDEBUG /Zi /Od
+USR_CPPFLAGS_WIN32 += -DDEBUG /Zi /Od
+USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
 USR_INCLUDES_WIN32 += 
 USR_LIBS_WIN32 +=
+
+OPT_CFLAGS_YES=/Od
+OPT_CXXFLAGS_YES=/Od
+
+OPT_CFLAGS=$(OPT_CFLAGS_NO)
+OPT_CPPFLAGS=$(OPT_CPPFLAGS_NO)
 
 # The following are compiled and added to the support library
 wses_SRCS_WIN32 += cexports.cpp werror.cpp wevent.cpp wlibrary.cpp wsesinstrument.cpp wvariable.cpp wseswrapperbase.cpp wseswrappermain.cpp

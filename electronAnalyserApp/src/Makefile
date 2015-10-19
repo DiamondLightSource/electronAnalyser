@@ -24,9 +24,17 @@ LIBRARY_IOC_WIN32 += electronAnalyserSupport
 # Any specific external resources (not epics) that we need to link to
 USR_CFLAGS +=   -DWIN32
 USR_CXXFLAGS += -DWIN32
-USR_CFLAGS_WIN32 += 
+USR_CFLAGS_WIN32 += -DDEBUG /Zi /Od
+USR_CPPFLAGS_WIN32 += -DDEBUG /Zi /Od
+USR_LDFLAGS += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
 USR_INCLUDES_WIN32 += 
 USR_LIBS_WIN32 +=
+
+OPT_CFLAGS_YES=/Od
+OPT_CXXFLAGS_YES=/Od
+
+OPT_CFLAGS=$(OPT_CFLAGS_NO)
+OPT_CPPFLAGS=$(OPT_CPPFLAGS_NO)
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c

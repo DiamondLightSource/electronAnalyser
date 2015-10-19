@@ -38,7 +38,7 @@ NDProcessConfigure("CCD.PROC", 16, 0, "CCD.CAM", 0, 50, -1)
 # NDStatsConfigure(portName, queueSize, blockingCallbacks, NDArrayPort, NDArrayAddr, maxBuffers, maxMemory)
 NDStatsConfigure("CCD.STAT", 16, 0, "CCD.CAM", 0, 50, -1)
 
-asynSetTraceMask("CCD.CAM", 0, 0x1)
+#asynSetTraceMask("CCD.CAM", 0, 0x1)
 #asynSetTraceMask("electronAnalyser", 0, 0x1)
 
 dbLoadRecords("$(TOP)/db/electronAnalyser.template","P=ELECTRON-ANALYSER-01,R=:TEST:,PORT=CCD.CAM")
