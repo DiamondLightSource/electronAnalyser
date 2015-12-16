@@ -65,7 +65,7 @@ USR_INCLUDES += -I$(PROTOBUF)/include
 # Build an IOC Application
 # ------------------------
 
-PROD_IOC_WIN32 += electronAnalyser
+#PROD_IOC_WIN32 += electronAnalyser
 
 # electronAnalyser.dbd will be installed into <top>/dbd
 # <name>.dbd will be created from <name>Include.dbd
@@ -106,6 +106,7 @@ electronAnalyser_SYS_LIBS_WIN32 +=nafxcw
 # install the areaDetector and dxp DLL libraries locally in our bin dir
 
 BIN_INSTALLS_WIN32 += $(wildcard $(AREADETECTOR)/bin/win32-x86/*.dll)
+BIN_INSTALLS_WIN32 += $(wildcard $(ADBINARIES)/bin/win32-x86/*.dll)
 BIN_INSTALLS_WIN32 += $(wildcard $(FFMPEGSERVER)/bin/win32-x86/*.dll)
 
 # install caRepeater.exe in the bin dir so we dont depend on EPICS being preinstalled

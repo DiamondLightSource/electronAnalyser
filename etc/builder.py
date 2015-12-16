@@ -1,38 +1,40 @@
 
 from iocbuilder import Device, AutoSubstitution, Architecture, SetSimulation
 from iocbuilder.arginfo import *
+from iocbuilder.modules.asyn import Asyn, AsynPort, AsynIP
 
-from iocbuilder.modules.areaDetector import AreaDetector, _ADBase, _ADBaseTemplate, simDetector
+from iocbuilder.modules.ADCore import ADCore, ADBaseTemplate, makeTemplateInstance, includesTemplates
 
-class _electronAnalyser(AutoSubstitution):
+@includesTemplates(ADBaseTemplate)
+class electronAnalyserTemplate(AutoSubstitution):
     TemplateFile="electronAnalyser.template"
-    SubstitutionOverwrites = [_ADBaseTemplate]
 
-class electronAnalyser(_ADBase):
+class electronAnalyser(AsynPort):
     '''Creates a electronAnalyser driver'''
-    _SpecificTemplate = _electronAnalyser
-    def __init__(self, BUFFERS = 50, MEMORY = -1, **args):
-        # Init the superclass
-        self.__super.__init__(**args)
-        # Store the args
+    Dependencies = (ADCore,)
+    # This tells xmlbuilder to use PORT instead of name as the row ID
+    UniqueName = "PORT"
+    _SpecificTemplate = electronAnalyserTemplate
+    def __init__(self, PORT, BUFFERS = 50, MEMORY = -1, **args):
+        # Init the superclass (AsynPort)
+        self.__super.__init__(PORT)
+        # Update the attributes of self from the commandline args
         self.__dict__.update(locals())
-        print self._SpecificTemplate
-
+        # Make an instance of our template
+        makeTemplateInstance(self._SpecificTemplate, locals(), args)
 
     # __init__ arguments
-    ArgInfo = _ADBase.ArgInfo + _electronAnalyser.ArgInfo + makeArgInfo(__init__,
-#        XSIZE = Simple('X Size of image', int),
-#        YSIZE = Simple('Y Size of image', int),
-        BUFFERS = Simple('Maximum number of NDArray buffers to be created for '
-            'plugin callbacks', int),
-        MEMORY  = Simple('Max memory to allocate, should be maxw*maxh*nbuffer '
-            'for driver and all attached plugins', int))
+    ArgInfo = ADBaseTemplate.ArgInfo + _SpecificTemplate.ArgInfo + makeArgInfo(__init__,
+        PORT = Simple('Port name for the detector', str),
+        BUFFERS = Simple('Maximum number of NDArray buffers to be created for plugin callbacks', int),
+        MEMORY = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int))
 
+    # Device attributes
     LibFileList = []
     DbdFileList = []
     SysLibFileList = []
     MakefileStringList = []
-    if Architecture() == "win32-x86":
+    if Architecture() == "win32-x86" or Architecture() == "windows-x64":
         # Device attributes
         LibFileList += ['electronAnalyserSupport', 'wses']
         SysLibFileList += ['nafxcw']
@@ -41,40 +43,41 @@ class electronAnalyser(_ADBase):
                                  'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
 
     def Initialise(self):
-        print '# electronAnalyserConfig(portName, ' \
-            'maxBuffers, maxMemory)'
-        print 'electronAnalyserConfig("%(PORT)s", ' \
-            '%(BUFFERS)d, %(MEMORY)d)' % self.__dict__
+        print '# electronAnalyserConfig(portName, maxBuffers, maxMemory)'
+        print 'electronAnalyserConfig("%(PORT)s", %(BUFFERS)d, %(MEMORY)d)' % self.__dict__
 
 
 
-def electronAnalyser_sim(**kwargs):
-    return simDetector(1024, 768, **kwargs)
+#def electronAnalyser_sim(**kwargs):
+#    return simDetector(1024, 768, **kwargs)
+#
+#SetSimulation(electronAnalyser, electronAnalyser_sim)
 
-SetSimulation(electronAnalyser, electronAnalyser_sim)
 
 
-
-class _electronAnalyserViewer(AutoSubstitution):
+@includesTemplates(ADBaseTemplate)
+class electronAnalyserViewerTemplate(AutoSubstitution):
     TemplateFile="electronAnalyserViewer.template"
-    SubstitutionOverwrites = [_ADBaseTemplate]
 
-class electronAnalyserViewer(_ADBase):
+class electronAnalyserViewer(AsynPort):
     '''Creates a electronAnalyserViewer driver'''
-    _SpecificTemplate = _electronAnalyserViewer
-    def __init__(self, BUFFERS = 50, MEMORY = -1, **args):
-        # Init the superclass
-        self.__super.__init__(**args)
-        # Store the args
+    Dependencies = (ADCore,)
+    # This tells xmlbuilder to use PORT instead of name as the row ID
+    UniqueName = "PORT"
+    _SpecificTemplate = electronAnalyserViewerTemplate
+    def __init__(self, PORT, BUFFERS = 50, MEMORY = -1, **args):
+        # Init the superclass (AsynPort)
+        self.__super.__init__(PORT)
+        # Update the attributes of self from the commandline args
         self.__dict__.update(locals())
-        print self._SpecificTemplate
+        # Make an instance of our template
+        makeTemplateInstance(self._SpecificTemplate, locals(), args)
 
     # __init__ arguments
-    ArgInfo = _ADBase.ArgInfo + _electronAnalyserViewer.ArgInfo + makeArgInfo(__init__,
-        BUFFERS = Simple('Maximum number of NDArray buffers to be created for '
-            'plugin callbacks', int),
-        MEMORY  = Simple('Max memory to allocate, should be maxw*maxh*nbuffer '
-            'for driver and all attached plugins', int))
+    ArgInfo = ADBaseTemplate.ArgInfo + _SpecificTemplate.ArgInfo + makeArgInfo(__init__,
+        PORT = Simple('Port name for the detector', str),
+        BUFFERS = Simple('Maximum number of NDArray buffers to be created for plugin callbacks', int),
+        MEMORY = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int))
 
     LibFileList = ['electronAnalyserViewerSupport']
     DbdFileList = ['electronAnalyserViewerSupport']

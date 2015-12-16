@@ -20,16 +20,16 @@ pattern { P, 			  R, 	   PORT, 	       TIMEOUT, ADDR }
 #  NDARRAY_PORT  Input Array Port
 #  NDARRAY_ADDR  Input Array Address
 #  Enabled       Plugin Enabled at startup?
-file $(AREADETECTOR)/db/NDPluginBase.template
-{
-pattern { P, R, PORT, TIMEOUT, ADDR, NDARRAY_PORT, NDARRAY_ADDR, Enabled }
-    	{ "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0", "CCD.CAM", "0", "0" }
-    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0", "CCD.CAM", "0", "0" }
-    	{ "ELECTRON-ANALYSER-01", ":ARR:", "CCD.ARR", "1", "0", "CCD.CAM", "0", "0" }
-    	{ "ELECTRON-ANALYSER-01", ":MPG:", "CCD.MPG", "1", "0", "CCD.CAM", "0", "0" }
-    	{ "ELECTRON-ANALYSER-01", ":PROC:", "CCD.PROC", "1", "0", "CCD.CAM", "0", "0" }
-    	{ "ELECTRON-ANALYSER-01", ":STAT:", "CCD.STAT", "1", "0", "CCD.CAM", "0", "0" }
-}
+#file $(AREADETECTOR)/db/NDPluginBase.template
+#{
+#pattern { P, R, PORT, TIMEOUT, ADDR, NDARRAY_PORT, NDARRAY_ADDR, Enabled }
+#    	{ "ELECTRON-ANALYSER-01", ":ROI:", "CCD.ROI", "1", "0", "CCD.CAM", "0", "0" }
+#    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0", "CCD.CAM", "0", "0" }
+#    	{ "ELECTRON-ANALYSER-01", ":ARR:", "CCD.ARR", "1", "0", "CCD.CAM", "0", "0" }
+#    	{ "ELECTRON-ANALYSER-01", ":MPG:", "CCD.MPG", "1", "0", "CCD.CAM", "0", "0" }
+#    	{ "ELECTRON-ANALYSER-01", ":PROC:", "CCD.PROC", "1", "0", "CCD.CAM", "0", "0" }
+#    	{ "ELECTRON-ANALYSER-01", ":STAT:", "CCD.STAT", "1", "0", "CCD.CAM", "0", "0" }
+#}
 
 # Macros:
 #  P        Device Prefix
@@ -49,11 +49,11 @@ pattern { P, R, PORT, TIMEOUT, ADDR }
 #  PORT     Asyn Port name
 #  TIMEOUT  Timeout
 #  ADDR     Asyn Port address
-file $(AREADETECTOR)/db/NDFile.template
-{
-pattern { P, R, PORT, TIMEOUT, ADDR }
-    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0" }
-}
+#file $(AREADETECTOR)/db/NDFile.template
+#{
+#pattern { P, R, PORT, TIMEOUT, ADDR }
+#    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0" }
+#}
 
 # Macros:
 #  P     Device Prefix
@@ -61,8 +61,8 @@ pattern { P, R, PORT, TIMEOUT, ADDR }
 #  PORT  Asyn Port name
 file $(AREADETECTOR)/db/NDFileHDF5.template
 {
-pattern { P, R, PORT }
-    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF" }
+pattern { P, R, PORT, TIMEOUT, ADDR }
+    	{ "ELECTRON-ANALYSER-01", ":HDF:", "CCD.HDF", "1", "0" }
 }
 
 # Macros:

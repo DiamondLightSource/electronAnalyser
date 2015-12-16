@@ -11,7 +11,7 @@ include $(TOP)/configure/CONFIG
 
 DB += electronAnalyser.template
 DB += electronAnalyserViewer.template
-DB += electronAnalyserExample.db
+#DB += electronAnalyserExample.db
 
 include $(TOP)/configure/RULES
 #----------------------------------------

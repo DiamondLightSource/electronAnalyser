@@ -6,6 +6,8 @@
 # This associates the template with an edm screen
 # % gui, $(PORT), edmtab, electronAnalyserViewer.edl, P=$(P),R=$(R)
 
+include "ADBase.template"
+
 ########## Viewer specific Fields #########
 
 record(stringout, "$(P)$(R)CONNECTION")
