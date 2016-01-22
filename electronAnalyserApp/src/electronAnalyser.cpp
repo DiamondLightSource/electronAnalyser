@@ -450,7 +450,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	acq_data_copy = (double *)calloc(100, sizeof(epicsFloat64));
 
 	werror = WError::instance();
-
+        //int traceMask = pasynTrace->getTraceMask(pasynUserSelf);
+        //pasynTrace->setTraceMask(pasynUserSelf, traceMask | ASYN_TRACE_FLOW);
 	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts */
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
@@ -2183,14 +2184,13 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
 	ses = WSESWrapperMain::instance();
-	
 	ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
 	int err = ses->setProperty("instrument_library", strlen(pSESInstrumentEnvVar), pSESInstrumentEnvVar);
 	err |= ses->initialize(0);
 	if (err)
 	{
 		this->setIntegerParam(ADStatus, ADStatusError);
-		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %s\n", werror->message(err));
+		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %d, %s\n", err, werror->message(err));
 		this->setStringParam(ADStatusMessage,message);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 	}

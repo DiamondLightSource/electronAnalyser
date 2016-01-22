@@ -22,6 +22,6 @@ include $(TOP)/configure/RULES
 #        convertDlsRelease.pl does not currently handle expanding the support
 #        modules paths properly on Windows W: Once that is fixed we can remove
 #        this rule and go back to using the dls rules...
-electronAnalyserExample.db: ../electronAnalyserExample.substitutions
-	msi -I.. -I$(FFMPEGSERVER)/db -I$(ASYN)/db -I$(AREADETECTOR)/db -I$(EPICS_BASE)/db -S$? <$(DEV_NULL) > $@
+#electronAnalyserExample.db: ../electronAnalyserExample.substitutions
+#	msi -I.. -I$(FFMPEGSERVER)/db -I$(ASYN)/db -I$(AREADETECTOR)/db -I$(EPICS_BASE)/db -S$? <$(DEV_NULL) > $@
 
