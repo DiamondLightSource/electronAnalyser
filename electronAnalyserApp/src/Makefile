@@ -30,11 +30,11 @@ USR_LDFLAGS += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
 USR_INCLUDES_WIN32 += 
 USR_LIBS_WIN32 +=
 
-OPT_CFLAGS_YES=/Od
-OPT_CXXFLAGS_YES=/Od
+#OPT_CFLAGS_YES=/Od
+#OPT_CXXFLAGS_YES=/Od
 
-OPT_CFLAGS=$(OPT_CFLAGS_NO)
-OPT_CPPFLAGS=$(OPT_CPPFLAGS_NO)
+#OPT_CFLAGS=$(OPT_CFLAGS_NO)
+#OPT_CPPFLAGS=$(OPT_CPPFLAGS_NO)
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
