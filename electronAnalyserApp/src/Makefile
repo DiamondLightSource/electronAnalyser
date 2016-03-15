@@ -21,20 +21,20 @@ USR_INCLUDES += -I../../wsesSrc/
 #define the library name
 LIBRARY_IOC_WIN32 += electronAnalyserSupport
 
-# Any specific external resources (not epics) that we need to link to
-#electronAnalyserSupport_CFLAGS +=   -DWIN32
-#electronAnalyserSupport_CXXFLAGS += -DWIN32
+# Set the compiler and linker flags required to give a debug build 
+# Note that the /Od flag (disable compiler optimisations) gets overridden by
+# /Ox coming from the global win32_x86 compiler settings. I haven't found a 
+# way to override this global flag for just the win32_x86 build - the only
+# thing that seems to work is to override OPT_CFLAGS_YES globally, which 
+# breaks builds for other targets (notably the Linux build needed for the
+# viewer).
+# It still seems to be possible to follow the code in the debugger with Ox on though.
 USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
 USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
 USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
 USR_INCLUDES_WIN32 += 
 USR_LIBS_WIN32 +=
 
-#OPT_CFLAGS_YES=/Od
-#OPT_CXXFLAGS_YES=/Od
-
-#OPT_CFLAGS=$(OPT_CFLAGS_NO)
-#OPT_CPPFLAGS=$(OPT_CPPFLAGS_NO)
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c

@@ -450,8 +450,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	acq_data_copy = (double *)calloc(100, sizeof(epicsFloat64));
 
 	werror = WError::instance();
-        //int traceMask = pasynTrace->getTraceMask(pasynUserSelf);
-        //pasynTrace->setTraceMask(pasynUserSelf, traceMask | ASYN_TRACE_FLOW);
+        int traceMask = pasynTrace->getTraceMask(pasynUserSelf);
+        pasynTrace->setTraceMask(pasynUserSelf, traceMask | ASYN_TRACE_FLOW);
 	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts */
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)

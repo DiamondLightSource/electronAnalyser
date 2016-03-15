@@ -30,8 +30,6 @@ INC += wseswrappermain.h
 LIBRARY_IOC_WIN32 += wses
 
 # Any specific external resources (not epics) that we need to link to
-#wses_CFLAGS +=   -DWIN32
-#wses_CXXFLAGS += -DWIN32
 USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
 USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
 USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
