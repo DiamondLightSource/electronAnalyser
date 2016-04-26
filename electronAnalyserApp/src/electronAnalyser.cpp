@@ -283,6 +283,8 @@ class ElectronAnalyser: public ADDriver
 		double *acq_image;
 		double *acq_data;
 		double *acq_data_copy;
+		double *channel_scale;
+		double *slice_scale;
 
 		epicsEventId startEventId;
 		epicsEventId stopEventId;
@@ -424,6 +426,8 @@ ElectronAnalyser::~ElectronAnalyser()
 	free(acq_image);
 	free(acq_data);
 	free(acq_data_copy);
+	free(channel_scale);
+	free(slice_scale);
 	this->delete_device();
 }
 
@@ -446,7 +450,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	acq_data_copy = (double *)calloc(100, sizeof(epicsFloat64));
 
 	werror = WError::instance();
-
+        int traceMask = pasynTrace->getTraceMask(pasynUserSelf);
+        pasynTrace->setTraceMask(pasynUserSelf, traceMask | ASYN_TRACE_FLOW);
 	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts */
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
@@ -924,6 +929,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		free(spectrum);
 		free(acq_image);
 		free(acq_data);
+		free(channel_scale);
+		free(slice_scale);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,"\n\n%s:%s: Spectrum, image and ExtIO memory freed\n\n", driverName, functionName);
 
 		/* Check to see if acquisition is complete */
@@ -1043,6 +1050,39 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	{
 		waitTimeout = analyzer.dwellTime_ + 3000;
 	}*/
+
+	/* Read out units and scale for scan that is about to run */
+	int size = MAX_STRING_SIZE;
+	char intensity_unit[MAX_STRING_SIZE];
+	ses->getAcqIntensityUnit(0, intensity_unit, size);
+	setStringParam(AcqIntensityUnit, intensity_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
+
+	size = MAX_STRING_SIZE;
+	char channel_unit[MAX_STRING_SIZE];
+	ses->getAcqChannelUnit(0,channel_unit, size);
+	setStringParam(AcqChannelUnit, channel_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
+
+	size = MAX_STRING_SIZE;
+	char slice_unit[MAX_STRING_SIZE];
+	ses->getAcqSliceUnit(0,slice_unit, size);
+	setStringParam(AcqSliceUnit, slice_unit);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Slice Units = %s\n", driverName, functionName, slice_unit);
+
+	size = MAX_STRING_SIZE;
+	this->channel_scale = (double *)calloc(channels, sizeof(epicsFloat64));
+	ses->getAcqChannelScale(0, this->channel_scale, size);
+	status = doCallbacksFloat64Array(this->channel_scale, channels, AcqChannelScale, 0);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel scale: %f, %f, %f\n", driverName, functionName,
+			  this->channel_scale[0], this->channel_scale[1], this->channel_scale[2]);
+
+	size = MAX_STRING_SIZE;
+	this->slice_scale = (double *)calloc(detector.slices_, sizeof(epicsFloat64));
+	ses->getAcqSliceScale(0, this->slice_scale, size);
+	status = doCallbacksFloat64Array(this->slice_scale, detector.slices_, AcqSliceScale, 0);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel scale: %f, %f, %f\n", driverName, functionName,
+		  this->slice_scale[0], this->slice_scale[1], this->slice_scale[2]);
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
@@ -1277,20 +1317,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		ses->continueAcquisition();
 	}
-
-	/*int size = 0;
-	char intensity_unit[MAX_STRING_SIZE];
-	getAcqIntensityUnit(intensity_unit, size);
-	//ses->getAcquiredData("acq_intensity_unit", 0, intensity_unit, size);
-	setStringParam(AcqIntensityUnit, intensity_unit);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Intensity Units = %s\n", driverName, functionName, intensity_unit);
-
-	/*size = 0;
-	char channel_unit[MAX_STRING_SIZE];
-	getAcqChannelUnit(channel_unit, size);
-	//ses->getAcquiredData("acq_channel_unit", 0, channel_unit, size);
-	setStringParam(AcqChannelUnit, channel_unit);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel Units = %s\n", driverName, functionName, channel_unit);
 
 	/* Summary of settings */
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Acquisition Mode = %d\n", driverName, functionName, analyzer.fixed_);
@@ -2158,14 +2184,13 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
 	// Get connection to the SES wrapper
 	ses = WSESWrapperMain::instance();
-	
 	ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
 	int err = ses->setProperty("instrument_library", strlen(pSESInstrumentEnvVar), pSESInstrumentEnvVar);
 	err |= ses->initialize(0);
 	if (err)
 	{
 		this->setIntegerParam(ADStatus, ADStatusError);
-		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %s\n", werror->message(err));
+		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %d, %s\n", err, werror->message(err));
 		this->setStringParam(ADStatusMessage,message);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 	}
