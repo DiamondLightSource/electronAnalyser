@@ -450,8 +450,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	acq_data_copy = (double *)calloc(100, sizeof(epicsFloat64));
 
 	werror = WError::instance();
-        int traceMask = pasynTrace->getTraceMask(pasynUserSelf);
-        pasynTrace->setTraceMask(pasynUserSelf, traceMask | ASYN_TRACE_FLOW);
+        
 	/* Create the epicsEvents for signalling to the Electron Analyser task when acquisition starts */
 	this->startEventId = epicsEventCreate(epicsEventEmpty);
 	if (!this->startEventId)
@@ -2179,9 +2178,9 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	const char *pSESInstrumentEnvVar = getenv("SES_INSTRUMENT_DLL");
 	instrumentDLLPath = pSESInstrumentEnvVar;
 
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory: %s\n", driverName, functionName, sesWorkingDirectory);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: SES Working directory: %s\n", driverName, functionName, sesWorkingDirectory.c_str());
 	instrumentFilePath = sesWorkingDirectory.append(instrumentFile);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Instrument file path: %s\n", driverName, functionName, instrumentFilePath.c_str());
 	// Get connection to the SES wrapper
 	ses = WSESWrapperMain::instance();
 	ses->setProperty("lib_working_dir", strlen(workingDir), workingDir);
@@ -2190,18 +2189,18 @@ void ElectronAnalyser::init_device(const char *workingDir, const char *instrumen
 	if (err)
 	{
 		this->setIntegerParam(ADStatus, ADStatusError);
-		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %d, %s\n", err, werror->message(err));
+		epicsSnprintf(message, sizeof(message), "SES library initialisation failed: %d, %s\n", err, werror->message(err).c_str());
 		this->setStringParam(ADStatusMessage,message);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s\n", driverName, functionName, message);
 	}
 	else
 	{
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Loading instrument file....\n", driverName, functionName);
+	    asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Loading instrument file from path %s\n", driverName, functionName, instrumentFilePath.c_str());
 		err = ses->loadInstrument(instrumentFilePath.c_str());
 		if (err)
 		{
 			this->setIntegerParam(ADStatus, ADStatusError);
-			epicsSnprintf(message, sizeof(message), "Load Instrument file: %s failed; %s\n", instrumentFilePath, werror->message(err));
+			epicsSnprintf(message, sizeof(message), "Load Instrument file: %s failed; %s\n", instrumentFilePath.c_str(), werror->message(err).c_str());
 			this->setStringParam(ADStatusMessage, message);
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: %s. \n", driverName, functionName, message);
 		}
