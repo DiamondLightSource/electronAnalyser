@@ -633,11 +633,11 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	size = MAX_MESSAGE_SIZE;
 	getLibDescription(value, size);
 	status |= setStringParam(LibDescription, value);
-
+        
 	size = MAX_MESSAGE_SIZE;
 	getLibVersion(value, size);
 	status |= setStringParam(LibVersion, value);
-
+        
 	size = MAX_MESSAGE_SIZE;
 	getLibWorkingDir(value, size);
 	status |= setStringParam(LibWorkingDir, value);
@@ -2675,6 +2675,7 @@ asynStatus ElectronAnalyser::getLibDescription(char *value, int &size)
  * @brief get the version of the library.
  *
  * If the @p value parameter is 0, @p size will be modified to return the required buffer length for the version.
+ * Note that at present (with SES 1.5.0-r7/SESWrapper2.7) this always just returns the string "@LibVersion", which means it's not very useful.
  *
  * @param[out] value A @c char* buffer to be filled with the version. The syntax is @code <major>.<minor>.<build> @endcode.
  *              Can be 0 (NULL).
