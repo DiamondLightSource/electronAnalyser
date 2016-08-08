@@ -1,6 +1,7 @@
 
 from iocbuilder import Device, AutoSubstitution, Architecture, SetSimulation
 from iocbuilder.arginfo import *
+from iocbuilder import iocwriter # For AddDbMakefileHooks
 from iocbuilder.modules.asyn import Asyn, AsynPort, AsynIP
 
 from iocbuilder.modules.ADCore import ADCore, ADBaseTemplate, makeTemplateInstance, includesTemplates
@@ -15,19 +16,30 @@ class electronAnalyser(AsynPort):
     # This tells xmlbuilder to use PORT instead of name as the row ID
     UniqueName = "PORT"
     _SpecificTemplate = electronAnalyserTemplate
-    def __init__(self, PORT, BUFFERS = 50, MEMORY = -1, **args):
+    def __init__(self, PORT, SES_BASE_DIR, SES_INSTRUMENT_FILE, BUFFERS = 50, MEMORY = -1, debug = False, **args):
         # Init the superclass (AsynPort)
         self.__super.__init__(PORT)
         # Update the attributes of self from the commandline args
         self.__dict__.update(locals())
         # Make an instance of our template
         makeTemplateInstance(self._SpecificTemplate, locals(), args)
+        iocwriter.AddDbMakefileHook(self.DbMakefileHook)
+        if debug:
+            self.MakefileStringList.append("USR_CFLAGS_WIN32 += -DDEBUG /Zi /Od")
+            self.MakefileStringList.append("USR_CPPFLAGS_WIN32 += -DDEBUG /Zi /Od")
+            self.MakefileStringList.append("USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF")
 
     # __init__ arguments
     ArgInfo = ADBaseTemplate.ArgInfo + _SpecificTemplate.ArgInfo + makeArgInfo(__init__,
         PORT = Simple('Port name for the detector', str),
         BUFFERS = Simple('Maximum number of NDArray buffers to be created for plugin callbacks', int),
-        MEMORY = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int))
+        MEMORY = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int),
+        debug = Simple('If True, generate PDB debugging file for this IOC to allow post-mortem debugging in WinDBG', bool),
+        SES_BASE_DIR = Simple('Path to SES base installation directory, e.g. C:/Projects/SES_1.5.0-r5_Win64/. Note the trailing / is required.'),
+        SES_INSTRUMENT_FILE = Simple('Path to the SES instrument file.'))
+                                                                            
+
+
 
     # Device attributes
     LibFileList = []
@@ -43,9 +55,22 @@ class electronAnalyser(AsynPort):
                                  'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
 
     def Initialise(self):
+        print 'epicsEnvSet "SES_BASE_DIR", "%(SES_BASE_DIR)s"' % self.__dict__
+        print 'epicsEnvSet "SES_INSTRUMENT_FILE", "%(SES_INSTRUMENT_FILE)s"' % self.__dict__
+        print 'epicsEnvSet "SES_INSTRUMENT_DLL", "dll/SESInstrument.dll"'
         print '# electronAnalyserConfig(portName, maxBuffers, maxMemory)'
         print 'electronAnalyserConfig("%(PORT)s", %(BUFFERS)d, %(MEMORY)d)' % self.__dict__
 
+    def PostIocInitialise(self):
+        print '# SESWrapper sets pwd to SES_BASE_DIR, and scans will fail to'
+        print '# complete if this is not the case when they are run. We '
+        print '# overwrite this with INSTALL, so set it back to SES_BASE_DIR '
+        print '# here.'
+        print 'cd "$(SES_BASE_DIR)"'
+        
+
+    def DbMakefileHook(self, makefile, ioc_name, db_filename, expanded_filename):
+        makefile.AddLine("SYS_MSI_INCLUDES = -I$(ADCORE)/db")
 
 
 #def electronAnalyser_sim(**kwargs):
