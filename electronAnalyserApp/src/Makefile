@@ -29,12 +29,13 @@ LIBRARY_IOC_WIN32 += electronAnalyserSupport
 # breaks builds for other targets (notably the Linux build needed for the
 # viewer).
 # It still seems to be possible to follow the code in the debugger with Ox on though.
-USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
-USR_INCLUDES_WIN32 += 
-USR_LIBS_WIN32 +=
-
+ifdef ANALYSER_DEBUG
+  USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
+  USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
+  USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
+  USR_INCLUDES_WIN32 += 
+  USR_LIBS_WIN32 +=
+endif
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c
