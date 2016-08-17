@@ -2,6 +2,9 @@
 #% macro, P, Device Prefix
 #% macro, R, Device Suffix
 #% macro, PORT, Asyn Port name
+#% macro, SPECTRUM_SIZE, Maximum spectrum size. Reducing this may save bandwidth if arrays being read via Channel Access.
+#% macro, IMAGE_SIZE, Maximum image size. Reducing this may save bandwidth if arrays being read via Channel Access.
+#% macro, EXTIO_SIZE, Maximum external I/O size. Reducing this may save bandwidth if arrays being read via Channel Access.
 
 # This associates the template with an edm screen
 # % gui, $(PORT), edmtab, electronAnalyser.edl, P=$(P),R=$(R)
@@ -41,7 +44,8 @@ record(waveform, "$(P)$(R)X_SCALE_RBV")
   field(INP,  "@asyn($(PORT) 0)ACQ_CHANNEL_SCALE")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "100000")
+#  field(NELM, "100000")
+  field(NELM, "$(SPECTRUM_SIZE=5000000)")
 }
 
 record(waveform, "$(P)$(R)Y_SCALE_RBV")
@@ -506,7 +510,8 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "100000")
+  #field(NELM, "100000")
+  field(NELM, "$(SPECTRUM_SIZE=5000000)")
 }
 
 # Acquired integrated spectrum copy of data
@@ -517,7 +522,8 @@ record(waveform, "$(P)$(R)INT_SPECTRUM_COPY")
   field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM_COPY")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "100000")
+  #field(NELM, "100000")
+  field(NELM, "$(SPECTRUM_SIZE=5000000)")
 }
 
 # Acquired image of data
@@ -528,7 +534,8 @@ record(waveform, "$(P)$(R)IMAGE")
   field(INP,  "@asyn($(PORT) 0)ACQ_IMAGE")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "2000000")
+  #field(NELM, "2000000")
+  field(NELM, "$(IMAGE_SIZE=5000000)")
 }
 
 # Acquired external IO data
@@ -539,7 +546,8 @@ record(waveform, "$(P)$(R)EXTIO")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "800000")
+  #field(NELM, "800000")
+  field(NELM, "$(EXTIO_SIZE=5000000)")
 }
 
 # Acquired external IO data copy
@@ -550,7 +558,8 @@ record(waveform, "$(P)$(R)EXTIO_COPY")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA_COPY")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
-  field(NELM, "800000")
+  #field(NELM, "800000")
+  field(NELM, "$(EXTIO_SIZE=5000000)")
 }
 
 ################## Region Name #####################

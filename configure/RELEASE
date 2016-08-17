@@ -27,13 +27,13 @@ SSCAN=$(SUPPORT)/sscan/2-8-1
 BUSY=$(SUPPORT)/busy/1-6-1
 
 #AUTOSAVE is needed for save_restore
-AUTOSAVE=$(SUPPORT)/autosave/5-0dls3
+AUTOSAVE=$(SUPPORT)/autosave/5-0dls4
 
 #DEVIOCSTATS=$(SUPPORT)/devIocStats/3-1-5dls7
 
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-6
+FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-9
 
-AREADETECTOR=$(SUPPORT)/ADCore/2-4dls1
+AREADETECTOR=$(SUPPORT)/ADCore/2-4dls5
 ADBINARIES=$(SUPPORT)/ADBinaries/2-2dls2
 
 ZMQ       = /dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix/
@@ -44,4 +44,3 @@ EPICS_BASE=/dls_sw/epics/R3.14.12.3/base
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 -include $(TOP)/configure/RELEASE.private
-
