@@ -55,9 +55,13 @@ class electronAnalyser(AsynPort):
                                  'BIN_INSTALLS_WIN32 += $(EPICS_BASE)/bin/$(EPICS_HOST_ARCH)/caRepeater.exe']
 
     def Initialise(self):
-        print 'epicsEnvSet "SES_BASE_DIR", "%(SES_BASE_DIR)s"' % self.__dict__
-        print 'epicsEnvSet "SES_INSTRUMENT_FILE", "%(SES_INSTRUMENT_FILE)s"' % self.__dict__
-        print 'epicsEnvSet "SES_INSTRUMENT_DLL", "dll/SESInstrument.dll"'
+        print '''#Set SES_OVERRIDE_ENV to # to disable these parameters and load 
+#SES settings from the environment (note this requires the IOC to be built 
+#with the -b flag having been sent to iocbuilder, otherwise this macro will 
+#already have been set to its default by msi).''' 
+        print '$(SES_OVERRIDE_ENV="")epicsEnvSet "SES_BASE_DIR", "%(SES_BASE_DIR)s"' % self.__dict__
+        print '$(SES_OVERRIDE_ENV="")epicsEnvSet "SES_INSTRUMENT_FILE", "%(SES_INSTRUMENT_FILE)s"' % self.__dict__
+        print '$(SES_OVERRIDE_ENV="")epicsEnvSet "SES_INSTRUMENT_DLL", "dll/SESInstrument.dll"'
         print '# electronAnalyserConfig(portName, maxBuffers, maxMemory)'
         print 'electronAnalyserConfig("%(PORT)s", %(BUFFERS)d, %(MEMORY)d)' % self.__dict__
 
