@@ -1344,6 +1344,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	{
 		/* EPICS Stop event */
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: EPICS Stop event triggered abort of waitForRegionReady\n", driverName, functionName);
+		setIntegerParam(ADStatus, ADStatusAborted);
 		ses->stopAcquisition();
 		status = asynError;
 	}
