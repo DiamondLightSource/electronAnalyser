@@ -837,3 +837,15 @@ record(longout, "$(P)$(R)PAUSE")
   field(DRVL, "0")
   field(DRVH, "1")
 }
+
+# Stop after the current iteration.
+record(longout, "$(P)$(R)STOP_NEXT_ITERATION") 
+{
+  field(DESC, "Stop after the iteration has finished")
+  field(DTYP, "asynInt32")
+  field(OUT,  "@asyn($(PORT) 0)STOP_NEXT_ITERATION")
+  field(PINI, "NO")
+  field(VAL,  "0")
+  field(DRVL, "0")
+  field(DRVH, "1")
+}

@@ -152,6 +152,8 @@ static const char *driverName = "electronAnalyser";
 #define LeadingInString				"LEADING_IN"
 /* Control of the detector */
 #define PauseAcquisitionString		"PAUSE_ACQUISITION"
+/* Camera acquisition control */
+#define StopNextIterationString		"STOP_NEXT_ITERATION"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -266,7 +268,9 @@ class ElectronAnalyser: public ADDriver
 		int ZeroSupplies;			/**< (asynInt32,    	r/w) reset the power supplies to zero*/
 		/* Control of the detector */
 		int PauseAcquisition;		/**< (asynInt32,    	r/w) pause/resume the acquisition*/
-		#define LAST_ELECTRONANALYZER_PARAM PauseAcquisition
+        /* Camera acquisition control */
+        int StopNextIteration;			/**< (asynInt32, 		r/w) return an image after the current iteration has completed. If there are further images, they will continue as before. */
+		#define LAST_ELECTRONANALYZER_PARAM StopNextIteration
 
 	private:
 		WSESWrapperMain *ses;
@@ -572,6 +576,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(LeadingInString, asynParamInt32, &LeadingIn);
 	/* Control of the detector */
 	createParam(PauseAcquisitionString, asynParamInt32, &PauseAcquisition);
+	/* Camera acquisition control */
+    createParam(StopNextIterationString, asynParamInt32, &StopNextIteration);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -692,6 +698,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 
 	/* Set the initial pause state to zero */
 	status |= setIntegerParam(PauseAcquisition, 0);
+
+	/* Set the stop iterations flag to false */
+	status |= setIntegerParam(StopNextIteration, 0);
 
 	updateStatus();
 
@@ -1001,6 +1010,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	int extIOPorts = 0;
 	int extIOSize = 0;
 //	int check_var;
+	int stopIterations = 0;
 
 	if (start() != asynSuccess)
 	{
@@ -1092,6 +1102,9 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 	status = doCallbacksFloat64Array(this->slice_scale, detector.slices_, AcqSliceScale, 0);
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Channel scale: %f, %f, %f\n", driverName, functionName,
 		  this->slice_scale[0], this->slice_scale[1], this->slice_scale[2]);
+
+	/* Reset the StopNextIteration flag */
+	setIntegerParam(StopNextIteration, 0);
 
 	/* Reset progress bar before new acquisition begins */
 	/* The variable percentage complete is set to 0 when initialised */
@@ -1323,6 +1336,12 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 		real_point = 1;
 		lead_in_point = 1;
+
+		this->getIntegerParam(StopNextIteration, &stopIterations);
+		if (stopIterations)
+		{
+			break;
+		}
 
 		ses->continueAcquisition();
 	}
@@ -1879,6 +1898,14 @@ asynStatus ElectronAnalyser::writeInt32(asynUser *pasynUser, epicsInt32 value)
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Resuming acquisition.\n\n", driverName, functionName);
 				setStringParam(ADStatusMessage, "Acquiring....");
 			}
+		}
+	}
+	else if (function == StopNextIteration)
+	{
+		if (value)
+		{
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Stopping after current iteration....\n\n", driverName, functionName);
+            setIntegerParam(StopNextIteration, 1);
 		}
 	}
 	else
