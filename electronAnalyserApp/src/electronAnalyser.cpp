@@ -734,7 +734,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	int status = asynSuccess;
 	int acquire;
 	int nbytes;
-	int numImages, numImagesCounter, imageCounter, imageMode;
+	int numImages, numExposuresCounter, numImagesCounter, imageCounter, imageMode;
 	int arrayCallbacks;
 	double acquireTime, acquirePeriod, delay;
 	epicsTimeStamp startTime, endTime;
@@ -885,10 +885,14 @@ void ElectronAnalyser::electronAnalyserTask()
 		getIntegerParam(NDArrayCallbacks, &arrayCallbacks);
 		getIntegerParam(NDArrayCounter, &imageCounter);
 		getIntegerParam(ADNumImagesCounter, &numImagesCounter);
+		getIntegerParam(ADNumExposuresCounter, &numExposuresCounter);
 		imageCounter++;
 		numImagesCounter++;
 		setIntegerParam(NDArrayCounter, imageCounter);
 		setIntegerParam(ADNumImagesCounter, numImagesCounter);
+		/* Reset the exposures counter. */
+		setIntegerParam(ADNumExposuresCounter, 0);
+
 		/* Already set above */
 		//setIntegerParam(NDArraySize, nbytes);
 
@@ -898,6 +902,10 @@ void ElectronAnalyser::electronAnalyserTask()
 		/* Get any attributes that have been defined for this driver */
 		this->getAttributes(pImage->pAttributeList);
 
+		pImage->pAttributeList->add(ADNumExposuresCounterString, "Exposure count", \
+                                    NDAttrUInt32, &numExposuresCounter);
+		pImage->pAttributeList->add(ADNumImagesCounterString, "Image count", \
+                                    NDAttrUInt32, &numImagesCounter);
 		//pImage->report(2); // print debugging info
 
 		if (arrayCallbacks)
@@ -906,6 +914,8 @@ void ElectronAnalyser::electronAnalyserTask()
 			 * block on the plugin lock, and the plugin can be calling us */
 			this->unlock();
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW,"%s:%s: calling NDArray callback\n", driverName, functionName);
+			/* Use the following to check attribute lists: */
+			// pImage->pAttributeList->report(stdout, 11);
 			doCallbacksGenericPointer(pImage, NDArrayData, 0);
 			this->lock();
 		}
@@ -1110,7 +1120,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		this->unlock();
 
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Starting acquisition %d of %d....\n", driverName, functionName, i+1, MaxIterations);
-		setIntegerParam(ADNumExposuresCounter, i+1);
 		ses->startAcquisition();
 
 		getIntegerParam(PauseAcquisition, &paused);
@@ -1230,8 +1239,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 
 					ses->continueAcquisition();
 				}
-				/* Write all completed iterations to pData */
-				memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 			}
 		}
 	/*	getIntegerParam(ADNumExposures, &check_var);
@@ -1297,7 +1304,10 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		}
 
 		this->getAcqImage(this->acq_image,ImageSize);
+		// Only update NDArray every iteration, so we can retain this data.
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
+		// Set exposure count AFTER iteration completed.
+		setIntegerParam(ADNumExposuresCounter, i+1);
 
 	/*	int size = MAX_STRING_SIZE;
 		char regionnamestr[MAX_STRING_SIZE];
