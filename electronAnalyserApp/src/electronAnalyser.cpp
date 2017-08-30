@@ -1345,13 +1345,13 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 		real_point = 1;
 		lead_in_point = 1;
 
+		ses->continueAcquisition();
+
 		this->getIntegerParam(StopNextIteration, &stopIterations);
 		if (stopIterations)
 		{
 			break;
 		}
-
-		ses->continueAcquisition();
 	}
 
 	/* Summary of settings */
