@@ -154,6 +154,8 @@ static const char *driverName = "electronAnalyser";
 #define PauseAcquisitionString		"PAUSE_ACQUISITION"
 /* Camera acquisition control */
 #define StopNextIterationString		"STOP_NEXT_ITERATION"
+/* Metadata used by GDA */
+#define NumExposuresLastImageString	"NEXPOSURES_LAST"
 
 /**
  * Driver class for VG Scienta Electron Analyzer EW4000 System. It uses SESWrapper to communicate to the instrument library, which
@@ -269,8 +271,10 @@ class ElectronAnalyser: public ADDriver
 		/* Control of the detector */
 		int PauseAcquisition;		/**< (asynInt32,    	r/w) pause/resume the acquisition*/
         /* Camera acquisition control */
-        int StopNextIteration;			/**< (asynInt32, 		r/w) return an image after the current iteration has completed. If there are further images, they will continue as before. */
-		#define LAST_ELECTRONANALYZER_PARAM StopNextIteration
+        int StopNextIteration;		/**< (asynInt32, 		r/w) return an image after the current iteration has completed. If there are further images, they will continue as before. */
+        /* Metadata used by GDA */
+        int NumExposuresLastImage;	/**< (asynInt32,    	r) number of exposures for the last completed image*/
+		#define LAST_ELECTRONANALYZER_PARAM NumExposuresLastImage
 
 	private:
 		WSESWrapperMain *ses;
@@ -578,6 +582,8 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(PauseAcquisitionString, asynParamInt32, &PauseAcquisition);
 	/* Camera acquisition control */
     createParam(StopNextIterationString, asynParamInt32, &StopNextIteration);
+	/* Metadata used by GDA */
+    createParam(NumExposuresLastImageString, asynParamInt32, &NumExposuresLastImage);
 
 	/* Initialise state variables from SES library */
 	getAllowIOWithDetector(&m_bAllowIOWithDetector);
@@ -701,6 +707,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 
 	/* Set the stop iterations flag to false */
 	status |= setIntegerParam(StopNextIteration, 0);
+
+	/* Set the number of last exposures to 0 */
+	status |= setIntegerParam(NumExposuresLastImage, 0);
 
 	updateStatus();
 
@@ -899,7 +908,8 @@ void ElectronAnalyser::electronAnalyserTask()
 		numImagesCounter++;
 		setIntegerParam(NDArrayCounter, imageCounter);
 		setIntegerParam(ADNumImagesCounter, numImagesCounter);
-		/* Reset the exposures counter. */
+		/* Store number of exposures for last image and reset the exposures counter. */
+		setIntegerParam(NumExposuresLastImage, numExposuresCounter);
 		setIntegerParam(ADNumExposuresCounter, 0);
 
 		/* Already set above */
@@ -917,6 +927,18 @@ void ElectronAnalyser::electronAnalyserTask()
                                     NDAttrUInt32, &numImagesCounter);
 		//pImage->report(2); // print debugging info
 
+		/* Free the image buffers */
+		free(this->spectrumCopy);
+		free(this->acq_data_copy);
+		this->spectrumCopy = (double *)calloc(sizeof(spectrum), sizeof(epicsFloat64));
+		this->acq_data_copy = (double *)calloc(sizeof(acq_data), sizeof(epicsFloat64));
+		memcpy(this->spectrumCopy, spectrum, sizeof(spectrum)*sizeof(double));
+		memcpy(this->acq_data_copy, acq_data, sizeof(acq_data)*sizeof(double));
+
+		status = doCallbacksFloat64Array(this->spectrumCopy, sizeof(spectrum), AcqSpectrumCopy, 0);
+		status = doCallbacksFloat64Array(this->acq_data_copy, sizeof(acq_data), AcqIODataCopy, 0);
+		callParamCallbacks();
+
 		if (arrayCallbacks)
 		{
 			/* Must release the lock here, or we can get into a deadlock, because we can
@@ -929,21 +951,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			this->lock();
 		}
 
-		/* Free the image buffers */
 		pImage->release();
-		free(this->spectrumCopy);
-		free(this->acq_data_copy);
-		this->spectrumCopy = (double *)calloc(sizeof(spectrum), sizeof(epicsFloat64));
-		this->acq_data_copy = (double *)calloc(sizeof(acq_data), sizeof(epicsFloat64));
-		memcpy(this->spectrumCopy, spectrum, sizeof(spectrum)*sizeof(double));
-		memcpy(this->acq_data_copy, acq_data, sizeof(acq_data)*sizeof(double));
-
-		this->lock();
-		status = doCallbacksFloat64Array(this->spectrumCopy, sizeof(spectrum), AcqSpectrumCopy, 0);
-		status = doCallbacksFloat64Array(this->acq_data_copy, sizeof(acq_data), AcqIODataCopy, 0);
-		callParamCallbacks();
-		this->unlock();
-
 		free(spectrum);
 		free(acq_image);
 		free(acq_data);

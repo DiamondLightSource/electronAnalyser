@@ -849,3 +849,14 @@ record(longout, "$(P)$(R)STOP_NEXT_ITERATION")
   field(DRVL, "0")
   field(DRVH, "1")
 }
+
+# Return the number of exposures for the last image.
+record(ai, "$(P)$(R)NEXPOSURES_LAST_RBV") 
+{
+  field(DESC, "Number of exposures in the last image")
+  field(DTYP, "asynInt32")
+  field(INP,  "@asyn($(PORT) 0)NEXPOSURES_LAST")
+  field(SCAN, "I/O Intr")
+  field(PREC, "0")
+}
+
