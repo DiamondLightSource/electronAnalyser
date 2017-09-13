@@ -115,8 +115,9 @@ static const char *driverName = "electronAnalyser";
 #define AcqChannelUnitString  		"ACQ_CHANNEL_UNIT"
 #define AcqSliceUnitString  		"ACQ_SLICE_UNIT"
 #define AcqSpectrumString  			"ACQ_SPECTRUM"
-#define AcqSpectrumCopyString		"ACQ_SPECTRUM_COPY"
+#define AcqSpectrumLastString		"ACQ_SPECTRUM_LAST"
 #define AcqImageString  			"ACQ_IMAGE"
+#define AcqImageLastString			"ACQ_IMAGE_LAST"
 #define AcqSliceString  			"ACQ_SLICE"
 #define AcqSliceNumberString  		"ACQ_SLICE_INDEX"
 #define AcqChannelScaleString  		"ACQ_CHANNEL_SCALE"
@@ -132,7 +133,6 @@ static const char *driverName = "electronAnalyser";
 #define AcqIOSpectrumString 		"ACQ_IO_SPECTRUM"
 #define AcqIOPortIndexString 		"ACQ_IO_PORT_INDEX"
 #define AcqIODataString 			"ACQ_IO_DATA"
-#define AcqIODataCopyString 		"ACQ_IO_DATA_COPY"
 #define AcqIOPortNameString 		"ACQ_IO_PORT_NAME"
 #define PercentCompleteString		"PERCENT_COMPLETE"
 #define RegionPercentCompleteString	"REGION_PERCENT_COMPLETE"
@@ -233,8 +233,9 @@ class ElectronAnalyser: public ADDriver
 		int AcqChannelUnit; 		/**< (asynOctet,		r/o) the unit of channel scale (e.g. "eV")*/
 		int AcqSliceUnit; 			/**< (asynOctet,		r/o) the unit of slice scale (e.g. "mm")*/
 		int AcqSpectrum; 			/**< (asynFloat64Array,	r/o) the integrated spectrum*/
-		int AcqSpectrumCopy;		/**< (asynFloat64Array,	r/o) the integrated spectrum copy*/
+		int AcqSpectrumLast;		/**< (asynFloat64Array,	r/o) the integrated spectrum copy*/
 		int AcqImage; 				/**< (asynFloat64Array,	r/o) the 2D matrix of acquired data*/
+        int AcqImageLast;			/**< (asynFloat64Array, r/o) the acquired data copy*/
 		int AcqSlice; 				/**< (asynFloat64Array,	r/o) access one slice from acquired data. The AcqSliceNumber defines which slice to access.*/
 		int AcqSliceNumber; 		/**< (asynInt32,		r/w) the index parameters that specifies which slice to access by AcqSlice*/
 		int AcqChannelScale; 		/**< (asynFloat64Array,	r/o) the channel scale*/
@@ -250,7 +251,6 @@ class ElectronAnalyser: public ADDriver
 		int AcqIOSpectrum;			/**< (asynFloat64Array, r/o) data from one of the available ports in the external IO interface. AcqIOPortIndex parameter specifies which port to access. The size of the data is AcqIOSize*/
 		int AcqIOPortIndex;			/**< (asynInt32, 		r/w) specify the port index in the external IO interface to access data*/
 		int AcqIOData;				/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
-		int AcqIODataCopy;			/**< (asynFloat64Array, r/o) a matrix of all data from the available ports in the external IO interface. The size of the data is AcqIOPorts * AcqIOSize.*/
 		int AcqIOPortName;			/**< (asynOctet, 		r/o) the name of the IO port indicated by AcqIOPortIndex parameter*/
 		int TotalTime;				/**< (asynInt32,    	r/w) total acquisition time in msec*/
 		int RegionTimeLeft;			/**< (asynInt32,    	r/w) region time left*/
@@ -281,16 +281,14 @@ class ElectronAnalyser: public ADDriver
 		SESWrapperNS::WAnalyzerRegion analyzer;
 		SESWrapperNS::WDetectorRegion detector;
 		SESWrapperNS::WDetectorInfo detectorInfo;
-		asynStatus acquireData(void *pData, int NumSteps);
+		asynStatus acquireData(void *pData, double *pSpectrumLast, int NumSteps);
 		virtual void init_device(const char *workingDir, const char *instrumentFile);
 		void delete_device();
 		virtual void updateStatus();
 
 		double *spectrum;
-		double *spectrumCopy;
 		double *acq_image;
 		double *acq_data;
-		double *acq_data_copy;
 		double *channel_scale;
 		double *slice_scale;
 
@@ -430,10 +428,8 @@ static void electronAnalyserTaskC(void *drvPvt)
 ElectronAnalyser::~ElectronAnalyser()
 {
 	free(spectrum);
-	free(spectrumCopy);
 	free(acq_image);
 	free(acq_data);
-	free(acq_data_copy);
 	free(channel_scale);
 	free(slice_scale);
 	this->delete_device();
@@ -452,10 +448,6 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	int size = 0;
 	char *pWorkingDirEnvVar;
 	char *pInstrumentFileEnvVar;
-
-	//spectrum = (double *)calloc(MAX_MEMORY_SIZE, sizeof(epicsFloat64));
-	spectrumCopy = (double *)calloc(100, sizeof(epicsFloat64));
-	acq_data_copy = (double *)calloc(100, sizeof(epicsFloat64));
 
 	werror = WError::instance();
         
@@ -543,8 +535,9 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(AcqChannelUnitString, asynParamOctet, &AcqChannelUnit);
 	createParam(AcqSliceUnitString, asynParamOctet, &AcqSliceUnit);
 	createParam(AcqSpectrumString, asynParamFloat64Array, &AcqSpectrum);
-	createParam(AcqSpectrumCopyString, asynParamFloat64Array, &AcqSpectrumCopy);
+	createParam(AcqSpectrumLastString, asynParamFloat64Array, &AcqSpectrumLast);
 	createParam(AcqImageString, asynParamFloat64Array, &AcqImage);
+	createParam(AcqImageLastString, asynParamFloat64Array, &AcqImageLast);
 	createParam(AcqSliceString, asynParamFloat64Array, &AcqSlice);
 	createParam(AcqSliceNumberString, asynParamInt32, &AcqSliceNumber);
 	createParam(AcqChannelScaleString, asynParamFloat64Array, &AcqChannelScale);
@@ -560,7 +553,6 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	createParam(AcqIOSpectrumString, asynParamFloat64Array, &AcqIOSpectrum);
 	createParam(AcqIOPortIndexString, asynParamInt32, &AcqIOPortIndex);
 	createParam(AcqIODataString, asynParamFloat64Array, &AcqIOData);
-	createParam(AcqIODataCopyString, asynParamFloat64Array, &AcqIODataCopy);
 	createParam(AcqIOPortNameString, asynParamOctet, &AcqIOPortName);
 	createParam(PercentCompleteString, asynParamInt32, &PercentComplete);
 	createParam(RegionPercentCompleteString, asynParamInt32, &RegionPercentComplete);
@@ -758,6 +750,7 @@ void ElectronAnalyser::electronAnalyserTask()
 	epicsTimeStamp startTime, endTime;
 	double elapsedTime;
 	NDArray *pImage;
+    double *pSpectrumLast;
 	size_t dims[2];
 	int intdims[2];
 	NDDataType_t dataType;
@@ -855,13 +848,15 @@ void ElectronAnalyser::electronAnalyserTask()
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: dims[0] = %d, dims[1] = %d, datatype = %d\n", driverName, functionName, dims[0], dims[1], dataType);
 		/* Allocate memory suitable for 2D data */
 		pImage = this->pNDArrayPool->alloc(2, dims, dataType, 0, NULL);
+        /* Allocate for last spectrum */
+		pSpectrumLast = (double *)calloc(dims[0], sizeof(epicsFloat64));
 		/* We release the mutex when acquire image, because this may take a long time and
 		 * we need to allow abort operations to get through */
 		this->unlock();
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Collecting data from electron analyser....\n", driverName, functionName);
-		status = this->acquireData(pImage->pData, steps);
-
+		status = this->acquireData(pImage->pData, pSpectrumLast, steps);
 		this->lock();
+
 		/* If there was an error jump to bottom of the loop */
 		if (status)
 		{
@@ -886,6 +881,7 @@ void ElectronAnalyser::electronAnalyserTask()
 				acquire = 0;
 				setIntegerParam(ADAcquire, acquire);
 				pImage->release();
+				free(pSpectrumLast);
 				continue;
 			}
 		}
@@ -908,6 +904,16 @@ void ElectronAnalyser::electronAnalyserTask()
 		numImagesCounter++;
 		setIntegerParam(NDArrayCounter, imageCounter);
 		setIntegerParam(ADNumImagesCounter, numImagesCounter);
+
+		// If no images, doCallbacks with zeroed data (give size of 0)
+		if (numExposuresCounter)
+		{
+            status = doCallbacksFloat64Array((double *) pImage->pData, dims[0] * dims[1], AcqImageLast, 0);
+            status = doCallbacksFloat64Array(pSpectrumLast, dims[0], AcqSpectrumLast, 0);
+        } else {
+			status = doCallbacksFloat64Array((double *) pImage->pData, 0, AcqImageLast, 0);
+			status = doCallbacksFloat64Array(pSpectrumLast, 0, AcqSpectrumLast, 0);
+		}
 		/* Store number of exposures for last image and reset the exposures counter. */
 		setIntegerParam(NumExposuresLastImage, numExposuresCounter);
 		setIntegerParam(ADNumExposuresCounter, 0);
@@ -927,16 +933,6 @@ void ElectronAnalyser::electronAnalyserTask()
                                     NDAttrUInt32, &numImagesCounter);
 		//pImage->report(2); // print debugging info
 
-		/* Free the image buffers */
-		free(this->spectrumCopy);
-		free(this->acq_data_copy);
-		this->spectrumCopy = (double *)calloc(sizeof(spectrum), sizeof(epicsFloat64));
-		this->acq_data_copy = (double *)calloc(sizeof(acq_data), sizeof(epicsFloat64));
-		memcpy(this->spectrumCopy, spectrum, sizeof(spectrum)*sizeof(double));
-		memcpy(this->acq_data_copy, acq_data, sizeof(acq_data)*sizeof(double));
-
-		status = doCallbacksFloat64Array(this->spectrumCopy, sizeof(spectrum), AcqSpectrumCopy, 0);
-		status = doCallbacksFloat64Array(this->acq_data_copy, sizeof(acq_data), AcqIODataCopy, 0);
 		callParamCallbacks();
 
 		if (arrayCallbacks)
@@ -952,6 +948,7 @@ void ElectronAnalyser::electronAnalyserTask()
 		}
 
 		pImage->release();
+		free(pSpectrumLast);
 		free(spectrum);
 		free(acq_image);
 		free(acq_data);
@@ -994,7 +991,7 @@ void ElectronAnalyser::electronAnalyserTask()
  * This function expects that the driver to locked already by the caller.
  *
  */
-asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
+asynStatus ElectronAnalyser::acquireData(void *pData, double *pSpectrumLast, int NumSteps)
 {
 	asynStatus status = asynSuccess;
 	const char *functionName = "acquireData";
@@ -1222,17 +1219,17 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 						real_point++;
 						this->getAcqSpectrum(this->spectrum, channels);
 						this->getAcqImage(this->acq_image, ImageSize);
-						if ((extIOPorts > 0) && (extIOSize > 0)){
+						/*if ((extIOPorts > 0) && (extIOSize > 0)){
 							asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n%s:%s: Acquiring IO Data\n\n", driverName, functionName);
 							//this->getAcqIOData(this->acq_data, IOSize);
-						}
+						}*/
 
 						this->lock();
 						status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
 						status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-						if ((extIOPorts > 0) && (extIOSize > 0)){
+						/*if ((extIOPorts > 0) && (extIOSize > 0)){
 							//status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
-						}
+						}*/
 						callParamCallbacks();
 						this->unlock();
 					}
@@ -1324,9 +1321,10 @@ asynStatus ElectronAnalyser::acquireData(void *pData, int NumSteps)
 			this->unlock();
 		}
 
-		this->getAcqImage(this->acq_image,ImageSize);
+		this->getAcqImage(this->acq_image, ImageSize);
 		// Only update NDArray every iteration, so we can retain this data.
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
+		memcpy(pSpectrumLast, this->spectrum, channels*sizeof(double));
 		// Set exposure count AFTER iteration completed.
 		setIntegerParam(ADNumExposuresCounter, i+1);
 

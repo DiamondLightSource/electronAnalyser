@@ -514,12 +514,12 @@ record(waveform, "$(P)$(R)INT_SPECTRUM")
   field(NELM, "$(SPECTRUM_SIZE=5000000)")
 }
 
-# Acquired integrated spectrum copy of data
-record(waveform, "$(P)$(R)INT_SPECTRUM_COPY")
+# Acquired integrated spectrum of data for last image
+record(waveform, "$(P)$(R)INT_SPECTRUM_LAST")
 {
-  field(DESC, "Integrated Spectrum Copy")
+  field(DESC, "Integrated Spectrum for last image")
   field(DTYP, "asynFloat64ArrayIn")
-  field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM_COPY")
+  field(INP,  "@asyn($(PORT) 0)ACQ_SPECTRUM_LAST")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
   #field(NELM, "100000")
@@ -538,24 +538,24 @@ record(waveform, "$(P)$(R)IMAGE")
   field(NELM, "$(IMAGE_SIZE=5000000)")
 }
 
+# Acquired image of data for previous image
+record(waveform, "$(P)$(R)IMAGE_LAST")
+{
+  field(DESC, "Acquired Image for previous")
+  field(DTYP, "asynFloat64ArrayIn")
+  field(INP,  "@asyn($(PORT) 0)ACQ_IMAGE_LAST")
+  field(SCAN, "I/O Intr")
+  field(FTVL, "DOUBLE")
+  #field(NELM, "800000")
+  field(NELM, "$(IMAGE_SIZE=5000000)")
+}
+
 # Acquired external IO data
 record(waveform, "$(P)$(R)EXTIO")
 {
   field(DESC, "External IO Data")
   field(DTYP, "asynFloat64ArrayIn")
   field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA")
-  field(SCAN, "I/O Intr")
-  field(FTVL, "DOUBLE")
-  #field(NELM, "800000")
-  field(NELM, "$(EXTIO_SIZE=5000000)")
-}
-
-# Acquired external IO data copy
-record(waveform, "$(P)$(R)EXTIO_COPY")
-{
-  field(DESC, "External IO Data Copy")
-  field(DTYP, "asynFloat64ArrayIn")
-  field(INP,  "@asyn($(PORT) 0)ACQ_IO_DATA_COPY")
   field(SCAN, "I/O Intr")
   field(FTVL, "DOUBLE")
   #field(NELM, "800000")
