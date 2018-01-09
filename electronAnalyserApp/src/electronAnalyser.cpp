@@ -1308,6 +1308,7 @@ asynStatus ElectronAnalyser::acquireData(void *pData, double *pSpectrumLast, int
 		if (analyzer.fixed_ == true)
 		{
 			this->getAcqSpectrum(this->spectrum, channels);
+            this->getAcqImage(this->acq_image, ImageSize);
 			setIntegerParam(LeadingIn, 0);
 			/* Update progress bar */
 			PercentCompleteVal = (int)(((double)(i+1) / MaxIterations) * 100);
@@ -1317,11 +1318,11 @@ asynStatus ElectronAnalyser::acquireData(void *pData, double *pSpectrumLast, int
 			setDoubleParam(TotalTimeLeft, ((TotalAcqTime * MaxIterations) - (((TotalAcqTime * MaxIterations) / 100) * PercentCompleteVal)));
 			this->lock();
 			status = doCallbacksFloat64Array(this->spectrum, channels, AcqSpectrum, 0);
+            status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
 			callParamCallbacks();
 			this->unlock();
 		}
 
-		this->getAcqImage(this->acq_image, ImageSize);
 		// Only update NDArray every iteration, so we can retain this data.
 		memcpy(pData, this->acq_image, ImageSize*sizeof(double));
 		memcpy(pSpectrumLast, this->spectrum, channels*sizeof(double));
@@ -1333,12 +1334,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, double *pSpectrumLast, int
 		this->getRegionName(regionnamestr, size);
 
 		setStringParam(RegionName, regionnamestr);*/
-
-		this->lock();
-		status = doCallbacksFloat64Array(this->acq_image, ImageSize, AcqImage, 0);
-		//status = doCallbacksFloat64Array(this->acq_data, IOSize, AcqIOData, 0);
-		callParamCallbacks();
-		this->unlock();
 
 		real_point = 1;
 		lead_in_point = 1;
