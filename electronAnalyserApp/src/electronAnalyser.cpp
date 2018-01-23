@@ -280,6 +280,7 @@ class ElectronAnalyser: public ADDriver
 		WSESWrapperMain *ses;
 		SESWrapperNS::WAnalyzerRegion analyzer;
 		SESWrapperNS::WDetectorRegion detector;
+        SESWrapperNS::WDetectorRegion old_detector;
 		SESWrapperNS::WDetectorInfo detectorInfo;
 		asynStatus acquireData(void *pData, double *pSpectrumLast, int NumSteps);
 		virtual void init_device(const char *workingDir, const char *instrumentFile);
@@ -385,6 +386,8 @@ class ElectronAnalyser: public ADDriver
 		virtual asynStatus getAcqIOSpectrum(int index, double * pSpectrum, int & size);
 		virtual asynStatus getAcqIOData(double * pData, int & size);
 		virtual asynStatus getAcqIOPortName(int index, char * pName, int & size);
+
+        virtual asynStatus updateDetectorRegion();
 
 		WError *werror;
 		string sesWorkingDirectory;
@@ -624,7 +627,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Detector Mode = %d\n\n", driverName, functionName, detector.adcMode_);
 	detector.adcMode_ = true;
 
-	setDetectorRegion(&detector);
+	updateDetectorRegion();
 	//ses->setProperty("detector_region", 0, &detector);
 
 	/* Set some default values for parameters (the setup panel parameters) */
@@ -806,7 +809,7 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		setIntegerParam(ADStatus, ADStatusAcquire);
 
-		this->setDetectorRegion(&detector);
+		this->updateDetectorRegion();
 		this->setAnalyzerRegion(&analyzer);
 		int steps=0;
 		double dtime=0;
@@ -2426,7 +2429,7 @@ asynStatus ElectronAnalyser::start()
 	int err;
 
 	/* Set acquisition parameters on the wrapper */
-	this->setDetectorRegion(&detector);
+	this->updateDetectorRegion();
 	//int err=ses->setProperty("detector_region", 0, &detector);
 
 	/*if (isError(err, functionName)) {
@@ -3014,6 +3017,28 @@ asynStatus ElectronAnalyser::setDetectorRegion(const SESWrapperNS::DetectorRegio
 	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Exit....\n", driverName, functionName);
 	return asynSuccess;
+}
+/**
+ * Improvement over setDetectorRegion.
+ *
+ * Only updates detector region if necessary.
+ */
+asynStatus ElectronAnalyser::updateDetectorRegion() {
+	asynStatus status = asynSuccess;
+
+	bool is_equal = detector.firstXChannel_ == old_detector.firstXChannel_ &&
+                        detector.lastXChannel_ == old_detector.lastXChannel_ &&
+                        detector.firstYChannel_ == old_detector.firstYChannel_ &&
+                        detector.lastYChannel_ == old_detector.lastYChannel_ &&
+                        detector.slices_ == old_detector.slices_ &&
+                        detector.adcMode_ == old_detector.adcMode_;
+
+	if (!is_equal) {
+    	status = this->setDetectorRegion(&detector);
+        this->old_detector = this->detector;
+    }
+
+	return status;
 }
 
 /**
