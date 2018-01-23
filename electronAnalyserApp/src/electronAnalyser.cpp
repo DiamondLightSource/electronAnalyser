@@ -2010,6 +2010,9 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		setIntegerParam(Frames, frames);
 		analyzer.dwellTime_ = int(value * 1000);
 		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
+
+        double time = (double)frames / (double)detectorInfo.frameRate_;
+        setDoubleParam(ADAcquireTime, time);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nanalyzer dwell time = %d\n\n", driverName, functionName, analyzer.dwellTime_);
 	} else if (function == ExcitationEnergy){
 		setExcitationEnergy(value);
