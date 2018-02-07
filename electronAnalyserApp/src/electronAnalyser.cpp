@@ -2008,11 +2008,11 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 		// Calculate the frames from the time value
 		int frames = (int)(floor(((double)detectorInfo.frameRate_ * value) + 0.5));
 		setIntegerParam(Frames, frames);
-		analyzer.dwellTime_ = int(value * 1000);
-		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
 
-        double time = (double)frames / (double)detectorInfo.frameRate_;
-        setDoubleParam(ADAcquireTime, time);
+		double time = (double)frames / (double)detectorInfo.frameRate_;
+		setDoubleParam(ADAcquireTime, time);
+		analyzer.dwellTime_ = int(time * 1000);
+		setIntegerParam(AnalyzerDwellTime, analyzer.dwellTime_);
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: \n\nanalyzer dwell time = %d\n\n", driverName, functionName, analyzer.dwellTime_);
 	} else if (function == ExcitationEnergy){
 		setExcitationEnergy(value);
