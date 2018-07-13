@@ -830,13 +830,13 @@ void ElectronAnalyser::electronAnalyserTask()
 		else
 		{
 			/* In swept mode, the data will be Number of Channels x Number of Slices (lead-in data points are not included) */
-			/* Adding a nominally small epsilon value to ensure
-			 * no rounding error in the number of channels calculation */
-			double epsilon = 0.000000001;
-			setIntegerParam(NumChannels, (int)(floor(((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_)+ (double)(1.0)+epsilon)));
-			//setIntegerParam(NumChannels, (int)(floor((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_) + 0.5) + 1);
-			//getIntegerParam(NumChannels, &dims[0]);
-			getIntegerParam(NumChannels, &intdims[0]);
+			double channels = ((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_) + 1.0;
+
+			// Need to round it properly.
+			int ratio_floor = (int)(channels);
+			intdims[0] = ((channels - ratio_floor) < 0.5) ? ratio_floor : ratio_floor + 1;
+
+			setIntegerParam(NumChannels, intdims[0]);
 			dims[0] = intdims[0];
 		}
 		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
