@@ -310,6 +310,7 @@ class ElectronAnalyser: public ADDriver
 		virtual asynStatus setAcquisitionMode(const bool b);
 		virtual asynStatus getAcquisitionMode(bool *b);
 
+		virtual asynStatus validate_settings(int &steps);
 		virtual asynStatus start();
 		virtual asynStatus stop();
 
@@ -809,37 +810,39 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		setIntegerParam(ADStatus, ADStatusAcquire);
 
-		this->updateDetectorRegion();
-		this->setAnalyzerRegion(&analyzer);
-		int steps=0;
-		double dtime=0;
-		double minEnergyStep=0;
+		int steps;
+		status = validate_settings(steps);
 
-		ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-
-		/* get an image buffer from the pool */
-		/*getIntegerParam(NDArraySizeX, &dims[0]);
-		getIntegerParam(NDArraySizeY, &dims[1]);*/
-		if (analyzer.fixed_)
-		{
-			/* In fixed mode, the data will be ROI X Size x Number of Slices */
-			//getIntegerParam(NDArraySizeX, &dims[0]);
-			getIntegerParam(NDArraySizeX, &intdims[0]);
-			dims[0] = intdims[0];
+		if (status) {
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Validation failed for scan settings.\n",driverName, functionName);
+			setStringParam(ADStatusMessage,	"Validation failed for scan settings");
+			setIntegerParam(ADStatus, ADStatusError);
+			/* Reset both acquire and ADAcquire back to zero */
+			acquire = 0;
+			setIntegerParam(ADAcquire, acquire);
+			continue;
 		}
-		else
-		{
-			/* In swept mode, the data will be Number of Channels x Number of Slices (lead-in data points are not included) */
-			double channels = ((analyzer.highEnergy_ - analyzer.lowEnergy_) / analyzer.energyStep_) + 1.0;
 
-			// Need to round it properly.
-			int ratio_floor = (int)(channels);
-			intdims[0] = ((channels - ratio_floor) < 0.5) ? ratio_floor : ratio_floor + 1;
+		status = validate_settings(steps);
+		if (status) {
+			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Initialisation for scan failed.\n",driverName, functionName);
+			setStringParam(ADStatusMessage,	"Initialisation for scan failed.");
+			setIntegerParam(ADStatus, ADStatusError);
+			/* Reset both acquire and ADAcquire back to zero */
+			acquire = 0;
+			setIntegerParam(ADAcquire, acquire);
+			continue;
+		}
 
+		int channels;
+		this->getAcqChannels(channels);
+		intdims[0] = channels;
+		dims[0] = intdims[0];
+
+		if (!analyzer.fixed_) {
 			setIntegerParam(NumChannels, intdims[0]);
-			dims[0] = intdims[0];
 		}
-		/* dims[1] must be set properly - don't use: getIntegerParam(detector.slices_, &dims[0]); */
+
 		dims[1] = detector.slices_;
 		nbytes = (dims[0] * dims[1]) * sizeof(double);
 		setIntegerParam(NDArraySize, nbytes);
@@ -1019,11 +1022,6 @@ asynStatus ElectronAnalyser::acquireData(void *pData, double *pSpectrumLast, int
 	int extIOSize = 0;
 //	int check_var;
 	int stopIterations = 0;
-
-	if (start() != asynSuccess)
-	{
-		return asynError;
-	}
 
 	/* Find out how many channels to work with */
 	this->getAcqChannels(channels);
@@ -2417,6 +2415,60 @@ asynStatus ElectronAnalyser::getAcquisitionMode(bool *b){
 
 /// ######################## integration methods ######################
 /**
+ * @brief Validate settings for ses acquisition
+ *
+ * This method validates the detector and analyzer region. Will set values if valid.
+ *
+ * @return asynError if failed, otherwise asynSuccess.
+ */
+asynStatus ElectronAnalyser::validate_settings(int &steps)
+{
+	const char * functionName = "validate_settings()";
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
+	int err;
+
+	/* Set acquisition parameters on the wrapper */
+	this->updateDetectorRegion();
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
+
+	bool BindingMode = false;
+	int dummySize = 0;
+	getUseBindingEnergy(0, &BindingMode, dummySize);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Binding Energy Mode = %d\n", driverName, functionName, BindingMode);
+
+	double dtime=0;
+	double minEnergyStep=0;
+
+	err=ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
+
+	if (isError(err, functionName)) {
+		return asynError;
+	}
+
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer dwell time = %d\n", driverName, functionName, analyzer.dwellTime_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer energy step = %f\n", driverName, functionName, analyzer.energyStep_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer low energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer center energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer high energy = %f\n", driverName, functionName, analyzer.highEnergy_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer fixed = %d\n", driverName, functionName, analyzer.fixed_);
+
+	this->setAnalyzerRegion(&analyzer);
+	//err = ses->setProperty("analyzer_region", 0, &analyzer);
+
+	char message[MAX_MESSAGE_SIZE];
+	bool ret_value = false;
+	getUseDetector(&ret_value);
+	epicsSnprintf(message, sizeof(message),"UseDetector = %d; dtime = %f; minEnergyStep = %f; Number of Steps: %d; Step Time: %d; Total Time: %d; Energy Step Size: %f\n", ret_value, dtime, minEnergyStep, steps, (analyzer.dwellTime_/1000), (steps*(analyzer.dwellTime_/1000)), analyzer.energyStep_);
+	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.\n", driverName, functionName, message);
+
+	callParamCallbacks();
+	return asynSuccess;
+}
+/**
  * @brief start acquisition
  *
  * This method sets detector region and analyzer region, then initialise acquisition before start.
@@ -2431,37 +2483,6 @@ asynStatus ElectronAnalyser::start()
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Entering...\n", driverName, functionName);
 	int err;
 
-	/* Set acquisition parameters on the wrapper */
-	this->updateDetectorRegion();
-	//int err=ses->setProperty("detector_region", 0, &detector);
-
-	/*if (isError(err, functionName)) {
-		return asynError;
-	}*/
-
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer dwell time = %d\n", driverName, functionName, analyzer.dwellTime_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer energy step = %f\n", driverName, functionName, analyzer.energyStep_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer low energy = %f\n", driverName, functionName, analyzer.lowEnergy_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer center energy = %f\n", driverName, functionName, analyzer.centerEnergy_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer high energy = %f\n", driverName, functionName, analyzer.highEnergy_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Analyzer fixed = %d\n", driverName, functionName, analyzer.fixed_);
-	bool BindingMode = false;
-	int dummySize = 0;
-	getUseBindingEnergy(0, &BindingMode, dummySize);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: Binding Energy Mode = %d\n", driverName, functionName, BindingMode);
-
-	this->setAnalyzerRegion(&analyzer);
-	//err = ses->setProperty("analyzer_region", 0, &analyzer);
-
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "\n\n%s:%s: First X Channel = %d\n", driverName, functionName, detector.firstXChannel_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last X Channel = %d\n", driverName, functionName, detector.lastXChannel_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: First Y Channel = %d\n", driverName, functionName, detector.firstYChannel_);
-	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Last Y Channel = %d\n", driverName, functionName, detector.lastYChannel_);
-
-	/*if (isError(err, functionName)) {
-		return asynError;
-	}*/
-
 	/* Leave second parameter set to false. Can still call waitForRegionReady and avoids race condition */
 	/* initAcquisition(blockPointReady Flag, blockRegionReady Flag) */
 	err = ses->initAcquisition(!analyzer.fixed_, false);
@@ -2475,37 +2496,6 @@ asynStatus ElectronAnalyser::start()
 	}
 
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: acquisition initialisation completed.\n", driverName, functionName);
-	setStringParam(ADStatusMessage, "acquisition initialisation completed.");
-	callParamCallbacks();
-
-	int steps=0;
-	double dtime=0;
-	double minEnergyStep=0;
-
-	err=ses->checkAnalyzerRegion(&analyzer, &steps, &dtime, &minEnergyStep);
-
-	if (isError(err, functionName))
-	{
-		return asynError;
-	}
-	else
-	{
-		char message[MAX_MESSAGE_SIZE];
-		bool ret_value = false;
-		getUseDetector(&ret_value);
-		epicsSnprintf(message, sizeof(message),"UseDetector = %d; dtime = %f; minEnergyStep = %f; Number of Steps: %d; Step Time: %d; Total Time: %d; Energy Step Size: %f\n", ret_value, dtime, minEnergyStep, steps, (analyzer.dwellTime_/1000), (steps*(analyzer.dwellTime_/1000)), analyzer.energyStep_);
-		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: %s.\n", driverName, functionName, message);
-		//setStringParam(ADStatusMessage, message);
-		callParamCallbacks();
-	}
-	//TODO  should this be here?
-	//err = ses->startAcquisition();
-	setIntegerParam(ADStatus, ADStatusAcquire);
-	if (isError(err, functionName)) {
-		setIntegerParam(ADStatus, ADStatusError);
-		callParamCallbacks();
-		return asynError;
-	}
 	asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: start acquisition.\n", driverName, functionName);
 	setStringParam(ADStatusMessage, "Acquiring....");
 	callParamCallbacks();
