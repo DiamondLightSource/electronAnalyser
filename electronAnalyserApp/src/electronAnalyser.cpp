@@ -812,7 +812,6 @@ void ElectronAnalyser::electronAnalyserTask()
 
 		int steps;
 		status = validate_settings(steps);
-
 		if (status) {
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Validation failed for scan settings.\n",driverName, functionName);
 			setStringParam(ADStatusMessage,	"Validation failed for scan settings");
@@ -823,7 +822,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			continue;
 		}
 
-		status = validate_settings(steps);
+		status = start();
 		if (status) {
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Initialisation for scan failed.\n",driverName, functionName);
 			setStringParam(ADStatusMessage,	"Initialisation for scan failed.");
