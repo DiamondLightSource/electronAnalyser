@@ -746,6 +746,7 @@ ElectronAnalyser::ElectronAnalyser(const char *portName, int maxBuffers, size_t 
 void ElectronAnalyser::electronAnalyserTask()
 {
 	int status = asynSuccess;
+	bool major_error;
 	int acquire;
 	int nbytes;
 	int numImages, numExposuresCounter, numImagesCounter, imageCounter, imageMode;
@@ -778,8 +779,18 @@ void ElectronAnalyser::electronAnalyserTask()
 			{
 				asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Waiting for the acquire command\n", driverName, functionName);
 				setStringParam(ADStatusMessage, "Waiting for the acquire command");
-				setIntegerParam(ADStatus, ADStatusIdle);
 			}
+
+			if (!major_error) {
+				// If major_error is true, this indicates that error status should be preserved.
+				// If this is the case, the IOC is likely to end up unusable due to wait for Idle in Abort sequence.
+				// Meanwhile, there are other hacks in GDA that prevent us from switching to proper ADStatus settings
+				// (solving ARPES-285).
+				setIntegerParam(ADStatus, ADStatusIdle);
+			} else {
+				major_error = false;
+			}
+
 			/* Reset the counters */
 			setIntegerParam(ADNumExposuresCounter, 0);
 			setIntegerParam(ADNumImagesCounter, 0);
@@ -816,6 +827,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Validation failed for scan settings.\n",driverName, functionName);
 			setStringParam(ADStatusMessage,	"Validation failed for scan settings");
 			setIntegerParam(ADStatus, ADStatusError);
+			major_error = true;
 			/* Reset both acquire and ADAcquire back to zero */
 			acquire = 0;
 			setIntegerParam(ADAcquire, acquire);
@@ -827,6 +839,7 @@ void ElectronAnalyser::electronAnalyserTask()
 			asynPrint(this->pasynUserSelf, ASYN_TRACE_ERROR, "%s:%s: Initialisation for scan failed.\n",driverName, functionName);
 			setStringParam(ADStatusMessage,	"Initialisation for scan failed.");
 			setIntegerParam(ADStatus, ADStatusError);
+			major_error = true;
 			/* Reset both acquire and ADAcquire back to zero */
 			acquire = 0;
 			setIntegerParam(ADAcquire, acquire);
@@ -887,6 +900,7 @@ void ElectronAnalyser::electronAnalyserTask()
 				setIntegerParam(ADAcquire, acquire);
 				pImage->release();
 				free(pSpectrumLast);
+				major_error = true;
 				continue;
 			}
 		}
@@ -913,11 +927,11 @@ void ElectronAnalyser::electronAnalyserTask()
 		// If no images, doCallbacks with zeroed data (give size of 0)
 		if (numExposuresCounter)
 		{
-            status = doCallbacksFloat64Array((double *) pImage->pData, dims[0] * dims[1], AcqImageLast, 0);
-            status = doCallbacksFloat64Array(pSpectrumLast, dims[0], AcqSpectrumLast, 0);
+            doCallbacksFloat64Array((double *) pImage->pData, dims[0] * dims[1], AcqImageLast, 0);
+            doCallbacksFloat64Array(pSpectrumLast, dims[0], AcqSpectrumLast, 0);
         } else {
-			status = doCallbacksFloat64Array((double *) pImage->pData, 0, AcqImageLast, 0);
-			status = doCallbacksFloat64Array(pSpectrumLast, 0, AcqSpectrumLast, 0);
+			doCallbacksFloat64Array((double *) pImage->pData, 0, AcqImageLast, 0);
+			doCallbacksFloat64Array(pSpectrumLast, 0, AcqSpectrumLast, 0);
 		}
 		/* Store number of exposures for last image and reset the exposures counter. */
 		setIntegerParam(NumExposuresLastImage, numExposuresCounter);
@@ -985,7 +999,7 @@ void ElectronAnalyser::electronAnalyserTask()
 				setIntegerParam(ADStatus, ADStatusWaiting);
 				callParamCallbacks();
 				this->unlock();
-				status = epicsEventWaitWithTimeout(this->stopEventId, delay);
+				epicsEventWaitWithTimeout(this->stopEventId, delay);
 				this->lock();
 			}
 		}
@@ -1983,16 +1997,30 @@ asynStatus ElectronAnalyser::writeFloat64(asynUser *pasynUser,
 	int function = pasynUser->reason;
 	asynStatus status = asynSuccess;
 	const char *functionName = "writeFloat64";
+	char message[MAX_MESSAGE_SIZE];
 	int adstatus;
+
+	double OldValue;
+	getDoubleParam(function, &OldValue);
 
 	/* Set the parameter and readback in the parameter library.  This may be overwritten when we read back the
 	 * status at the end, but that's OK */
 	status = setDoubleParam(function, value);
 	getIntegerParam(ADStatus, &adstatus);
 	if (function == AnalyzerHighEnergy){
+		if (value < analyzer.lowEnergy_)
+		{
+			setDoubleParam(AnalyzerLowEnergy, value);
+			analyzer.lowEnergy_ = value;
+		}
 		analyzer.highEnergy_ = value;
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting high energy to %f eV\n", driverName, functionName, value);
 	} else if (function == AnalyzerLowEnergy){
+		if (value > analyzer.highEnergy_)
+		{
+			setDoubleParam(AnalyzerHighEnergy, value);
+			analyzer.highEnergy_ = value;
+		}
 		analyzer.lowEnergy_ = value;
 		asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Setting low energy to %f eV\n", driverName, functionName, value);
 	} else if (function == AnalyzerCenterEnergy){
