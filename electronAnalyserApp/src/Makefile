@@ -51,17 +51,17 @@ LIBRARY_IOC_Linux += electronAnalyserViewerSupport
 # The following are compiled and added to the support library
 electronAnalyserViewerSupport_SRCS += drvElectronAnalyserViewerRegistrar.c
 electronAnalyserViewerSupport_SRCS += electronAnalyserViewer.cpp
-electronAnalyserViewerSupport_SRCS += dgframe.pb.cc
 electronAnalyserViewerSupport_LIBS += zmq
-electronAnalyserViewerSupport_LIBS += protobuf
+electronAnalyserViewerSupport_LIBS += Qt5Core
 
-zmq_DIR = $(ZMQ)/lib
-protobuf_DIR = $(PROTOBUF)/lib
+# The following line would be needed if we dynamically linked
+# against QT5. We are currently using a static build (RHEL6 Qt 5.2)
+#PROD_LDFLAGS +=-Wl,-rpath,$(QT5_LIB)
 
 DBD += electronAnalyserViewerSupport.dbd
 
-USR_INCLUDES += -I$(ZMQ)/include
-USR_INCLUDES += -I$(PROTOBUF)/include
+USR_INCLUDES += $(ZMQ_INCLUDE)
+USR_INCLUDES += $(QT5_INCLUDE)
 # ------------------------
 # Build an IOC Application
 # ------------------------

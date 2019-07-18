@@ -11,7 +11,6 @@
 # Set this when you only want to compile this application
 # for a subset of the cross-compiled target architectures
 # that Base is built for.
-CROSS_COMPILER_TARGET_ARCHS = 
 #vxWorks-68040
 
 # To restrict the build to a list *without* the host arch,

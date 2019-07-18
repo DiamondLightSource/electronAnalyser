@@ -1,0 +1,13 @@
+CROSS_COMPILER_TARGET_ARCHS=
+
+ZMQ=/dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix
+ZMQ_LIB=$(ZMQ)/lib
+ZMQ_INCLUDE=-I$(ZMQ)/include
+
+QT5=/dls_sw/prod/tools/RHEL6-x86_64/qt_static/5-2-0/prefix
+QT5_LIB=$(QT5)/lib
+QT5_INCLUDE=-I$(QT5)/include
+
+zmq_DIR=$(ZMQ_LIB)
+Qt5Core_DIR=$(QT5_LIB)
+

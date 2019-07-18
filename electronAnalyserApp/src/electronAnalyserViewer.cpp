@@ -30,8 +30,12 @@
 #include <epicsExport.h>
 
 #include "zmq.hpp"
-#include "dgframe.pb.h"
+#include <QtCore/QByteArray>
+#include <QtCore/QJsonObject>
+#include <QtCore/QJsonDocument>
 #include <string>
+#include <iostream>
+
 #undef min
 #undef max
 
@@ -206,6 +210,7 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
   zmq::pollitem_t *items = 0;
   zmq::message_t msgHeader;
   zmq::message_t msgData;
+  int length = 0, height = 0, width = 0;
 
   asynPrint(this->pasynUserSelf, ASYN_TRACE_FLOW, "%s:%s: Polling thread started\n", driverName, functionName);
 
@@ -263,24 +268,26 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
             if (items[0].revents == ZMQ_POLLIN){
               //printf("Received test frame for header information\n");
               if (frameSocket->recv(&msgHeader, ZMQ_RCVMORE) && frameSocket->recv(&msgData)){
-                dgframe::Frame frame;
-                frame.ParseFromArray(msgHeader.data(), msgHeader.size());
-                //printf("  width:  %d\n", frame.width());
-                //printf("  height: %d\n", frame.height());
-                //printf("  length: %d\n", frame.length());
-                //printf("  code:   %d\n", frame.code());
-                dims[0] = frame.width();
-                dims[1] = frame.height();
-                nbytes = frame.length();
-                setIntegerParam(ADMaxSizeX, frame.width());
-                setIntegerParam(ADMaxSizeY, frame.height());
+                QByteArray header = QByteArray::fromRawData((const char *)msgHeader.data(), msgHeader.size());
+                QJsonObject jHeader = QJsonDocument::fromBinaryData(header).object();
+                width = jHeader["width"].toInt();
+                height = jHeader["height"].toInt();
+                length = jHeader["length"].toInt();
+//                code = jHeader["code"].toInt();
+
+                dims[0] = width;
+                dims[1] = height;
+                nbytes = length;
+
+                setIntegerParam(ADMaxSizeX, width);
+                setIntegerParam(ADMaxSizeY, height);
                 setIntegerParam(ADMinX, 0);
                 setIntegerParam(ADMinY, 0);
-                setIntegerParam(ADSizeX, frame.width());
-                setIntegerParam(ADSizeY, frame.height());
-                setIntegerParam(NDArraySizeX, frame.width());
-                setIntegerParam(NDArraySizeY, frame.height());
-                setIntegerParam(NDArraySize, (frame.height()*frame.width()));
+                setIntegerParam(ADSizeX, width);
+                setIntegerParam(ADSizeY, height);
+                setIntegerParam(NDArraySizeX, width);
+                setIntegerParam(NDArraySizeY, height);
+                setIntegerParam(NDArraySize, (height*width));
                 callParamCallbacks();
               } else {
                 acquire = 0;
@@ -366,9 +373,7 @@ void ElectronAnalyserViewer::electronAnalyserViewerTask()
             }
           }
         }
-        dgframe::Frame frame;
-        frame.ParseFromArray(msgHeader.data(), msgHeader.size());
-        memcpy(pImage->pData, msgData.data(), frame.length());
+        memcpy(pImage->pData, msgData.data(), length);
       }  catch (zmq::error_t &e)
       {
         acquire = 0;

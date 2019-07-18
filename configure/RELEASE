@@ -36,9 +36,6 @@ FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-9
 AREADETECTOR=$(SUPPORT)/ADCore/2-4dls5
 ADBINARIES=$(SUPPORT)/ADBinaries/2-2dls2
 
-ZMQ       = /dls_sw/prod/tools/RHEL6-x86_64/zeromq/3-2-4/prefix/
-PROTOBUF  = /dls_sw/prod/tools/RHEL6-x86_64/protobuf/2-6-0/prefix/
-
 # EPICS_BASE usually appears last so other apps can override stuff:
 EPICS_BASE=/dls_sw/epics/R3.14.12.3/base
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
