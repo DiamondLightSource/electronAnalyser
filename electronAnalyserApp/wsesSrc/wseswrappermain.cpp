@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <limits>
 #include <ctime>
+#include <stdio.h>
 
 using namespace SESWrapperNS;
 using namespace std;
@@ -156,6 +157,35 @@ int WSESWrapperMain::initialize(void *reserved)
     return WError::ERR_OK;
 
   instrumentLoaded_ = false;
+  
+  instrumentLibraryName_ = workingDir_;
+  if (workingDir_.empty())
+    instrumentLibraryName_ = "dll\\SESInstrument.dll";
+  else
+    instrumentLibraryName_.append("\\dll\\SESInstrument.dll");
+
+  std:string path = workingDir_;
+  path.append("/ini/Ses.ini");
+  int bufferLength = 2048;
+  char* fromFileResult = new char[bufferLength];
+  memset(fromFileResult, 0, bufferLength);
+
+  DWORD length = GetPrivateProfileString("Global", "Detector Interface", "None", fromFileResult, bufferLength, path.c_str());
+  path = fromFileResult;
+  std::replace(path.begin(), path.end(), '\\', ' ');
+  if (path == "dll Detector Detector_Graph.dll")
+  {
+    path = workingDir_;
+    path.append("/ini/DetectorGraph.ini");
+    bufferLength = 2048;
+    length = GetPrivateProfileString("global", "direct_viewer", "None", fromFileResult, bufferLength, path.c_str());
+    path = fromFileResult;
+    if (path == "true")
+      return WError::ERR_QT_RUNNING;
+  }
+  delete[] fromFileResult;
+
+	char *tmpDir = _getcwd(0, 0);
 
   if (!lib_->isLoaded() && !lib_->load(instrumentLibraryName_.c_str()))
     errorCode = WError::ERR_LOAD_LIBRARY;
@@ -163,7 +193,23 @@ int WSESWrapperMain::initialize(void *reserved)
   if (errorCode == WError::ERR_OK && lib_->GDS_Initialize(errorNotify, 0) != 0)
     errorCode = WError::ERR_INITIALIZE_FAIL;
 
+  _chdir(tmpDir);
+  free(tmpDir);
+  
   initialized_ = (errorCode == WError::ERR_OK);
+
+  // Create sesGui database
+  sesGUI_.clear();
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_InstallInstrument", lib_->GDS_InstallInstrument));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_InstallSupplies", lib_->GDS_InstallSupplies));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_InstallElements", lib_->GDS_InstallElements));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_InstallLensModes", lib_->GDS_InstallLensModes));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_SetupSignals", lib_->GDS_SetupSignals));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_CalibrateVoltages", lib_->GDS_CalibrateVoltages));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_CalibrateDetector", lib_->GDS_CalibrateDetector));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_ControlSupplies", lib_->GDS_ControlSupplies));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_SupplyInfo", lib_->GDS_SupplyInfo));
+  sesGUI_.insert(std::pair<std::string, guiCallback>("GDS_DetectorInfo", lib_->GDS_DetectorInfo));
 
   return errorCode;
 }
@@ -187,7 +233,10 @@ int WSESWrapperMain::finalize()
   abortAcquisitionEvent_.set();
   
   if (lib_->isLoaded())
+  {
     lib_->GDS_Finalize();
+    lib_->unload();
+  }
   
   return WError::ERR_OK;
 }
@@ -215,10 +264,24 @@ int WSESWrapperMain::finalize()
  */
 int WSESWrapperMain::getProperty(const char *property, int index, void *value, int &size)
 {
-  PropertyMap::iterator it = properties_.find(property);
-  if (it == properties_.end())
-    return (lib_->SC_GetProperty != 0 && lib_->SC_GetProperty(property, value, &size) == 0) ? WError::ERR_OK : WError::ERR_PARAMETER_NOT_FOUND;
-  return it->second.get(index, value, size);
+	PropertyMap::iterator it = properties_.find(property);
+	if (it == properties_.end())
+	{
+		if (lib_->SC_GetProperty == 0)
+			return WError::ERR_NOT_INITIALIZED;
+
+		int error = lib_->SC_GetProperty(property, value, &size);
+		if (error == 0)
+			return WError::ERR_OK;
+		if (error == -1)
+			return WError::ERR_PARAMETER_NOT_FOUND;
+		else
+			return WError::ERR_WRONG_SIZE;
+	}
+	return it->second.get(index, value, size);
+
+	int error = lib_->SC_GetProperty(property, value, &size);
+	return error;
 }
 
 /*!
@@ -324,57 +387,103 @@ int WSESWrapperMain::testHW()
  * Loads an instrument configuration file. The SESInstrument library must have been initialized
  * before calling this member function.
  *
- * \param[in] fileName The name of the configuration file. It is possible to use an absolute or relative path.
+ * \param[in] fileName The name of the configuration file. It is possible to use an absolute or relative path. If filename pointer is zero,
+ *         the instrument file name is read from the ini\Ses.ini file in current working directory.
  *
  * \return WError::ERR_NOT_INITIALIZED if initialize() has not been called, WError::ERR_OPEN_INSTRUMENT if
  *         the file could not be opened, WError::ERR_FAIL if the instrument configuration is corrupted, otherwise WError::ERR_OK.
  */
-int WSESWrapperMain::loadInstrument(const char *fileName)
+int WSESWrapperMain::loadInstrument(const char* fileName)
 {
-  instrumentLoaded_ = false;
-  memset(&sesInstrumentInfo_, 0, sizeof(SesNS::WInstrumentInfo));
+	instrumentLoaded_ = false;
+	memset(&sesInstrumentInfo_, 0, sizeof(SesNS::WInstrumentInfo));
 
-  if (!initialized_)
-    return WError::ERR_NOT_INITIALIZED;
+	if (!initialized_)
+		return WError::ERR_NOT_INITIALIZED;
 
-  if (*fileName == 0)
-    return WError::ERR_FAIL;
+	if (*fileName == 0)
+	{
+		std:string path = workingDir_;
+		path.append("/ini/Ses.ini");
+		int bufferLength = 2048;
+		char* fromFileResult = new char[bufferLength];
+		memset(fromFileResult, 0, bufferLength);
+		DWORD length = GetPrivateProfileString("Global", "Instrument Prefs", "None", fromFileResult, bufferLength, path.c_str());
+		path = workingDir_;
+		if (path.back() != '\\')
+			path.append("\\");
+		path.append(fromFileResult);
+		delete[] fromFileResult;
+		return loadInstrument(path.c_str());
+	}
 
-  lib_->GDS_GetDetectorInfo(&sesDetectorInfo_);
-  int errorCode = WError::ERR_OK;
-  if (lib_->GDS_LoadInstrument(fileName) == 0)
-  {
-    lib_->GDS_GetInstrumentInfo(&sesInstrumentInfo_);
-    int length = *sesInstrumentInfo_.Model;
-    memcpy(sesInstrumentInfo_.Model, sesInstrumentInfo_.Model + 1, length);
-    sesInstrumentInfo_.Model[length] = 0;
-    length = *sesInstrumentInfo_.SerialNo;
-    memcpy(sesInstrumentInfo_.SerialNo, sesInstrumentInfo_.SerialNo + 1, length);
-    sesInstrumentInfo_.SerialNo[length] = 0;
-    instrumentLoaded_ = true;
+	if (*fileName == 0)
+		return WError::ERR_FAIL;
 
-    loadElementSets();
-    loadLensModes();
-    if (lensModes_.size() > 0)
-      loadPassEnergies(lensModes_[0], passEnergies_);
-    loadElementNames();
-    if (elementNames_.size() == 0)
-      errorCode = WError::ERR_FAIL;
-  }
-  else
-    errorCode = WError::ERR_OPEN_INSTRUMENT;
+	currentInstrumentFile_ = fileName;
 
-  lib_->GDS_GetGlobalDetector(&sesDetectorRegion_);
-  sesRegion_.ADCMask = sesDetectorRegion_.ADCMask;
-  sesRegion_.ADCMode = sesDetectorRegion_.ADCMode;
-  sesRegion_.DiscLvl = sesDetectorRegion_.DiscLvl;
-  sesRegion_.FirstXChannel = sesDetectorRegion_.FirstXChannel;
-  sesRegion_.FirstYChannel = sesDetectorRegion_.FirstYChannel;
-  sesRegion_.LastXChannel = sesDetectorRegion_.LastXChannel;
-  sesRegion_.LastYChannel = sesDetectorRegion_.LastYChannel;
-  sesRegion_.Slices = sesDetectorRegion_.Slices;
+	lib_->GDS_GetDetectorInfo(&sesDetectorInfo_);
+	int errorCode = lib_->GDS_LoadInstrument(fileName);
+	if (errorCode < 100 || errorCode > 110)
+	{
+		lib_->GDS_GetInstrumentInfo(&sesInstrumentInfo_);
+		int length = *sesInstrumentInfo_.Model;
+		memcpy(sesInstrumentInfo_.Model, sesInstrumentInfo_.Model + 1, length);
+		sesInstrumentInfo_.Model[length] = 0;
+		length = *sesInstrumentInfo_.SerialNo;
+		memcpy(sesInstrumentInfo_.SerialNo, sesInstrumentInfo_.SerialNo + 1, length);
+		sesInstrumentInfo_.SerialNo[length] = 0;
+		instrumentLoaded_ = true;
 
-  return errorCode;
+		loadElementSets();
+		loadLensModes();
+		if (lensModes_.size() > 0)
+			loadPassEnergies(lensModes_[0], passEnergies_);
+		loadElementNames();
+		if (elementNames_.size() == 0)
+			errorCode = WError::ERR_FAIL;
+	}
+	else
+		errorCode = WError::ERR_OPEN_INSTRUMENT;
+
+	lib_->GDS_GetGlobalDetector(&sesDetectorRegion_);
+	sesRegion_.ADCMask = sesDetectorRegion_.ADCMask;
+	sesRegion_.ADCMode = sesDetectorRegion_.ADCMode;
+	sesRegion_.DiscLvl = sesDetectorRegion_.DiscLvl;
+	sesRegion_.FirstXChannel = sesDetectorRegion_.FirstXChannel;
+	sesRegion_.FirstYChannel = sesDetectorRegion_.FirstYChannel;
+	sesRegion_.LastXChannel = sesDetectorRegion_.LastXChannel;
+	sesRegion_.LastYChannel = sesDetectorRegion_.LastYChannel;
+	sesRegion_.Slices = sesDetectorRegion_.Slices;
+
+	return errorCode;
+}
+
+/*!
+ * Saves an instrument configuration file. The SESInstrument library must have been initialized
+ * before calling this member function.
+ *
+ * \param[in] fileName The name of the configuration file. It is possible to use an absolute or relative path. If filename pointer is zero,
+ *         the current instrument file name is used.
+ *
+ * \return WError::ERR_NO_INSTRUMENT if no instrument has been loaded, otherwise WError::ERR_OK.
+ */
+int WSESWrapperMain::saveInstrument(const char* fileName)
+{
+	try
+	{
+		if (!instrumentLoaded_)
+			return WError::ERR_NO_INSTRUMENT;
+
+		if (*fileName == 0)
+			return lib_->GDS_SaveInstrument(currentInstrumentFile_.c_str());
+		else
+			return lib_->GDS_SaveInstrument(fileName);
+	}
+	catch (...)
+	{
+		return WError::ERR_FAIL;
+	}
 }
 
 /*!
@@ -455,7 +564,8 @@ int WSESWrapperMain::setKineticEnergy(const double kineticEnergy)
   if (!instrumentLoaded_)
     return WError::ERR_NO_INSTRUMENT;
 
-  return lib_->GDS_SetKineticEnergy(kineticEnergy) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+  int error = lib_->GDS_SetKineticEnergy(kineticEnergy);
+  return error >= 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 
 /*!
@@ -608,7 +718,7 @@ int WSESWrapperMain::initAcquisition(const bool blockPointReady, const bool bloc
 
   startTime_ = clock();
 
-  return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+  return result >= 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 
 /*!
@@ -663,7 +773,7 @@ int WSESWrapperMain::startAcquisition()
   if (lib_->GDS_GetCurrSignals != 0)
     lib_->GDS_GetCurrSignals(&sesSignals_);
 
-  return result == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+  return result >= 0 ? WError::ERR_OK : WError::ERR_FAIL;
 }
 
 /*!
@@ -786,6 +896,71 @@ int WSESWrapperMain::continueAcquisition()
   pointReadyEvent_.reset();
   continueAcquisitionEvent_.set();
   return WError::ERR_OK;
+}
+
+int WSESWrapperMain::openGui(const char* name)
+{
+	if (!instrumentLoaded_)
+		return WError::ERR_NO_INSTRUMENT;
+
+	SesGuiMap::iterator p = sesGUI_.find(name);
+	if (p != sesGUI_.end())
+	{
+		return p->second();
+	}
+	return 0;
+}
+
+int WSESWrapperMain::loadLensTable(const char* lensmode, const char* filePath)
+{
+	if (!instrumentLoaded_)
+		return WError::ERR_NO_INSTRUMENT;
+
+	return lib_->SC_LoadLensTable(lensmode, filePath);
+}
+
+
+int WSESWrapperMain::setupDetector(SESWrapperNS::PDetectorRegion detectorRegion)
+{
+	if (lib_->GDS_SetupDetector != 0)
+	{
+		sesDetectorRegion_.ADCMode = detectorRegion->adcMode_;
+		sesDetectorRegion_.FirstXChannel = detectorRegion->firstXChannel_;
+		sesDetectorRegion_.LastXChannel = detectorRegion->lastXChannel_;
+		sesDetectorRegion_.FirstYChannel = detectorRegion->firstYChannel_;
+		sesDetectorRegion_.LastYChannel = detectorRegion->lastYChannel_;
+		sesDetectorRegion_.Slices = detectorRegion->slices_;
+
+		int error = lib_->GDS_SetupDetector(&sesDetectorRegion_) == 0 ? WError::ERR_OK : WError::ERR_FAIL;
+		if (error == 0)
+		{
+			detectorRegion->adcMode_ = sesDetectorRegion_.ADCMode;
+			detectorRegion->firstXChannel_ = sesDetectorRegion_.FirstXChannel;
+			detectorRegion->lastXChannel_ = sesDetectorRegion_.LastXChannel;
+			detectorRegion->firstYChannel_ = sesDetectorRegion_.FirstYChannel;
+			detectorRegion->lastYChannel_ = sesDetectorRegion_.LastYChannel;
+			detectorRegion->slices_ = sesDetectorRegion_.Slices;
+		}
+		return 0;
+	}
+	return WError::ERR_OPEN_INSTRUMENT;
+}
+
+/*!
+ * Check if a property exists and has the expected size.
+ *
+ * \return WError
+ */
+int WSESWrapperMain::checkProperty(const char* name, int size)
+{
+	int property_size = 0;
+	double tmp_value = 0;
+	int error = getProperty(name, 0, 0, property_size);
+	if ((error == WError::ERR_OK) || (error == WError::ERR_WRONG_SIZE))
+		if (property_size == size)
+			error = WError::ERR_OK;
+
+	return error;
 }
 
 /*!
@@ -1092,6 +1267,9 @@ int WSESWrapperMain::getAcqRawImage(int index, void *data, int &size)
   int width = sesDetectorInfo_.XChannels;
   int height = sesDetectorInfo_.YChannels;
   int byteSize = 1;
+
+  if (size < width * height * byteSize)
+	  errorCode = WError::ERR_INCORRECT_DETECTOR_REGION;
   
   if (errorCode == WError::ERR_OK)
   {

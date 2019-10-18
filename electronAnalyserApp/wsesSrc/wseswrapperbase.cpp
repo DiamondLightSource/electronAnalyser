@@ -34,16 +34,12 @@ using namespace SESWrapperNS;
  */
 WSESWrapperBase::WSESWrapperBase()
 : lib_(new WSESInstrument), instrumentLoaded_(false),
-  activeDetectors_(0x0001), iteration_(0), startTime_(0),
+  activeDetectors_(0x0001), iteration_(0), startTime_(0),workingDir_(""),
   blockPointReady_(false), blockRegionReady_(false), resetDataBetweenIterations_(false)
 { 
   errors_ = WError::instance();
   
-  std::string baseDir = ::getenv("SES_BASE_DIR");
-  if (baseDir.empty())
-    instrumentLibraryName_ = "dll\\SESInstrument.dll";
-  else
-    instrumentLibraryName_ = baseDir + "\\dll\\SESInstrument.dll";
+  instrumentLibraryName_ = "dll\\SESInstrument.dll";
 
   *sesInstrumentInfo_.Model = 0;
   *sesInstrumentInfo_.SerialNo = 0;
@@ -821,10 +817,23 @@ int WSESWrapperBase::readOnlyStub(int index, const void *value)
  */
 int WSESWrapperBase::setLibWorkingDir(int index, const void *value)
 {
-  const char *strValue = reinterpret_cast<const char *>(value);
-  if (strValue != 0)
-    _chdir(strValue);
-
+	const char *strValue = reinterpret_cast<const char *>(value);
+	if (strValue != 0)
+	{
+		struct stat info;
+		int statRC = stat(strValue, &info);
+		if (statRC != 0)
+			return WError::ERR_INVALID_DIR;
+		else
+		{
+			_chdir(strValue);
+			char *buffer = getcwd(0, 0);
+			workingDir_ = buffer;
+			workingDir_.append("\\");
+			free(buffer);
+			SetEnvironmentVariable("SES_BASE_DIR", workingDir_.c_str());
+		}
+	}
 	return WError::ERR_OK;
 }
 

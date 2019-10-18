@@ -35,6 +35,8 @@ WError::WError()
     Message(ERR_INITIALIZE_FAIL, "Error in call to function GDS_Initialize()"),
     Message(ERR_LOAD_LIBRARY, "Could not load the instrument library"),
     Message(ERR_OPEN_INSTRUMENT, "Could not open the instrument configuration file"),
+    Message(ERR_QT_RUNNING, "QT is running. Disable direct_viewer in DetectorGraph.ini"),
+    Message(ERR_INVALID_DIR, "Invalid SES directory. Call setLibWorkingDir with a valid directory path"),
     Message(ERR_NOT_IMPLEMENTED, "Not implemented")
   };
   for (int i = 0; i < sizeof(messages) / sizeof(Message); i++)

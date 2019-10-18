@@ -90,6 +90,8 @@ public:
   C_Function<int, const char * /* Property */, void * /* Value Buffer */, int * /* Size */>::Pointer SC_GetProperty; /*!< Reads a property from  the instrument library */
   C_Function<int, const char * /* Property */, const void * /* Value Buffer */>::Pointer SC_SetProperty; /*!< Sets an instrument library property */
   C_Function<int, const char * /* Property */, const void * /* Value Buffer */, int /* Buffer Size */>::Pointer SC_SetPropertyEx; /*!< Sets an instrument library property. This function also contains the size (in bytes) of the data block. */
+
+  C_Function<int, const char* /* LensMode Name */, const char* /* File Path */>::Pointer SC_LoadLensTable; /*!< Load Lens Table */
 };
 
 #endif

@@ -107,8 +107,7 @@ int __stdcall WRP_GetProperty(const char *property, int index, void *value, int 
 int __stdcall WRP_GetPropertyBool(const char *property, int index, bool *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
-  if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_BOOL)
-    error = gMain->getProperty(property, index, value, *size);
+  error = gMain->getProperty(property, index, value, *size);
   return error;
 }
 
@@ -119,8 +118,7 @@ int __stdcall WRP_GetPropertyBool(const char *property, int index, bool *value, 
 int __stdcall WRP_GetPropertyInteger(const char *property, int index, int *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
-  if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_INT32)
-    error = gMain->getProperty(property, index, value, *size);
+  error = gMain->getProperty(property, index, value, *size);
   return error;
 }
 
@@ -131,8 +129,7 @@ int __stdcall WRP_GetPropertyInteger(const char *property, int index, int *value
 int __stdcall WRP_GetPropertyDouble(const char *property, int index, double *value, int *size)
 {
   int error = WError::ERR_NOT_APPLICABLE;
-  if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_DOUBLE)
-    error = gMain->getProperty(property, index, value, *size);
+  error = gMain->getProperty(property, index, value, *size);
   return error;
 }
 
@@ -193,6 +190,12 @@ int __stdcall WRP_SetPropertyBool(const char *property, int /* size */, const bo
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_BOOL)
     error = gMain->setProperty(property, sizeof(bool), value);
+  else
+  {
+	  error = gMain->checkProperty(property, sizeof(bool));
+	  if (error == WError::ERR_OK)
+		  error = gMain->setProperty(property, sizeof(bool), value);
+  }
   return error;
 }
 
@@ -205,6 +208,12 @@ int __stdcall WRP_SetPropertyInteger(const char *property, int /* size */, const
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_INT32)
     error = gMain->setProperty(property, sizeof(int), value);
+  else
+  {
+	  error = gMain->checkProperty(property, sizeof(int));
+	  if (error == WError::ERR_OK)
+		  error = gMain->setProperty(property, sizeof(int), value);
+  }
   return error;
 }
 
@@ -216,7 +225,13 @@ int __stdcall WRP_SetPropertyDouble(const char *property, int /* size  */, const
 {
   int error = WError::ERR_NOT_APPLICABLE;
   if (gMain->parameterType(property) == WSESWrapperMain::Property::TYPE_DOUBLE)
-    error = gMain->setProperty(property, sizeof(double), value);
+	  error = gMain->setProperty(property, sizeof(double), value);
+  else
+  {
+	  error = gMain->checkProperty(property, sizeof(double));
+	  if (error == WError::ERR_OK)
+		  error = gMain->setProperty(property, sizeof(double), value);
+  }
   return error;
 }
 
@@ -281,9 +296,17 @@ int __stdcall WRP_TestHW()
 /*!
  * Exported function that wraps the WSESWrapperMain::loadInstrument() member function.
  */
-int __stdcall WRP_LoadInstrument(const char *fileName)
+int __stdcall WRP_LoadInstrument(const char* fileName)
 {
-  return gMain->loadInstrument(fileName);
+	return gMain->loadInstrument(fileName);
+}
+
+/*!
+ * Exported function that wraps the WSESWrapperMain::saveInstrument() member function.
+ */
+int __stdcall WRP_SaveInstrument(const char* fileName)
+{
+	return gMain->saveInstrument(fileName);
 }
 
 /*!
@@ -291,7 +314,7 @@ int __stdcall WRP_LoadInstrument(const char *fileName)
  */
 int __stdcall WRP_ZeroSupplies()
 {
-  return gMain->zeroSupplies();
+	return gMain->zeroSupplies();
 }
 
 /*!
@@ -473,7 +496,37 @@ int __stdcall WRP_WaitForRegionReady(int timeout_ms)
  */
 int __stdcall WRP_ContinueAcquisition()
 {
-  return gMain->continueAcquisition();
+	return gMain->continueAcquisition();
+}
+
+
+/*!
+ * Open SES GUI.
+ name can be:
+ GDS_InstallInstrument, GDS_InstallSupplies, GDS_InstallElements, GDS_InstallLensModes, GDS_SetupSignals, GDS_CalibrateVoltages, GDS_CalibrateDetector, GDS_ControlSupplies, GDS_SupplyInfo, GDS_DetectorInfo
+ */
+int __stdcall WRP_OpenGUI(const char* name)
+{
+	return gMain->openGui(name);
+}
+
+
+/*!
+ * Open DetectorSetup GUI.
+ */
+int __stdcall WRP_SetupDetector(SESWrapperNS::PDetectorRegion detectorRegion)
+{
+	return gMain->setupDetector(detectorRegion);
+}
+
+
+/*!
+ * Load Lens Table.
+ */
+int __stdcall WRP_LoadLensTable(const char* lensmode, const char* filePath)
+{
+	int error = gMain->loadLensTable(lensmode, filePath);
+	return error;
 }
 
 /*! \} */

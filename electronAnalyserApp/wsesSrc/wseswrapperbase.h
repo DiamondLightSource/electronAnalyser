@@ -20,6 +20,9 @@ public:
   typedef std::vector<std::string> NameVector;
   typedef std::vector<double> DoubleVector;
 
+  typedef int (*guiCallback)();
+  typedef std::map<std::string, guiCallback> SesGuiMap;
+
   WSESWrapperBase();
   ~WSESWrapperBase();
 
@@ -85,6 +88,7 @@ protected:
   WSESInstrument *lib_;
 
   bool instrumentLoaded_;
+  std::string workingDir_;
   std::string instrumentLibraryName_;
   SesNS::WInstrumentInfo sesInstrumentInfo_;
   SesNS::WDetectorInfo sesDetectorInfo_;
@@ -98,6 +102,8 @@ protected:
   DoubleVector passEnergies_;
   NameVector elementNames_;
   unsigned int startTime_;
+
+  SesGuiMap sesGUI_;
 
   bool blockPointReady_;
   bool blockRegionReady_;

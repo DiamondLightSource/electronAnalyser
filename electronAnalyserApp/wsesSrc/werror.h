@@ -40,7 +40,10 @@ public:
     ERR_INITIALIZE_FAIL = -15, /*!< Error in call to function GDS_Initialize() */
     ERR_LOAD_LIBRARY = -16, /*!< Could not load the instrument library */
     ERR_OPEN_INSTRUMENT = -17, /*!< Could not open the instrument configuration file */
-    ERR_TIMEOUT = 8, /*!< Operation timed out */
+    ERR_QT_RUNNING = -18, /*!< QT is running */
+	ERR_INVALID_DIR = -19, /*!< Invalid SES directory */
+	ERR_WRONG_SIZE = -20, /*!< Wrong parameter size */
+	ERR_TIMEOUT = 8, /*!< Operation timed out */
     ERR_NOT_IMPLEMENTED = 9 /*!< Function has not been implemented */
   };
 

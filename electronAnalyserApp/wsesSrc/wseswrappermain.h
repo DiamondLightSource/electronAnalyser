@@ -29,7 +29,8 @@ public:
   int validate(const char *elementSet, const char *lensMode, double passEnergy, double kineticEnergy);
   int resetHW();
   int testHW();
-  int loadInstrument(const char *fileName);
+  int loadInstrument(const char* fileName);
+  int saveInstrument(const char* fileName);
   int zeroSupplies();
   int getBindingEnergy(double *bindingEnergy);
   int setBindingEnergy(const double bindingEnergy);
@@ -47,8 +48,12 @@ public:
   int waitForPointReady(int timeout_ms);
   int waitForRegionReady(int timeout_ms);
   int continueAcquisition();
+  int openGui(const char* name);
+  int loadLensTable(const char* lensmode, const char* filePath);
+  int setupDetector(SESWrapperNS::PDetectorRegion detectorRegion);
 
-  int parameterType(const char *parameter);
+  int checkProperty(const char* parameter, int size);
+  int parameterType(const char* parameter);
 
   int getAcqChannels(int index, void *data, int &size);
   int getAcqSlices(int index, void *data, int &size);
@@ -93,6 +98,7 @@ private:
   int currentPoint_;
   SesNS::WSpectrum *sesSpectrum_;
   SesNS::WSignals *sesSignals_;
+  std::string currentInstrumentFile_;
 
   DataParameterMap dataParameters_;
 

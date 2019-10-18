@@ -111,7 +111,8 @@ bool WSESInstrument::load(const char *fileName)
     ::import(*this, "GDS_StartAcquisition", SESWrapperNS::FUNCTION_REQUIRED, GDS_StartAcquisition);
     ::import(*this, "SC_GetProperty", SESWrapperNS::FUNCTION_OPTIONAL, SC_GetProperty);
     ::import(*this, "SC_SetProperty", SESWrapperNS::FUNCTION_OPTIONAL, SC_SetProperty);
-    ::import(*this, "SC_SetPropertyEx", SESWrapperNS::FUNCTION_OPTIONAL, SC_SetProperty);
+	::import(*this, "SC_SetPropertyEx", SESWrapperNS::FUNCTION_OPTIONAL, SC_SetPropertyEx);
+	::import(*this, "SC_LoadLensTable", SESWrapperNS::FUNCTION_OPTIONAL, SC_LoadLensTable);
   }
   catch (WFunctionException &)
   {
@@ -199,4 +200,5 @@ void WSESInstrument::resetFunctions()
   SC_GetProperty = 0;
   SC_SetProperty = 0;
   SC_SetPropertyEx = 0;
+  SC_LoadLensTable = 0;
 }
