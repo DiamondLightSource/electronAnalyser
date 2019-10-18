@@ -8,6 +8,8 @@
 
 #define NOMINMAX
 #include <windows.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include <iostream>
 #include <string>
