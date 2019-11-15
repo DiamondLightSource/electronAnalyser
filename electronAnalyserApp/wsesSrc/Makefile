@@ -29,15 +29,6 @@ INC += wseswrappermain.h
 #define the library name
 LIBRARY_IOC_WIN32 += wses
 
-# Any specific external resources (not epics) that we need to link to
-ifdef ANALYSER_DEBUG
-  USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-  USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-  USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
-  USR_INCLUDES_WIN32 += 
-  USR_LIBS_WIN32 +=
-endif
-
 #OPT_CFLAGS_YES=/Od
 #OPT_CXXFLAGS_YES=/Od
 

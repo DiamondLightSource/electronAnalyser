@@ -5,12 +5,6 @@ include $(TOP)/configure/CONFIG
 #  ADD MACRO DEFINITIONS AFTER THIS LINE
 #========================================
 
-# The following is needed on win32-x86-debug because the Prosilica library 
-# wants to use LIBCMT, and that conflicts with LIBCMTD
-#ifeq ($(T_A), win32-x86)
-#USR_LDFLAGS += /NODEFAULTLIB:LIBCMT
-#endif
-
 # -------------------------------
 # Build an Diamond Support Module
 # -------------------------------
@@ -20,22 +14,6 @@ USR_INCLUDES += -I../../wsesSrc/
 
 #define the library name
 LIBRARY_IOC_WIN32 += electronAnalyserSupport
-
-# Set the compiler and linker flags required to give a debug build 
-# Note that the /Od flag (disable compiler optimisations) gets overridden by
-# /Ox coming from the global win32_x86 compiler settings. I haven't found a 
-# way to override this global flag for just the win32_x86 build - the only
-# thing that seems to work is to override OPT_CFLAGS_YES globally, which 
-# breaks builds for other targets (notably the Linux build needed for the
-# viewer).
-# It still seems to be possible to follow the code in the debugger with Ox on though.
-ifdef ANALYSER_DEBUG
-  USR_CFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-  USR_CPPFLAGS_WIN32 += -DWIN32 -DDEBUG /Zi /Od
-  USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF
-  USR_INCLUDES_WIN32 += 
-  USR_LIBS_WIN32 +=
-endif
 
 # The following are compiled and added to the support library
 electronAnalyserSupport_SRCS += drvElectronAnalyserRegistrar.c

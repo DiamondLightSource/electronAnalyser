@@ -16,7 +16,7 @@ class electronAnalyser(AsynPort):
     # This tells xmlbuilder to use PORT instead of name as the row ID
     UniqueName = "PORT"
     _SpecificTemplate = electronAnalyserTemplate
-    def __init__(self, PORT, SES_BASE_DIR, SES_INSTRUMENT_FILE, BUFFERS = 50, MEMORY = -1, debug = False, **args):
+    def __init__(self, PORT, SES_BASE_DIR, SES_INSTRUMENT_FILE, BUFFERS = 50, MEMORY = -1, **args):
         # Init the superclass (AsynPort)
         self.__super.__init__(PORT)
         # Update the attributes of self from the commandline args
@@ -24,17 +24,12 @@ class electronAnalyser(AsynPort):
         # Make an instance of our template
         makeTemplateInstance(self._SpecificTemplate, locals(), args)
         iocwriter.AddDbMakefileHook(self.DbMakefileHook)
-        if debug:
-            self.MakefileStringList.append("USR_CFLAGS_WIN32 += -DDEBUG /Zi /Od")
-            self.MakefileStringList.append("USR_CPPFLAGS_WIN32 += -DDEBUG /Zi /Od")
-            self.MakefileStringList.append("USR_LDFLAGS_WIN32 += /INCREMENTAL:NO /DEBUG /OPT:REF /OPT:ICF")
 
     # __init__ arguments
     ArgInfo = ADBaseTemplate.ArgInfo + _SpecificTemplate.ArgInfo + makeArgInfo(__init__,
         PORT = Simple('Port name for the detector', str),
         BUFFERS = Simple('Maximum number of NDArray buffers to be created for plugin callbacks', int),
         MEMORY = Simple('Max memory to allocate, should be maxw*maxh*nbuffer for driver and all attached plugins', int),
-        debug = Simple('If True, generate PDB debugging file for this IOC to allow post-mortem debugging in WinDBG', bool),
         SES_BASE_DIR = Simple('Path to SES base installation directory, e.g. C:/Projects/SES_1.5.0-r5_Win64/. Note the trailing / is required.'),
         SES_INSTRUMENT_FILE = Simple('Path to the SES instrument file.'))
                                                                             
