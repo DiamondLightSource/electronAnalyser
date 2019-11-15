@@ -8,36 +8,17 @@
 # each time EPICS_BASE, SNCSEQ, or any other external
 # module defined in the RELEASE file is rebuilt.
 
-SUPPORT=/dls_sw/prod/R3.14.12.3/support
-#WORK=/dls_sw/work/R3.14.12.3/support
+SUPPORT=/dls_sw/prod/R3.14.12.7/support
 
 # If you don't want to install into $(TOP) then
 # define INSTALL_LOCATION_APP here
 
 # ASYN is needed for sockets and for smartControl
-ASYN=$(SUPPORT)/asyn/4-26
-
-# CALC is needed for scalcout record that SSCAN uses
-CALC=$(SUPPORT)/calc/3-1
-
-# SSCAN is needed for scanning threshold on Pilatus
-SSCAN=$(SUPPORT)/sscan/2-8-1
-
-# BUSY is needed for busy record
-BUSY=$(SUPPORT)/busy/1-6-1
-
-#AUTOSAVE is needed for save_restore
-AUTOSAVE=$(SUPPORT)/autosave/5-0dls4
-
-#DEVIOCSTATS=$(SUPPORT)/devIocStats/3-1-5dls7
-
-FFMPEGSERVER=$(SUPPORT)/ffmpegServer/3-0dls0-9
-
-AREADETECTOR=$(SUPPORT)/ADCore/2-4dls5
-ADBINARIES=$(SUPPORT)/ADBinaries/2-2dls2
+ASYN=$(SUPPORT)/asyn/4-34
+ADCORE=$(SUPPORT)/ADCore/3-6dls3
 
 # EPICS_BASE usually appears last so other apps can override stuff:
-EPICS_BASE=/dls_sw/epics/R3.14.12.3/base
+EPICS_BASE=/dls_sw/epics/R3.14.12.7/base
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
 -include $(TOP)/configure/RELEASE.private

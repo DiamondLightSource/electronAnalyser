@@ -116,6 +116,6 @@ DBD += electronAnalyserSupport.dbd
 
 # Ensure all the common libraries used by areaDetector are included in the build
 # of both library and IOC executable.
-include $(AREADETECTOR)/ADApp/commonDriverMakefile
+include $(ADCORE)/ADApp/commonDriverMakefile
 
 include $(TOP)/configure/RULES

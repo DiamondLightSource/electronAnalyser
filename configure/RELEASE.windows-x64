@@ -1,6 +1,6 @@
 TEMPLATE_TOP=$(EPICS_BASE)/templates/makeBaseApp/top
 
-SUPPORT=W:\prod/R3.14.12.3/support
-WORK=W:\work/R3.14.12.3/support
+SUPPORT=W:\prod/R3.14.12.7/support
+WORK=W:\work/R3.14.12.7/support
 
-EPICS_BASE=W:\epics/R3.14.12.3/base
+EPICS_BASE=W:\epics/R3.14.12.7/base
