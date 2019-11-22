@@ -21,7 +21,6 @@
 #include <windows.h>
 #include <stdio.h>
 #include <winsock2.h>
-#include "tiffio.h"
 
 
 #if defined _MSC_VER
